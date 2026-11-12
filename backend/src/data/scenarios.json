@@ -1,0 +1,34 @@
+[
+  {
+    "id": "scen_1",
+    "name": "Festive Season Upside",
+    "status": "saved",
+    "lastModified": "2026-11-12T07:31:00.000Z",
+    "userId": "usr_dp_1",
+    "userName": "Priya Sharma"
+  },
+  {
+    "id": "scen_2",
+    "name": "Base Forecast Refresh",
+    "status": "saved",
+    "lastModified": "2026-11-11T09:30:00.000Z",
+    "userId": "usr_dp_1",
+    "userName": "Priya Sharma"
+  },
+  {
+    "id": "scen_3",
+    "name": "Q3 Committed Plan",
+    "status": "committed",
+    "lastModified": "2026-07-15T14:30:00.000Z",
+    "userId": "usr_dp_1",
+    "userName": "Priya Sharma"
+  },
+  {
+    "id": "scen_4",
+    "name": "Raw Material Delay Risk",
+    "status": "saved",
+    "lastModified": "2026-07-18T10:15:00.000Z",
+    "userId": "usr_dp_1",
+    "userName": "Priya Sharma"
+  }
+]

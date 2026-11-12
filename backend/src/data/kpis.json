@@ -1,0 +1,65 @@
+[
+  {
+    "key": "total_forecast",
+    "label": "Total forecast",
+    "value": 1820000,
+    "format": "number",
+    "isNeutral": true
+  },
+  {
+    "key": "forecast_adj",
+    "label": "Forecast adjustment",
+    "value": 42000,
+    "format": "number",
+    "growthType": "positive"
+  },
+  {
+    "key": "risk",
+    "label": "Risk",
+    "value": -96000,
+    "format": "number",
+    "growthType": "negative"
+  },
+  {
+    "key": "opportunity",
+    "label": "Opportunity",
+    "value": 128000,
+    "format": "number",
+    "growthType": "positive"
+  },
+  {
+    "key": "growth_fy",
+    "label": "FY growth",
+    "value": 2.8,
+    "format": "percent",
+    "growthType": "positive"
+  },
+  {
+    "key": "growth_ytd",
+    "label": "YTD growth",
+    "value": 5.8,
+    "format": "percent",
+    "growthType": "positive"
+  },
+  {
+    "key": "growth_ytg",
+    "label": "YTG growth",
+    "value": -1.9,
+    "format": "percent",
+    "growthType": "negative"
+  },
+  {
+    "key": "growth_fy_ro",
+    "label": "FY growth (R&O)",
+    "value": 2.8,
+    "format": "percent",
+    "growthType": "positive"
+  },
+  {
+    "key": "growth_ytg_ro",
+    "label": "YTG growth (R&O)",
+    "value": -1.9,
+    "format": "percent",
+    "growthType": "negative"
+  }
+]

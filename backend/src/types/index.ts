@@ -1,0 +1,170 @@
+export type Role = 'demand_planner' | 'leadership';
+
+export type ProductLevel = 'brand' | 'product';
+export type CustomerLevel = 'customer' | 'customer_group';
+export type Uom = 'units' | 'volume' | 'revenue';
+
+export interface User {
+  id: string;
+  name: string;
+  role: Role;
+  roleTitle: string;
+}
+
+export interface WidgetManifest {
+  id: string;
+  componentKey: string;
+  title?: string;
+  order: number;
+  props?: Record<string, any>;
+}
+
+export interface LayoutManifest {
+  role: Role;
+  roleTitle: string;
+  widgets: WidgetManifest[];
+  headerControls: {
+    showProductLevel: boolean;
+    showCustomerLevel: boolean;
+    showUom: boolean;
+    actions: ('save' | 'commit' | 'table' | 'filter' | 'scenarios')[];
+  };
+}
+
+export interface LoginResponse {
+  token: string;
+  user: User;
+  layoutManifest: LayoutManifest;
+}
+
+export interface MetaOptions {
+  productLevels: Array<{ value: ProductLevel; label: string }>;
+  customerLevels: Array<{ value: CustomerLevel; label: string }>;
+  uoms: Array<{ value: Uom; label: string }>;
+  filters: {
+    categories: string[];
+    brands: string[];
+    products: string[];
+    customerGroups: string[];
+    customers: string[];
+    businessUnits: string[];
+  };
+}
+
+export interface FilterState {
+  timeRange: [number, number]; // Timestamp or month index
+  startDate: string; // e.g. "Jan 2026"
+  endDate: string; // e.g. "Dec 2026"
+  categories: string[];
+  brands: string[];
+  products: string[];
+  customerGroups: string[];
+  customers: string[];
+  businessUnits: string[];
+}
+
+export interface KpiItem {
+  key: string;
+  label: string;
+  value: number;
+  format: 'currency' | 'percent' | 'number';
+  growthType?: 'positive' | 'negative' | 'neutral';
+  isNeutral?: boolean;
+}
+
+export interface ForecastLinePoint {
+  time: string;
+  forecast: number;
+  worstCase: number;
+  bestCase: number;
+}
+
+export interface ForecastLineResponse {
+  points: ForecastLinePoint[];
+}
+
+export interface StackedBarItem {
+  category: string;
+  hasDrillDown: boolean;
+  segments: Record<string, number>;
+  total: number;
+}
+
+export interface StackedBarResponse {
+  level: ProductLevel;
+  parent?: string;
+  items: StackedBarItem[];
+  availableCustomerGroups: string[];
+}
+
+export interface WaterfallStep {
+  name: string;
+  value: number;
+  type: 'total' | 'increase' | 'decrease';
+  start?: number;
+  end?: number;
+}
+
+export interface WaterfallResponse {
+  steps: WaterfallStep[];
+}
+
+export interface TreemapNode {
+  name: string;
+  value?: number;
+  brand?: string;
+  children?: TreemapNode[];
+  color?: string;
+}
+
+export interface TreemapResponse {
+  level: ProductLevel;
+  data: TreemapNode[];
+}
+
+export type ScenarioStatus = 'saved' | 'committed';
+
+export interface Scenario {
+  id: string;
+  name: string;
+  status: ScenarioStatus;
+  lastModified: string; // ISO string
+  userId: string;
+  userName: string;
+}
+
+export interface CreateScenarioDto {
+  name: string;
+}
+
+export interface PlanningTableRow {
+  id: string;
+  category: string;
+  brand: string;
+  product?: string;
+  customerGroup: string;
+  customer: string;
+  definitions: {
+    opportunity: Record<string, number>;
+    actualFcst: Record<string, number>;
+    risk: Record<string, number>;
+  };
+  pastActuals: Record<string, number>;
+  diffs?: Record<string, Record<string, number>>;
+}
+
+export interface TableResponse {
+  period: string[];
+  currentMonthIndex: number;
+  level: ProductLevel;
+  rows: PlanningTableRow[];
+}
+
+export interface TableEdit {
+  rowId: string;
+  definitionType: 'opportunity' | 'actualFcst' | 'risk';
+  month: string;
+  value: number;
+  originalValue: number;
+}
+

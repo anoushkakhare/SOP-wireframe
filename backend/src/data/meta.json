@@ -1,0 +1,95 @@
+{
+  "productLevels": [
+    { "value": "brand",   "label": "Brand"   },
+    { "value": "product", "label": "Product" }
+  ],
+  "customerLevels": [
+    { "value": "customer_group", "label": "Customer group" },
+    { "value": "customer",       "label": "Customer"       }
+  ],
+  "uoms": [
+    { "value": "units",   "label": "Units"  },
+    { "value": "volume",  "label": "Volume" },
+    { "value": "revenue", "label": "Value"  }
+  ],
+  "filters": {
+    "categories": [
+      "Beauty & Wellbeing",
+      "Personal Care",
+      "Home Care",
+      "Foods"
+    ],
+    "brands": [
+      "Dove",
+      "Pond's",
+      "Vaseline",
+      "Sunsilk",
+      "Lux",
+      "Lifebuoy",
+      "Rexona",
+      "Closeup",
+      "Surf Excel",
+      "Comfort",
+      "Domestos",
+      "Vim",
+      "Knorr",
+      "Hellmann's",
+      "Brooke Bond",
+      "Lipton"
+    ],
+    "products": [
+      "Dove Nourishing Shampoo",
+      "Dove Intensive Repair Conditioner",
+      "Pond's Age Miracle Cream",
+      "Pond's Bright Beauty Face Wash",
+      "Vaseline Intensive Care Body Lotion",
+      "Vaseline Petroleum Jelly",
+      "Sunsilk Black Shine Shampoo",
+      "Lux Soft Touch Soap Bar",
+      "Lux Velvet Touch Body Wash",
+      "Lifebuoy Total 10 Soap",
+      "Lifebuoy Hand Sanitiser",
+      "Rexona Roll-on",
+      "Rexona Spray Deodorant",
+      "Closeup Red Hot Toothpaste",
+      "Surf Excel Matic Liquid",
+      "Surf Excel Easy Wash Powder",
+      "Comfort Lily Fresh Fabric Conditioner",
+      "Domestos Thick Bleach",
+      "Vim Lemon Dishwash Bar",
+      "Vim Dishwash Gel",
+      "Knorr Chicken Stock Cubes",
+      "Knorr Tomato Soup",
+      "Hellmann's Real Mayonnaise",
+      "Brooke Bond Red Label Tea",
+      "Lipton Green Tea Classic"
+    ],
+    "customerGroups": [
+      "Modern trade",
+      "General trade",
+      "E-commerce",
+      "Quick commerce"
+    ],
+    "customers": [
+      "Reliance Retail",
+      "DMart",
+      "More Retail",
+      "Spencer's",
+      "North Region Distributors",
+      "West Region Distributors",
+      "South Region Distributors",
+      "Amazon",
+      "Flipkart",
+      "BigBasket",
+      "Blinkit",
+      "Zepto",
+      "Swiggy Instamart"
+    ],
+    "businessUnits": [
+      "Beauty & Wellbeing",
+      "Personal Care",
+      "Home Care",
+      "Foods"
+    ]
+  }
+}

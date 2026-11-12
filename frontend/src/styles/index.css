@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CENTRAL THEME FILE – S&OP Demand Planner
+   ───────────────────────────────────────────────────────────────────────
+   ALL colour tokens are defined here as CSS custom properties.
+   To change a colour, update only this file.
+   To add dark mode, add a [data-theme="dark"] block below.
+
+   Token structure
+   ───────────────
+   --color-primary-{step}   Primary indigo ramp
+   --color-bg-page           Page background
+   --color-surface           Card / white surface
+   --color-border            Default border
+   --color-border-strong     Stronger border (inputs, dividers)
+   --color-text-primary      Body text
+   --color-text-secondary    Muted / supporting text
+   --color-text-disabled     Placeholder / disabled state
+   --color-positive / -bg    Green success semantic
+   --color-negative / -bg    Red error / risk semantic
+   --color-warning  / -bg    Amber saved / caution semantic
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    /* ── Primary indigo brand ramp ─────────────────────────── */
+    --color-primary-900: #090870;
+    --color-primary-700: #0F0E9A;   /* brand */
+    --color-primary-600: #2B2AB0;
+    --color-primary-500: #4F4EC6;
+    --color-primary-300: #A3A2E2;
+    --color-primary-100: #E2E2F6;
+    --color-primary-50:  #F3F3FB;
+
+    /* ── Surfaces ──────────────────────────────────────────── */
+    --color-bg-page:  #F6F7FB;
+    --color-surface:  #FFFFFF;
+
+    /* ── Borders ───────────────────────────────────────────── */
+    --color-border:        #E0E3EC;
+    --color-border-strong: #C8CCDA;
+
+    /* ── Text ───────────────────────────────────────────────── */
+    --color-text-primary:   #1A1C2E;
+    --color-text-secondary: #5A6078;
+    --color-text-disabled:  #9AA0B4;
+
+    /* ── Semantic ───────────────────────────────────────────── */
+    --color-positive:    #1B7F55;
+    --color-positive-bg: #E6F5EE;
+    --color-negative:    #C0392B;
+    --color-negative-bg: #FCEBE9;
+    --color-warning:     #A66A00;
+    --color-warning-bg:  #FFF3D6;
+
+    /* ── Chart palette (indigo + semantic) ─────────────────── */
+    /* Customer groups, in order: */
+    --color-cg-1: #0F0E9A;   /* Modern trade   – brand */
+    --color-cg-2: #4F4EC6;   /* General trade  – primary-500 */
+    --color-cg-3: #A3A2E2;   /* E-commerce     – primary-300 */
+    --color-cg-4: #D6D6F1;   /* Quick commerce – light indigo */
+    --color-cg-5: #8A8FA8;   /* neutral grey if 5th needed */
+
+    /* Forecast line */
+    --color-chart-forecast:    #0F0E9A;
+    --color-chart-band-fill:   #E2E2F6;   /* primary-100 @ 60% */
+    --color-chart-band-edge:   #A3A2E2;   /* primary-300, dashed */
+
+    /* Waterfall */
+    --color-wf-baseline:   #4F4EC6;
+    --color-wf-increase:   #1B7F55;
+    --color-wf-decrease:   #C0392B;
+    --color-wf-final:      #0F0E9A;
+
+    /* Treemap brand colours (darkest → lightest indigo) */
+    --color-tm-1: #0F0E9A;
+    --color-tm-2: #2B2AB0;
+    --color-tm-3: #4F4EC6;
+    --color-tm-4: #7A79D6;
+    --color-tm-5: #A3A2E2;
+    --color-tm-6: #C9C8EC;
+
+    /* Grid / axis */
+    --color-chart-grid: #E8EAF1;
+
+    /* ── Focus ring ─────────────────────────────────────────── */
+    --focus-ring-color: var(--color-primary-500);
+    --focus-ring:       0 0 0 2px var(--focus-ring-color);
+  }
+
+  /* ── Dark mode placeholder (tokens only; add values later) ── */
+  /* [data-theme="dark"] { --color-bg-page: ...; ... } */
+
+  /* ── Base element styles ─────────────────────────────────── */
+  html {
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-bg-page);
+    color: var(--color-text-primary);
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+  }
+
+  /* Tabular numbers everywhere numbers appear */
+  table, .tabular-nums, [data-num] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Focus ring – visible on keyboard nav, suppressed on mouse */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
+  }
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+}
+
+/* ── Scrollbars (thin, indigo-tinted) ───────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-primary-50);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary-300);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-500);
+}
+
+/* ── Utility: hide scrollbar rail but keep scroll behaviour ─── */
+.no-scrollbar {
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE / Edge */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

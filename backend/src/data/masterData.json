@@ -1,0 +1,877 @@
+{
+  "months": [
+    "Jan 2026",
+    "Feb 2026",
+    "Mar 2026",
+    "Apr 2026",
+    "May 2026",
+    "Jun 2026",
+    "Jul 2026",
+    "Aug 2026",
+    "Sep 2026",
+    "Oct 2026",
+    "Nov 2026",
+    "Dec 2026"
+  ],
+  "currentMonthIndex": 5,
+  "targets": {
+    "totalForecast": 1820000,
+    "forecastAdjustment": 42000,
+    "risk": -96000,
+    "opportunity": 128000,
+    "growthFy": 2.8,
+    "growthYtd": 5.8,
+    "growthYtg": -1.9,
+    "growthFyRo": 2.8,
+    "growthYtgRo": -1.9,
+    "baseline": 1600000,
+    "demandDrivers": 178000,
+    "manualAdjustment": 42000
+  },
+  "items": [
+    {
+      "id": "item_1",
+      "businessUnit": "Beauty & Wellbeing",
+      "category": "Beauty & Wellbeing",
+      "brand": "Dove",
+      "product": "Dove Nourishing Shampoo",
+      "customerGroup": "Modern trade",
+      "customer": "Reliance Retail",
+      "pastActuals": {
+        "Jan 2026": 14066,
+        "Feb 2026": 14437,
+        "Mar 2026": 15177,
+        "Apr 2026": 14622,
+        "May 2026": 15547
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1953,
+          "Jul 2026": 1692,
+          "Aug 2026": 2083,
+          "Sep 2026": 2343,
+          "Oct 2026": 1822,
+          "Nov 2026": 1432,
+          "Dec 2026": 1691
+        },
+        "actualFcst": {
+          "Jun 2026": 16102,
+          "Jul 2026": 15362,
+          "Aug 2026": 15917,
+          "Sep 2026": 16473,
+          "Oct 2026": 15732,
+          "Nov 2026": 15547,
+          "Dec 2026": 16110
+        },
+        "risk": {
+          "Jun 2026": -1367,
+          "Jul 2026": -1464,
+          "Aug 2026": -1269,
+          "Sep 2026": -1660,
+          "Oct 2026": -1464,
+          "Nov 2026": -1172,
+          "Dec 2026": -1379
+        }
+      }
+    },
+    {
+      "id": "item_2",
+      "businessUnit": "Beauty & Wellbeing",
+      "category": "Beauty & Wellbeing",
+      "brand": "Dove",
+      "product": "Dove Intensive Repair Conditioner",
+      "customerGroup": "E-commerce",
+      "customer": "Amazon",
+      "pastActuals": {
+        "Jan 2026": 11722,
+        "Feb 2026": 12031,
+        "Mar 2026": 12647,
+        "Apr 2026": 12185,
+        "May 2026": 12956
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1627,
+          "Jul 2026": 1410,
+          "Aug 2026": 1736,
+          "Sep 2026": 1953,
+          "Oct 2026": 1519,
+          "Nov 2026": 1193,
+          "Dec 2026": 1410
+        },
+        "actualFcst": {
+          "Jun 2026": 13419,
+          "Jul 2026": 12802,
+          "Aug 2026": 13264,
+          "Sep 2026": 13727,
+          "Oct 2026": 13110,
+          "Nov 2026": 12956,
+          "Dec 2026": 13419
+        },
+        "risk": {
+          "Jun 2026": -1139,
+          "Jul 2026": -1220,
+          "Aug 2026": -1058,
+          "Sep 2026": -1383,
+          "Oct 2026": -1220,
+          "Nov 2026": -976,
+          "Dec 2026": -1139
+        }
+      }
+    },
+    {
+      "id": "item_3",
+      "businessUnit": "Beauty & Wellbeing",
+      "category": "Beauty & Wellbeing",
+      "brand": "Pond's",
+      "product": "Pond's Age Miracle Cream",
+      "customerGroup": "Modern trade",
+      "customer": "DMart",
+      "pastActuals": {
+        "Jan 2026": 9378,
+        "Feb 2026": 9624,
+        "Mar 2026": 10118,
+        "Apr 2026": 9748,
+        "May 2026": 10365
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1302,
+          "Jul 2026": 1128,
+          "Aug 2026": 1388,
+          "Sep 2026": 1562,
+          "Oct 2026": 1215,
+          "Nov 2026": 955,
+          "Dec 2026": 1128
+        },
+        "actualFcst": {
+          "Jun 2026": 10735,
+          "Jul 2026": 10241,
+          "Aug 2026": 10612,
+          "Sep 2026": 10982,
+          "Oct 2026": 10488,
+          "Nov 2026": 10365,
+          "Dec 2026": 10735
+        },
+        "risk": {
+          "Jun 2026": -911,
+          "Jul 2026": -976,
+          "Aug 2026": -846,
+          "Sep 2026": -1106,
+          "Oct 2026": -976,
+          "Nov 2026": -781,
+          "Dec 2026": -911
+        }
+      }
+    },
+    {
+      "id": "item_4",
+      "businessUnit": "Beauty & Wellbeing",
+      "category": "Beauty & Wellbeing",
+      "brand": "Pond's",
+      "product": "Pond's Bright Beauty Face Wash",
+      "customerGroup": "General trade",
+      "customer": "North Region Distributors",
+      "pastActuals": {
+        "Jan 2026": 8205,
+        "Feb 2026": 8421,
+        "Mar 2026": 8853,
+        "Apr 2026": 8529,
+        "May 2026": 9069
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1139,
+          "Jul 2026": 987,
+          "Aug 2026": 1215,
+          "Sep 2026": 1367,
+          "Oct 2026": 1063,
+          "Nov 2026": 835,
+          "Dec 2026": 987
+        },
+        "actualFcst": {
+          "Jun 2026": 9393,
+          "Jul 2026": 8961,
+          "Aug 2026": 9285,
+          "Sep 2026": 9609,
+          "Oct 2026": 9177,
+          "Nov 2026": 9069,
+          "Dec 2026": 9393
+        },
+        "risk": {
+          "Jun 2026": -797,
+          "Jul 2026": -854,
+          "Aug 2026": -740,
+          "Sep 2026": -968,
+          "Oct 2026": -854,
+          "Nov 2026": -683,
+          "Dec 2026": -797
+        }
+      }
+    },
+    {
+      "id": "item_5",
+      "businessUnit": "Beauty & Wellbeing",
+      "category": "Beauty & Wellbeing",
+      "brand": "Vaseline",
+      "product": "Vaseline Intensive Care Body Lotion",
+      "customerGroup": "Modern trade",
+      "customer": "More Retail",
+      "pastActuals": {
+        "Jan 2026": 9378,
+        "Feb 2026": 9624,
+        "Mar 2026": 10118,
+        "Apr 2026": 9748,
+        "May 2026": 10365
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1302,
+          "Jul 2026": 1128,
+          "Aug 2026": 1388,
+          "Sep 2026": 1562,
+          "Oct 2026": 1215,
+          "Nov 2026": 955,
+          "Dec 2026": 1128
+        },
+        "actualFcst": {
+          "Jun 2026": 10735,
+          "Jul 2026": 10241,
+          "Aug 2026": 10612,
+          "Sep 2026": 10982,
+          "Oct 2026": 10488,
+          "Nov 2026": 10365,
+          "Dec 2026": 10735
+        },
+        "risk": {
+          "Jun 2026": -911,
+          "Jul 2026": -976,
+          "Aug 2026": -846,
+          "Sep 2026": -1106,
+          "Oct 2026": -976,
+          "Nov 2026": -781,
+          "Dec 2026": -911
+        }
+      }
+    },
+    {
+      "id": "item_6",
+      "businessUnit": "Beauty & Wellbeing",
+      "category": "Beauty & Wellbeing",
+      "brand": "Vaseline",
+      "product": "Vaseline Petroleum Jelly",
+      "customerGroup": "Quick commerce",
+      "customer": "Blinkit",
+      "pastActuals": {
+        "Jan 2026": 5861,
+        "Feb 2026": 6015,
+        "Mar 2026": 6324,
+        "Apr 2026": 6092,
+        "May 2026": 6478
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 814,
+          "Jul 2026": 705,
+          "Aug 2026": 868,
+          "Sep 2026": 976,
+          "Oct 2026": 759,
+          "Nov 2026": 597,
+          "Dec 2026": 705
+        },
+        "actualFcst": {
+          "Jun 2026": 6709,
+          "Jul 2026": 6401,
+          "Aug 2026": 6632,
+          "Sep 2026": 6864,
+          "Oct 2026": 6555,
+          "Nov 2026": 6478,
+          "Dec 2026": 6709
+        },
+        "risk": {
+          "Jun 2026": -569,
+          "Jul 2026": -610,
+          "Aug 2026": -529,
+          "Sep 2026": -692,
+          "Oct 2026": -610,
+          "Nov 2026": -488,
+          "Dec 2026": -569
+        }
+      }
+    },
+    {
+      "id": "item_7",
+      "businessUnit": "Beauty & Wellbeing",
+      "category": "Beauty & Wellbeing",
+      "brand": "Sunsilk",
+      "product": "Sunsilk Black Shine Shampoo",
+      "customerGroup": "General trade",
+      "customer": "West Region Distributors",
+      "pastActuals": {
+        "Jan 2026": 7033,
+        "Feb 2026": 7218,
+        "Mar 2026": 7588,
+        "Apr 2026": 7311,
+        "May 2026": 7774
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 976,
+          "Jul 2026": 846,
+          "Aug 2026": 1041,
+          "Sep 2026": 1172,
+          "Oct 2026": 911,
+          "Nov 2026": 716,
+          "Dec 2026": 846
+        },
+        "actualFcst": {
+          "Jun 2026": 8051,
+          "Jul 2026": 7681,
+          "Aug 2026": 7959,
+          "Sep 2026": 8236,
+          "Oct 2026": 7866,
+          "Nov 2026": 7774,
+          "Dec 2026": 8051
+        },
+        "risk": {
+          "Jun 2026": -683,
+          "Jul 2026": -732,
+          "Aug 2026": -635,
+          "Sep 2026": -830,
+          "Oct 2026": -732,
+          "Nov 2026": -586,
+          "Dec 2026": -683
+        }
+      }
+    },
+    {
+      "id": "item_8",
+      "businessUnit": "Personal Care",
+      "category": "Personal Care",
+      "brand": "Lux",
+      "product": "Lux Soft Touch Soap Bar",
+      "customerGroup": "General trade",
+      "customer": "South Region Distributors",
+      "pastActuals": {
+        "Jan 2026": 8205,
+        "Feb 2026": 8421,
+        "Mar 2026": 8853,
+        "Apr 2026": 8529,
+        "May 2026": 9069
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1139,
+          "Jul 2026": 987,
+          "Aug 2026": 1215,
+          "Sep 2026": 1367,
+          "Oct 2026": 1063,
+          "Nov 2026": 835,
+          "Dec 2026": 987
+        },
+        "actualFcst": {
+          "Jun 2026": 9393,
+          "Jul 2026": 8961,
+          "Aug 2026": 9285,
+          "Sep 2026": 9609,
+          "Oct 2026": 9177,
+          "Nov 2026": 9069,
+          "Dec 2026": 9393
+        },
+        "risk": {
+          "Jun 2026": -797,
+          "Jul 2026": -854,
+          "Aug 2026": -740,
+          "Sep 2026": -968,
+          "Oct 2026": -854,
+          "Nov 2026": -683,
+          "Dec 2026": -797
+        }
+      }
+    },
+    {
+      "id": "item_9",
+      "businessUnit": "Personal Care",
+      "category": "Personal Care",
+      "brand": "Lifebuoy",
+      "product": "Lifebuoy Total 10 Soap",
+      "customerGroup": "Modern trade",
+      "customer": "Spencer's",
+      "pastActuals": {
+        "Jan 2026": 7033,
+        "Feb 2026": 7218,
+        "Mar 2026": 7588,
+        "Apr 2026": 7311,
+        "May 2026": 7774
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 976,
+          "Jul 2026": 846,
+          "Aug 2026": 1041,
+          "Sep 2026": 1172,
+          "Oct 2026": 911,
+          "Nov 2026": 716,
+          "Dec 2026": 846
+        },
+        "actualFcst": {
+          "Jun 2026": 8051,
+          "Jul 2026": 7681,
+          "Aug 2026": 7959,
+          "Sep 2026": 8236,
+          "Oct 2026": 7866,
+          "Nov 2026": 7774,
+          "Dec 2026": 8051
+        },
+        "risk": {
+          "Jun 2026": -683,
+          "Jul 2026": -732,
+          "Aug 2026": -635,
+          "Sep 2026": -830,
+          "Oct 2026": -732,
+          "Nov 2026": -586,
+          "Dec 2026": -683
+        }
+      }
+    },
+    {
+      "id": "item_10",
+      "businessUnit": "Personal Care",
+      "category": "Personal Care",
+      "brand": "Rexona",
+      "product": "Rexona Roll-on",
+      "customerGroup": "E-commerce",
+      "customer": "Flipkart",
+      "pastActuals": {
+        "Jan 2026": 5861,
+        "Feb 2026": 6015,
+        "Mar 2026": 6324,
+        "Apr 2026": 6092,
+        "May 2026": 6478
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 814,
+          "Jul 2026": 705,
+          "Aug 2026": 868,
+          "Sep 2026": 976,
+          "Oct 2026": 759,
+          "Nov 2026": 597,
+          "Dec 2026": 705
+        },
+        "actualFcst": {
+          "Jun 2026": 6709,
+          "Jul 2026": 6401,
+          "Aug 2026": 6632,
+          "Sep 2026": 6864,
+          "Oct 2026": 6555,
+          "Nov 2026": 6478,
+          "Dec 2026": 6709
+        },
+        "risk": {
+          "Jun 2026": -569,
+          "Jul 2026": -610,
+          "Aug 2026": -529,
+          "Sep 2026": -692,
+          "Oct 2026": -610,
+          "Nov 2026": -488,
+          "Dec 2026": -569
+        }
+      }
+    },
+    {
+      "id": "item_11",
+      "businessUnit": "Personal Care",
+      "category": "Personal Care",
+      "brand": "Closeup",
+      "product": "Closeup Red Hot Toothpaste",
+      "customerGroup": "Quick commerce",
+      "customer": "Zepto",
+      "pastActuals": {
+        "Jan 2026": 4689,
+        "Feb 2026": 4812,
+        "Mar 2026": 5059,
+        "Apr 2026": 4874,
+        "May 2026": 5182
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 651,
+          "Jul 2026": 564,
+          "Aug 2026": 694,
+          "Sep 2026": 781,
+          "Oct 2026": 607,
+          "Nov 2026": 477,
+          "Dec 2026": 564
+        },
+        "actualFcst": {
+          "Jun 2026": 5367,
+          "Jul 2026": 5121,
+          "Aug 2026": 5306,
+          "Sep 2026": 5491,
+          "Oct 2026": 5244,
+          "Nov 2026": 5182,
+          "Dec 2026": 5367
+        },
+        "risk": {
+          "Jun 2026": -456,
+          "Jul 2026": -488,
+          "Aug 2026": -423,
+          "Sep 2026": -553,
+          "Oct 2026": -488,
+          "Nov 2026": -391,
+          "Dec 2026": -456
+        }
+      }
+    },
+    {
+      "id": "item_12",
+      "businessUnit": "Home Care",
+      "category": "Home Care",
+      "brand": "Surf Excel",
+      "product": "Surf Excel Matic Liquid",
+      "customerGroup": "Modern trade",
+      "customer": "Reliance Retail",
+      "pastActuals": {
+        "Jan 2026": 14066,
+        "Feb 2026": 14437,
+        "Mar 2026": 15177,
+        "Apr 2026": 14622,
+        "May 2026": 15547
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1953,
+          "Jul 2026": 1692,
+          "Aug 2026": 2083,
+          "Sep 2026": 2343,
+          "Oct 2026": 1822,
+          "Nov 2026": 1432,
+          "Dec 2026": 1692
+        },
+        "actualFcst": {
+          "Jun 2026": 16102,
+          "Jul 2026": 15362,
+          "Aug 2026": 15917,
+          "Sep 2026": 16473,
+          "Oct 2026": 15732,
+          "Nov 2026": 15547,
+          "Dec 2026": 16102
+        },
+        "risk": {
+          "Jun 2026": -1367,
+          "Jul 2026": -1464,
+          "Aug 2026": -1269,
+          "Sep 2026": -1660,
+          "Oct 2026": -1464,
+          "Nov 2026": -1172,
+          "Dec 2026": -1367
+        }
+      }
+    },
+    {
+      "id": "item_13",
+      "businessUnit": "Home Care",
+      "category": "Home Care",
+      "brand": "Comfort",
+      "product": "Comfort Lily Fresh Fabric Conditioner",
+      "customerGroup": "E-commerce",
+      "customer": "BigBasket",
+      "pastActuals": {
+        "Jan 2026": 5861,
+        "Feb 2026": 6015,
+        "Mar 2026": 6324,
+        "Apr 2026": 6092,
+        "May 2026": 6478
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 814,
+          "Jul 2026": 705,
+          "Aug 2026": 868,
+          "Sep 2026": 976,
+          "Oct 2026": 759,
+          "Nov 2026": 597,
+          "Dec 2026": 705
+        },
+        "actualFcst": {
+          "Jun 2026": 6709,
+          "Jul 2026": 6401,
+          "Aug 2026": 6632,
+          "Sep 2026": 6864,
+          "Oct 2026": 6555,
+          "Nov 2026": 6478,
+          "Dec 2026": 6709
+        },
+        "risk": {
+          "Jun 2026": -569,
+          "Jul 2026": -610,
+          "Aug 2026": -529,
+          "Sep 2026": -692,
+          "Oct 2026": -610,
+          "Nov 2026": -488,
+          "Dec 2026": -569
+        }
+      }
+    },
+    {
+      "id": "item_14",
+      "businessUnit": "Home Care",
+      "category": "Home Care",
+      "brand": "Domestos",
+      "product": "Domestos Thick Bleach",
+      "customerGroup": "Modern trade",
+      "customer": "DMart",
+      "pastActuals": {
+        "Jan 2026": 5861,
+        "Feb 2026": 6015,
+        "Mar 2026": 6324,
+        "Apr 2026": 6092,
+        "May 2026": 6478
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 814,
+          "Jul 2026": 705,
+          "Aug 2026": 868,
+          "Sep 2026": 976,
+          "Oct 2026": 759,
+          "Nov 2026": 597,
+          "Dec 2026": 705
+        },
+        "actualFcst": {
+          "Jun 2026": 6709,
+          "Jul 2026": 6401,
+          "Aug 2026": 6632,
+          "Sep 2026": 6864,
+          "Oct 2026": 6555,
+          "Nov 2026": 6478,
+          "Dec 2026": 6709
+        },
+        "risk": {
+          "Jun 2026": -569,
+          "Jul 2026": -610,
+          "Aug 2026": -529,
+          "Sep 2026": -692,
+          "Oct 2026": -610,
+          "Nov 2026": -488,
+          "Dec 2026": -569
+        }
+      }
+    },
+    {
+      "id": "item_15",
+      "businessUnit": "Foods",
+      "category": "Foods",
+      "brand": "Knorr",
+      "product": "Knorr Chicken Stock Cubes",
+      "customerGroup": "Quick commerce",
+      "customer": "Swiggy Instamart",
+      "pastActuals": {
+        "Jan 2026": 5861,
+        "Feb 2026": 6015,
+        "Mar 2026": 6324,
+        "Apr 2026": 6092,
+        "May 2026": 6478
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 814,
+          "Jul 2026": 705,
+          "Aug 2026": 868,
+          "Sep 2026": 976,
+          "Oct 2026": 759,
+          "Nov 2026": 597,
+          "Dec 2026": 705
+        },
+        "actualFcst": {
+          "Jun 2026": 6709,
+          "Jul 2026": 6401,
+          "Aug 2026": 6632,
+          "Sep 2026": 6864,
+          "Oct 2026": 6555,
+          "Nov 2026": 6478,
+          "Dec 2026": 6709
+        },
+        "risk": {
+          "Jun 2026": -569,
+          "Jul 2026": -610,
+          "Aug 2026": -529,
+          "Sep 2026": -692,
+          "Oct 2026": -610,
+          "Nov 2026": -488,
+          "Dec 2026": -569
+        }
+      }
+    },
+    {
+      "id": "item_16",
+      "businessUnit": "Foods",
+      "category": "Foods",
+      "brand": "Hellmann's",
+      "product": "Hellmann's Real Mayonnaise",
+      "customerGroup": "Modern trade",
+      "customer": "More Retail",
+      "pastActuals": {
+        "Jan 2026": 3517,
+        "Feb 2026": 3609,
+        "Mar 2026": 3794,
+        "Apr 2026": 3655,
+        "May 2026": 3887
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 488,
+          "Jul 2026": 423,
+          "Aug 2026": 521,
+          "Sep 2026": 586,
+          "Oct 2026": 456,
+          "Nov 2026": 358,
+          "Dec 2026": 423
+        },
+        "actualFcst": {
+          "Jun 2026": 4026,
+          "Jul 2026": 3841,
+          "Aug 2026": 3979,
+          "Sep 2026": 4118,
+          "Oct 2026": 3933,
+          "Nov 2026": 3887,
+          "Dec 2026": 4026
+        },
+        "risk": {
+          "Jun 2026": -342,
+          "Jul 2026": -366,
+          "Aug 2026": -317,
+          "Sep 2026": -415,
+          "Oct 2026": -366,
+          "Nov 2026": -293,
+          "Dec 2026": -342
+        }
+      }
+    },
+    {
+      "id": "item_17",
+      "businessUnit": "Foods",
+      "category": "Foods",
+      "brand": "Brooke Bond",
+      "product": "Brooke Bond Red Label Tea",
+      "customerGroup": "General trade",
+      "customer": "North Region Distributors",
+      "pastActuals": {
+        "Jan 2026": 8205,
+        "Feb 2026": 8421,
+        "Mar 2026": 8853,
+        "Apr 2026": 8529,
+        "May 2026": 9069
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1139,
+          "Jul 2026": 987,
+          "Aug 2026": 1215,
+          "Sep 2026": 1367,
+          "Oct 2026": 1063,
+          "Nov 2026": 835,
+          "Dec 2026": 987
+        },
+        "actualFcst": {
+          "Jun 2026": 9393,
+          "Jul 2026": 8961,
+          "Aug 2026": 9285,
+          "Sep 2026": 9609,
+          "Oct 2026": 9177,
+          "Nov 2026": 9069,
+          "Dec 2026": 9393
+        },
+        "risk": {
+          "Jun 2026": -797,
+          "Jul 2026": -854,
+          "Aug 2026": -740,
+          "Sep 2026": -968,
+          "Oct 2026": -854,
+          "Nov 2026": -683,
+          "Dec 2026": -797
+        }
+      }
+    },
+    {
+      "id": "item_18",
+      "businessUnit": "Foods",
+      "category": "Foods",
+      "brand": "Lipton",
+      "product": "Lipton Green Tea Classic",
+      "customerGroup": "E-commerce",
+      "customer": "Amazon",
+      "pastActuals": {
+        "Jan 2026": 3517,
+        "Feb 2026": 3609,
+        "Mar 2026": 3794,
+        "Apr 2026": 3655,
+        "May 2026": 3887
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 488,
+          "Jul 2026": 423,
+          "Aug 2026": 521,
+          "Sep 2026": 586,
+          "Oct 2026": 456,
+          "Nov 2026": 358,
+          "Dec 2026": 423
+        },
+        "actualFcst": {
+          "Jun 2026": 4026,
+          "Jul 2026": 3841,
+          "Aug 2026": 3979,
+          "Sep 2026": 4118,
+          "Oct 2026": 3933,
+          "Nov 2026": 3887,
+          "Dec 2026": 4026
+        },
+        "risk": {
+          "Jun 2026": -342,
+          "Jul 2026": -366,
+          "Aug 2026": -317,
+          "Sep 2026": -415,
+          "Oct 2026": -366,
+          "Nov 2026": -293,
+          "Dec 2026": -342
+        }
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "scen_1",
+      "name": "Festive Season Upside",
+      "status": "saved",
+      "lastModified": "2026-11-12T07:44:00.000Z",
+      "userId": "usr_dp_1",
+      "userName": "Priya Sharma"
+    },
+    {
+      "id": "scen_2",
+      "name": "Base Forecast Refresh",
+      "status": "saved",
+      "lastModified": "2026-11-11T09:30:00.000Z",
+      "userId": "usr_dp_1",
+      "userName": "Priya Sharma"
+    },
+    {
+      "id": "scen_3",
+      "name": "Q3 Committed Plan",
+      "status": "committed",
+      "lastModified": "2026-07-15T14:30:00.000Z",
+      "userId": "usr_dp_1",
+      "userName": "Priya Sharma"
+    },
+    {
+      "id": "scen_4",
+      "name": "Raw Material Delay Risk",
+      "status": "saved",
+      "lastModified": "2026-07-18T10:15:00.000Z",
+      "userId": "usr_dp_1",
+      "userName": "Priya Sharma"
+    }
+  ]
+}

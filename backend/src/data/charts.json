@@ -1,0 +1,221 @@
+{
+  "forecastLine": {
+    "points": [
+      { "time": "Jan 2026", "forecast": 138000, "worstCase": 120000, "bestCase": 155000 },
+      { "time": "Feb 2026", "forecast": 142000, "worstCase": 125000, "bestCase": 160000 },
+      { "time": "Mar 2026", "forecast": 149000, "worstCase": 131000, "bestCase": 168000 },
+      { "time": "Apr 2026", "forecast": 145000, "worstCase": 128000, "bestCase": 162000 },
+      { "time": "May 2026", "forecast": 153000, "worstCase": 135000, "bestCase": 172000 },
+      { "time": "Jun 2026", "forecast": 158000, "worstCase": 139000, "bestCase": 178000 },
+      { "time": "Jul 2026", "forecast": 152000, "worstCase": 133000, "bestCase": 171000 },
+      { "time": "Aug 2026", "forecast": 156000, "worstCase": 137000, "bestCase": 176000 },
+      { "time": "Sep 2026", "forecast": 162000, "worstCase": 142000, "bestCase": 184000 },
+      { "time": "Oct 2026", "forecast": 155000, "worstCase": 136000, "bestCase": 175000 },
+      { "time": "Nov 2026", "forecast": 152000, "worstCase": 134000, "bestCase": 173000 },
+      { "time": "Dec 2026", "forecast": 158000, "worstCase": 138000, "bestCase": 180000 }
+    ]
+  },
+  "stackedBar": {
+    "brand": [
+      {
+        "category": "Dove",
+        "hasDrillDown": true,
+        "segments": {
+          "Modern trade":   240000,
+          "General trade":  0,
+          "E-commerce":     98000,
+          "Quick commerce": 42000
+        },
+        "total": 380000
+      },
+      {
+        "category": "Surf Excel",
+        "hasDrillDown": true,
+        "segments": {
+          "Modern trade":   310000,
+          "General trade":  0,
+          "E-commerce":     72000,
+          "Quick commerce": 0
+        },
+        "total": 382000
+      },
+      {
+        "category": "Lifebuoy",
+        "hasDrillDown": true,
+        "segments": {
+          "Modern trade":   180000,
+          "General trade":  145000,
+          "E-commerce":     0,
+          "Quick commerce": 55000
+        },
+        "total": 380000
+      },
+      {
+        "category": "Knorr",
+        "hasDrillDown": true,
+        "segments": {
+          "Modern trade":   95000,
+          "General trade":  0,
+          "E-commerce":     68000,
+          "Quick commerce": 42000
+        },
+        "total": 205000
+      },
+      {
+        "category": "Vaseline",
+        "hasDrillDown": true,
+        "segments": {
+          "Modern trade":   120000,
+          "General trade":  0,
+          "E-commerce":     0,
+          "Quick commerce": 58000
+        },
+        "total": 178000
+      }
+    ],
+    "product": [
+      {
+        "category": "Dove Nourishing Shampoo",
+        "parent": "Dove",
+        "hasDrillDown": false,
+        "segments": {
+          "Modern trade":   130000,
+          "E-commerce":     56000,
+          "Quick commerce": 24000
+        },
+        "total": 210000
+      },
+      {
+        "category": "Dove Intensive Repair Conditioner",
+        "parent": "Dove",
+        "hasDrillDown": false,
+        "segments": {
+          "Modern trade":   110000,
+          "E-commerce":     42000,
+          "Quick commerce": 18000
+        },
+        "total": 170000
+      },
+      {
+        "category": "Surf Excel Matic Liquid",
+        "parent": "Surf Excel",
+        "hasDrillDown": false,
+        "segments": {
+          "Modern trade":   185000,
+          "E-commerce":     42000
+        },
+        "total": 227000
+      },
+      {
+        "category": "Surf Excel Easy Wash Powder",
+        "parent": "Surf Excel",
+        "hasDrillDown": false,
+        "segments": {
+          "Modern trade":   125000,
+          "E-commerce":     30000
+        },
+        "total": 155000
+      },
+      {
+        "category": "Lifebuoy Total 10 Soap",
+        "parent": "Lifebuoy",
+        "hasDrillDown": false,
+        "segments": {
+          "Modern trade":   105000,
+          "General trade":  88000,
+          "Quick commerce": 32000
+        },
+        "total": 225000
+      },
+      {
+        "category": "Lifebuoy Hand Sanitiser",
+        "parent": "Lifebuoy",
+        "hasDrillDown": false,
+        "segments": {
+          "Modern trade":   75000,
+          "General trade":  57000,
+          "Quick commerce": 23000
+        },
+        "total": 155000
+      }
+    ]
+  },
+  "waterfall": {
+    "steps": [
+      { "name": "Baseline",          "value": 1600000, "type": "total"    },
+      { "name": "Demand drivers",    "value": 178000,  "type": "increase" },
+      { "name": "Manual adjustment", "value": 42000,   "type": "increase" },
+      { "name": "Final forecast",    "value": 1820000, "type": "total"    }
+    ]
+  },
+  "treemap": {
+    "brand": [
+      {
+        "name": "Dove",
+        "brand": "Dove",
+        "color": "#0F0E9A",
+        "children": [
+          { "name": "Dove Nourishing Shampoo",        "value": 210000, "brand": "Dove", "color": "#0F0E9A" },
+          { "name": "Dove Intensive Repair Conditioner","value": 170000, "brand": "Dove", "color": "#2B2AB0" }
+        ]
+      },
+      {
+        "name": "Surf Excel",
+        "brand": "Surf Excel",
+        "color": "#2B2AB0",
+        "children": [
+          { "name": "Surf Excel Matic Liquid",    "value": 227000, "brand": "Surf Excel", "color": "#2B2AB0" },
+          { "name": "Surf Excel Easy Wash Powder","value": 155000, "brand": "Surf Excel", "color": "#4F4EC6" }
+        ]
+      },
+      {
+        "name": "Lifebuoy",
+        "brand": "Lifebuoy",
+        "color": "#4F4EC6",
+        "children": [
+          { "name": "Lifebuoy Total 10 Soap",  "value": 225000, "brand": "Lifebuoy", "color": "#4F4EC6" },
+          { "name": "Lifebuoy Hand Sanitiser", "value": 155000, "brand": "Lifebuoy", "color": "#7A79D6" }
+        ]
+      },
+      {
+        "name": "Knorr",
+        "brand": "Knorr",
+        "color": "#7A79D6",
+        "children": [
+          { "name": "Knorr Chicken Stock Cubes", "value": 120000, "brand": "Knorr", "color": "#7A79D6" },
+          { "name": "Knorr Tomato Soup",         "value": 85000,  "brand": "Knorr", "color": "#A3A2E2" }
+        ]
+      },
+      {
+        "name": "Vaseline",
+        "brand": "Vaseline",
+        "color": "#A3A2E2",
+        "children": [
+          { "name": "Vaseline Intensive Care Body Lotion", "value": 110000, "brand": "Vaseline", "color": "#A3A2E2" },
+          { "name": "Vaseline Petroleum Jelly",            "value": 68000,  "brand": "Vaseline", "color": "#C9C8EC" }
+        ]
+      },
+      {
+        "name": "Brooke Bond",
+        "brand": "Brooke Bond",
+        "color": "#C9C8EC",
+        "children": [
+          { "name": "Brooke Bond Red Label Tea", "value": 145000, "brand": "Brooke Bond", "color": "#C9C8EC" }
+        ]
+      }
+    ],
+    "product": [
+      { "name": "Surf Excel Matic Liquid",             "value": 227000, "brand": "Surf Excel",  "color": "#2B2AB0" },
+      { "name": "Lifebuoy Total 10 Soap",              "value": 225000, "brand": "Lifebuoy",    "color": "#4F4EC6" },
+      { "name": "Dove Nourishing Shampoo",             "value": 210000, "brand": "Dove",        "color": "#0F0E9A" },
+      { "name": "Dove Intensive Repair Conditioner",   "value": 170000, "brand": "Dove",        "color": "#2B2AB0" },
+      { "name": "Surf Excel Easy Wash Powder",         "value": 155000, "brand": "Surf Excel",  "color": "#4F4EC6" },
+      { "name": "Lifebuoy Hand Sanitiser",             "value": 155000, "brand": "Lifebuoy",    "color": "#7A79D6" },
+      { "name": "Brooke Bond Red Label Tea",           "value": 145000, "brand": "Brooke Bond", "color": "#C9C8EC" },
+      { "name": "Vaseline Intensive Care Body Lotion", "value": 110000, "brand": "Vaseline",    "color": "#A3A2E2" },
+      { "name": "Knorr Chicken Stock Cubes",           "value": 120000, "brand": "Knorr",       "color": "#7A79D6" },
+      { "name": "Knorr Tomato Soup",                   "value": 85000,  "brand": "Knorr",       "color": "#A3A2E2" },
+      { "name": "Vaseline Petroleum Jelly",            "value": 68000,  "brand": "Vaseline",    "color": "#C9C8EC" }
+    ]
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "demand_planner": {
+    "role": "demand_planner",
+    "roleTitle": "Demand Planner",
+    "headerControls": {
+      "showProductLevel": true,
+      "showCustomerLevel": true,
+      "showUom": true,
+      "actions": ["save", "commit", "table", "filter", "scenarios"]
+    },
+    "widgets": [
+      {
+        "id": "widget-kpi-row",
+        "componentKey": "KpiCardRow",
+        "order": 1,
+        "props": { "scrollable": true }
+      },
+      {
+        "id": "widget-forecast-line",
+        "componentKey": "ForecastLineChart",
+        "title": "Forecast trend",
+        "order": 2,
+        "props": {}
+      },
+      {
+        "id": "widget-stacked-bar",
+        "componentKey": "StackedBarChart",
+        "title": "Forecast by brand and customer group",
+        "order": 3,
+        "props": {}
+      },
+      {
+        "id": "widget-waterfall",
+        "componentKey": "WaterfallChart",
+        "title": "Forecast bridge",
+        "order": 4,
+        "props": {}
+      },
+      {
+        "id": "widget-treemap",
+        "componentKey": "TreemapChart",
+        "title": "Product mix",
+        "order": 5,
+        "props": {}
+      },
+      {
+        "id": "widget-bottom-table",
+        "componentKey": "BottomDock",
+        "title": "Table view",
+        "order": 6,
+        "props": {}
+      }
+    ]
+  },
+  "leadership": {
+    "role": "leadership",
+    "roleTitle": "Executive Leadership",
+    "headerControls": {
+      "showProductLevel": true,
+      "showCustomerLevel": true,
+      "showUom": true,
+      "actions": ["filter", "scenarios"]
+    },
+    "widgets": [
+      {
+        "id": "widget-kpi-row",
+        "componentKey": "KpiCardRow",
+        "order": 1,
+        "props": {}
+      },
+      {
+        "id": "widget-forecast-line",
+        "componentKey": "ForecastLineChart",
+        "title": "Forecast trend",
+        "order": 2,
+        "props": {}
+      },
+      {
+        "id": "widget-stacked-bar",
+        "componentKey": "StackedBarChart",
+        "title": "Forecast by brand and customer group",
+        "order": 3,
+        "props": {}
+      }
+    ]
+  }
+}

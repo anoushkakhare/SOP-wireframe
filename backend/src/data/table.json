@@ -1,0 +1,352 @@
+{
+  "period": ["Jan 2026","Feb 2026","Mar 2026","Apr 2026","May 2026","Jun 2026","Jul 2026","Aug 2026","Sep 2026","Oct 2026","Nov 2026","Dec 2026"],
+  "currentMonthIndex": 5,
+  "brandRows": [
+    {
+      "id": "row_b_1",
+      "category": "Home Care",
+      "brand": "Surf Excel",
+      "customerGroup": "Modern trade",
+      "customer": "Reliance Retail",
+      "pastActuals": {
+        "Jan 2026": 24000, "Feb 2026": 25200, "Mar 2026": 26800, "Apr 2026": 25000, "May 2026": 27500
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 3200, "Jul 2026": 2800, "Aug 2026": 3500, "Sep 2026": 4000, "Oct 2026": 3100, "Nov 2026": 2900, "Dec 2026": 3800
+        },
+        "actualFcst": {
+          "Jun 2026": 28400, "Jul 2026": 27200, "Aug 2026": 29000, "Sep 2026": 31500, "Oct 2026": 28000, "Nov 2026": 27500, "Dec 2026": 30200
+        },
+        "risk": {
+          "Jun 2026": -1800, "Jul 2026": -2100, "Aug 2026": -1500, "Sep 2026": -2400, "Oct 2026": -1900, "Nov 2026": -1600, "Dec 2026": -2200
+        }
+      }
+    },
+    {
+      "id": "row_b_2",
+      "category": "Home Care",
+      "brand": "Surf Excel",
+      "customerGroup": "E-commerce",
+      "customer": "Amazon",
+      "pastActuals": {
+        "Jan 2026": 16000, "Feb 2026": 16800, "Mar 2026": 17500, "Apr 2026": 16900, "May 2026": 18200
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 2100, "Jul 2026": 1900, "Aug 2026": 2400, "Sep 2026": 2800, "Oct 2026": 2000, "Nov 2026": 1800, "Dec 2026": 2500
+        },
+        "actualFcst": {
+          "Jun 2026": 19100, "Jul 2026": 18500, "Aug 2026": 19800, "Sep 2026": 21000, "Oct 2026": 18900, "Nov 2026": 18200, "Dec 2026": 20500
+        },
+        "risk": {
+          "Jun 2026": -1200, "Jul 2026": -1400, "Aug 2026": -1000, "Sep 2026": -1600, "Oct 2026": -1300, "Nov 2026": -1100, "Dec 2026": -1500
+        }
+      }
+    },
+    {
+      "id": "row_b_3",
+      "category": "Beauty & Wellbeing",
+      "brand": "Dove",
+      "customerGroup": "Modern trade",
+      "customer": "DMart",
+      "pastActuals": {
+        "Jan 2026": 19500, "Feb 2026": 20100, "Mar 2026": 21300, "Apr 2026": 20500, "May 2026": 22000
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 2600, "Jul 2026": 2300, "Aug 2026": 2900, "Sep 2026": 3300, "Oct 2026": 2500, "Nov 2026": 2200, "Dec 2026": 3000
+        },
+        "actualFcst": {
+          "Jun 2026": 23200, "Jul 2026": 22100, "Aug 2026": 23800, "Sep 2026": 25500, "Oct 2026": 22800, "Nov 2026": 22000, "Dec 2026": 24500
+        },
+        "risk": {
+          "Jun 2026": -1500, "Jul 2026": -1700, "Aug 2026": -1300, "Sep 2026": -1900, "Oct 2026": -1600, "Nov 2026": -1300, "Dec 2026": -1800
+        }
+      }
+    },
+    {
+      "id": "row_b_4",
+      "category": "Beauty & Wellbeing",
+      "brand": "Dove",
+      "customerGroup": "E-commerce",
+      "customer": "Flipkart",
+      "pastActuals": {
+        "Jan 2026": 11700, "Feb 2026": 12000, "Mar 2026": 12800, "Apr 2026": 12300, "May 2026": 13100
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1600, "Jul 2026": 1400, "Aug 2026": 1750, "Sep 2026": 1980, "Oct 2026": 1520, "Nov 2026": 1340, "Dec 2026": 1800
+        },
+        "actualFcst": {
+          "Jun 2026": 13800, "Jul 2026": 13200, "Aug 2026": 14100, "Sep 2026": 15200, "Oct 2026": 13600, "Nov 2026": 13100, "Dec 2026": 14600
+        },
+        "risk": {
+          "Jun 2026": -900, "Jul 2026": -1050, "Aug 2026": -780, "Sep 2026": -1150, "Oct 2026": -960, "Nov 2026": -820, "Dec 2026": -1100
+        }
+      }
+    },
+    {
+      "id": "row_b_5",
+      "category": "Personal Care",
+      "brand": "Lifebuoy",
+      "customerGroup": "General trade",
+      "customer": "South Region Distributors",
+      "pastActuals": {
+        "Jan 2026": 14200, "Feb 2026": 14600, "Mar 2026": 15400, "Apr 2026": 14900, "May 2026": 15900
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1950, "Jul 2026": 1700, "Aug 2026": 2100, "Sep 2026": 2400, "Oct 2026": 1850, "Nov 2026": 1620, "Dec 2026": 2200
+        },
+        "actualFcst": {
+          "Jun 2026": 16800, "Jul 2026": 16100, "Aug 2026": 17200, "Sep 2026": 18500, "Oct 2026": 16500, "Nov 2026": 15900, "Dec 2026": 17800
+        },
+        "risk": {
+          "Jun 2026": -1100, "Jul 2026": -1250, "Aug 2026": -950, "Sep 2026": -1400, "Oct 2026": -1150, "Nov 2026": -980, "Dec 2026": -1300
+        }
+      }
+    },
+    {
+      "id": "row_b_6",
+      "category": "Personal Care",
+      "brand": "Lifebuoy",
+      "customerGroup": "Quick commerce",
+      "customer": "Blinkit",
+      "pastActuals": {
+        "Jan 2026": 7800, "Feb 2026": 8100, "Mar 2026": 8600, "Apr 2026": 8300, "May 2026": 8800
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1100, "Jul 2026": 950, "Aug 2026": 1200, "Sep 2026": 1370, "Oct 2026": 1050, "Nov 2026": 920, "Dec 2026": 1250
+        },
+        "actualFcst": {
+          "Jun 2026": 9300, "Jul 2026": 8900, "Aug 2026": 9600, "Sep 2026": 10300, "Oct 2026": 9100, "Nov 2026": 8800, "Dec 2026": 9800
+        },
+        "risk": {
+          "Jun 2026": -630, "Jul 2026": -720, "Aug 2026": -540, "Sep 2026": -800, "Oct 2026": -660, "Nov 2026": -560, "Dec 2026": -750
+        }
+      }
+    },
+    {
+      "id": "row_b_7",
+      "category": "Foods",
+      "brand": "Brooke Bond",
+      "customerGroup": "General trade",
+      "customer": "North Region Distributors",
+      "pastActuals": {
+        "Jan 2026": 12500, "Feb 2026": 12900, "Mar 2026": 13600, "Apr 2026": 13100, "May 2026": 14000
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1720, "Jul 2026": 1490, "Aug 2026": 1850, "Sep 2026": 2100, "Oct 2026": 1620, "Nov 2026": 1430, "Dec 2026": 1940
+        },
+        "actualFcst": {
+          "Jun 2026": 14800, "Jul 2026": 14100, "Aug 2026": 15200, "Sep 2026": 16400, "Oct 2026": 14600, "Nov 2026": 14000, "Dec 2026": 15700
+        },
+        "risk": {
+          "Jun 2026": -960, "Jul 2026": -1100, "Aug 2026": -840, "Sep 2026": -1230, "Oct 2026": -1010, "Nov 2026": -860, "Dec 2026": -1140
+        }
+      }
+    },
+    {
+      "id": "row_b_8",
+      "category": "Foods",
+      "brand": "Knorr",
+      "customerGroup": "E-commerce",
+      "customer": "BigBasket",
+      "pastActuals": {
+        "Jan 2026": 8900, "Feb 2026": 9200, "Mar 2026": 9700, "Apr 2026": 9400, "May 2026": 10000
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1230, "Jul 2026": 1070, "Aug 2026": 1320, "Sep 2026": 1490, "Oct 2026": 1150, "Nov 2026": 1010, "Dec 2026": 1380
+        },
+        "actualFcst": {
+          "Jun 2026": 10600, "Jul 2026": 10100, "Aug 2026": 10900, "Sep 2026": 11700, "Oct 2026": 10400, "Nov 2026": 10000, "Dec 2026": 11200
+        },
+        "risk": {
+          "Jun 2026": -680, "Jul 2026": -780, "Aug 2026": -590, "Sep 2026": -870, "Oct 2026": -720, "Nov 2026": -610, "Dec 2026": -810
+        }
+      }
+    }
+  ],
+  "productRows": [
+    {
+      "id": "row_p_1",
+      "category": "Home Care",
+      "brand": "Surf Excel",
+      "product": "Surf Excel Matic Liquid",
+      "customerGroup": "Modern trade",
+      "customer": "Reliance Retail",
+      "pastActuals": {
+        "Jan 2026": 14000, "Feb 2026": 14800, "Mar 2026": 15700, "Apr 2026": 15100, "May 2026": 16200
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1950, "Jul 2026": 1700, "Aug 2026": 2100, "Sep 2026": 2400, "Oct 2026": 1850, "Nov 2026": 1700, "Dec 2026": 2250
+        },
+        "actualFcst": {
+          "Jun 2026": 17200, "Jul 2026": 16400, "Aug 2026": 17600, "Sep 2026": 18900, "Oct 2026": 16900, "Nov 2026": 16200, "Dec 2026": 18200
+        },
+        "risk": {
+          "Jun 2026": -1100, "Jul 2026": -1270, "Aug 2026": -930, "Sep 2026": -1450, "Oct 2026": -1180, "Nov 2026": -1000, "Dec 2026": -1340
+        }
+      }
+    },
+    {
+      "id": "row_p_2",
+      "category": "Home Care",
+      "brand": "Surf Excel",
+      "product": "Surf Excel Easy Wash Powder",
+      "customerGroup": "Modern trade",
+      "customer": "DMart",
+      "pastActuals": {
+        "Jan 2026": 10000, "Feb 2026": 10400, "Mar 2026": 11100, "Apr 2026": 10700, "May 2026": 11300
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1300, "Jul 2026": 1120, "Aug 2026": 1400, "Sep 2026": 1600, "Oct 2026": 1250, "Nov 2026": 1100, "Dec 2026": 1500
+        },
+        "actualFcst": {
+          "Jun 2026": 12000, "Jul 2026": 11500, "Aug 2026": 12300, "Sep 2026": 13200, "Oct 2026": 11800, "Nov 2026": 11300, "Dec 2026": 12700
+        },
+        "risk": {
+          "Jun 2026": -760, "Jul 2026": -870, "Aug 2026": -640, "Sep 2026": -980, "Oct 2026": -800, "Nov 2026": -680, "Dec 2026": -920
+        }
+      }
+    },
+    {
+      "id": "row_p_3",
+      "category": "Beauty & Wellbeing",
+      "brand": "Dove",
+      "product": "Dove Nourishing Shampoo",
+      "customerGroup": "Modern trade",
+      "customer": "DMart",
+      "pastActuals": {
+        "Jan 2026": 11500, "Feb 2026": 11900, "Mar 2026": 12600, "Apr 2026": 12100, "May 2026": 12900
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1580, "Jul 2026": 1370, "Aug 2026": 1700, "Sep 2026": 1930, "Oct 2026": 1490, "Nov 2026": 1310, "Dec 2026": 1760
+        },
+        "actualFcst": {
+          "Jun 2026": 13700, "Jul 2026": 13100, "Aug 2026": 14000, "Sep 2026": 15100, "Oct 2026": 13500, "Nov 2026": 12900, "Dec 2026": 14500
+        },
+        "risk": {
+          "Jun 2026": -890, "Jul 2026": -1020, "Aug 2026": -770, "Sep 2026": -1140, "Oct 2026": -950, "Nov 2026": -810, "Dec 2026": -1060
+        }
+      }
+    },
+    {
+      "id": "row_p_4",
+      "category": "Beauty & Wellbeing",
+      "brand": "Dove",
+      "product": "Dove Intensive Repair Conditioner",
+      "customerGroup": "E-commerce",
+      "customer": "Amazon",
+      "pastActuals": {
+        "Jan 2026": 8000, "Feb 2026": 8200, "Mar 2026": 8700, "Apr 2026": 8400, "May 2026": 9000
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1040, "Jul 2026": 900, "Aug 2026": 1120, "Sep 2026": 1270, "Oct 2026": 980, "Nov 2026": 860, "Dec 2026": 1150
+        },
+        "actualFcst": {
+          "Jun 2026": 9500, "Jul 2026": 9100, "Aug 2026": 9700, "Sep 2026": 10500, "Oct 2026": 9300, "Nov 2026": 9000, "Dec 2026": 10000
+        },
+        "risk": {
+          "Jun 2026": -590, "Jul 2026": -680, "Aug 2026": -510, "Sep 2026": -760, "Oct 2026": -630, "Nov 2026": -540, "Dec 2026": -710
+        }
+      }
+    },
+    {
+      "id": "row_p_5",
+      "category": "Personal Care",
+      "brand": "Lifebuoy",
+      "product": "Lifebuoy Total 10 Soap",
+      "customerGroup": "General trade",
+      "customer": "West Region Distributors",
+      "pastActuals": {
+        "Jan 2026": 9200, "Feb 2026": 9500, "Mar 2026": 10000, "Apr 2026": 9700, "May 2026": 10400
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1270, "Jul 2026": 1100, "Aug 2026": 1360, "Sep 2026": 1540, "Oct 2026": 1190, "Nov 2026": 1050, "Dec 2026": 1420
+        },
+        "actualFcst": {
+          "Jun 2026": 11000, "Jul 2026": 10500, "Aug 2026": 11300, "Sep 2026": 12100, "Oct 2026": 10800, "Nov 2026": 10400, "Dec 2026": 11700
+        },
+        "risk": {
+          "Jun 2026": -720, "Jul 2026": -820, "Aug 2026": -620, "Sep 2026": -920, "Oct 2026": -760, "Nov 2026": -650, "Dec 2026": -860
+        }
+      }
+    },
+    {
+      "id": "row_p_6",
+      "category": "Personal Care",
+      "brand": "Lifebuoy",
+      "product": "Lifebuoy Hand Sanitiser",
+      "customerGroup": "Quick commerce",
+      "customer": "Zepto",
+      "pastActuals": {
+        "Jan 2026": 5000, "Feb 2026": 5200, "Mar 2026": 5500, "Apr 2026": 5300, "May 2026": 5700
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 690, "Jul 2026": 600, "Aug 2026": 740, "Sep 2026": 840, "Oct 2026": 650, "Nov 2026": 570, "Dec 2026": 770
+        },
+        "actualFcst": {
+          "Jun 2026": 6000, "Jul 2026": 5750, "Aug 2026": 6200, "Sep 2026": 6700, "Oct 2026": 5900, "Nov 2026": 5700, "Dec 2026": 6400
+        },
+        "risk": {
+          "Jun 2026": -390, "Jul 2026": -450, "Aug 2026": -340, "Sep 2026": -500, "Oct 2026": -415, "Nov 2026": -355, "Dec 2026": -470
+        }
+      }
+    },
+    {
+      "id": "row_p_7",
+      "category": "Foods",
+      "brand": "Knorr",
+      "product": "Knorr Chicken Stock Cubes",
+      "customerGroup": "E-commerce",
+      "customer": "BigBasket",
+      "pastActuals": {
+        "Jan 2026": 5600, "Feb 2026": 5800, "Mar 2026": 6100, "Apr 2026": 5900, "May 2026": 6300
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 780, "Jul 2026": 670, "Aug 2026": 820, "Sep 2026": 930, "Oct 2026": 720, "Nov 2026": 630, "Dec 2026": 860
+        },
+        "actualFcst": {
+          "Jun 2026": 6700, "Jul 2026": 6400, "Aug 2026": 6900, "Sep 2026": 7400, "Oct 2026": 6600, "Nov 2026": 6300, "Dec 2026": 7100
+        },
+        "risk": {
+          "Jun 2026": -430, "Jul 2026": -490, "Aug 2026": -370, "Sep 2026": -550, "Oct 2026": -450, "Nov 2026": -385, "Dec 2026": -510
+        }
+      }
+    },
+    {
+      "id": "row_p_8",
+      "category": "Foods",
+      "brand": "Brooke Bond",
+      "product": "Brooke Bond Red Label Tea",
+      "customerGroup": "General trade",
+      "customer": "North Region Distributors",
+      "pastActuals": {
+        "Jan 2026": 7900, "Feb 2026": 8200, "Mar 2026": 8600, "Apr 2026": 8300, "May 2026": 8900
+      },
+      "definitions": {
+        "opportunity": {
+          "Jun 2026": 1090, "Jul 2026": 950, "Aug 2026": 1160, "Sep 2026": 1310, "Oct 2026": 1010, "Nov 2026": 890, "Dec 2026": 1210
+        },
+        "actualFcst": {
+          "Jun 2026": 9400, "Jul 2026": 9000, "Aug 2026": 9700, "Sep 2026": 10400, "Oct 2026": 9200, "Nov 2026": 8900, "Dec 2026": 9900
+        },
+        "risk": {
+          "Jun 2026": -610, "Jul 2026": -700, "Aug 2026": -530, "Sep 2026": -780, "Oct 2026": -640, "Nov 2026": -545, "Dec 2026": -724
+        }
+      }
+    }
+  ]
+}

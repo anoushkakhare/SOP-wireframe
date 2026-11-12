@@ -1,0 +1,16 @@
+{
+  "name": "demand-planner-sop",
+  "version": "1.0.0",
+  "description": "Demand Planner - Responsive S&OP Web Application",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "test:frontend": "cd frontend && npm test",
+    "test": "npm run test:frontend"
+  },
+  "devDependencies": {}
+}
+
