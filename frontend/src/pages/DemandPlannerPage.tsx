@@ -35,10 +35,12 @@ export const DemandPlannerPage: React.FC = () => {
     scope,
     customerView,
     measure,
+    timeGrain,
     apg,
     setProductLevel,
     setCustomerView,
     setMeasure,
+    setTimeGrain,
     setApg,
     setScope,
     drillDown,
@@ -46,7 +48,7 @@ export const DemandPlannerPage: React.FC = () => {
     resetHeaderOnly,
   } = useViewStore();
 
-  const { appliedFilters, applyFilters, resetAll } = useFilterStore();
+  const { appliedFilters, applyFilters, resetAll, syncWithGrain } = useFilterStore();
   const { activeScenario } = useScenarioStore();
   const {
     isDockOpen,
@@ -125,6 +127,16 @@ export const DemandPlannerPage: React.FC = () => {
     setDesegregated(false, undefined);
   };
 
+  const handleTimeGrainChange = (grain: any) => {
+    setTimeGrain(grain);
+    syncWithGrain(grain);
+  };
+
+  const handleResetHeader = () => {
+    resetHeaderOnly();
+    syncWithGrain('month');
+  };
+
   // Scenario operations
   const handleSaveScenario = async (name: string) => {
     try { await createScenario(name); addToast(labels.toasts.saveSuccess, 'success'); }
@@ -179,12 +191,14 @@ export const DemandPlannerPage: React.FC = () => {
       allowedLevels={allowed}
       customerView={customerView}
       measure={measure}
+      timeGrain={timeGrain}
       apg={apg}
       onProductLevelChange={setProductLevel}
       onCustomerViewChange={setCustomerView}
       onMeasureChange={setMeasure}
+      onTimeGrainChange={handleTimeGrainChange}
       onApgChange={setApg}
-      onResetHeaderOnly={resetHeaderOnly}
+      onResetHeaderOnly={handleResetHeader}
       isTableActive={isDockOpen}
       onToggleTable={toggleDock}
       activeFilterCount={activeFilterCount}

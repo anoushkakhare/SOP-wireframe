@@ -1,12 +1,18 @@
 import React from 'react';
 import { MonthPicker } from './MonthPicker';
-import { dateStringToMonthIndex } from '../../utils/dateRange';
+import {
+  dateStringToMonthIndex,
+  getGrainPeriods,
+  monthIndexToDateString,
+} from '../../utils/dateRange';
 import { labels } from '../../constants/labels';
+import { TimeGrain } from '../../types';
 
 interface TimeRangeSliderProps {
-  range: [number, number]; // [startIdx, endIdx] from 0 to 35
+  range: [number, number];
   startDate: string;
   endDate: string;
+  grain?: TimeGrain | string;
   onChangeRange: (newRange: [number, number]) => void;
   onChangeStartDate: (date: string) => void;
   onChangeEndDate: (date: string) => void;
@@ -16,11 +22,17 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
   range,
   startDate,
   endDate,
+  grain = 'month',
   onChangeRange,
   onChangeStartDate,
   onChangeEndDate,
 }) => {
-  const [startIdx, endIdx] = range;
+  const periods = getGrainPeriods(grain);
+  const maxIdx = Math.max(1, periods.length - 1);
+
+  const startIdx = Math.max(0, Math.min(maxIdx, range[0]));
+  const endIdx = Math.max(startIdx, Math.min(maxIdx, range[1]));
+
   const { fields } = labels.filterDrawer;
 
   const handleStartSlider = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,19 +48,19 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
   };
 
   const handleStartPicker = (date: string) => {
-    const idx = dateStringToMonthIndex(date);
+    const idx = dateStringToMonthIndex(date, grain);
     onChangeStartDate(date);
     onChangeRange([Math.min(idx, endIdx), endIdx]);
   };
 
   const handleEndPicker = (date: string) => {
-    const idx = dateStringToMonthIndex(date);
+    const idx = dateStringToMonthIndex(date, grain);
     onChangeEndDate(date);
     onChangeRange([startIdx, Math.max(idx, startIdx)]);
   };
 
-  const startPercent = (startIdx / 35) * 100;
-  const endPercent = (endIdx / 35) * 100;
+  const startPercent = (startIdx / maxIdx) * 100;
+  const endPercent = (endIdx / maxIdx) * 100;
 
   return (
     <div className="space-y-3 p-3 bg-surface border border-border rounded-card">
@@ -72,7 +84,7 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
             className="absolute h-2 bg-primary-700 rounded-full"
             style={{
               left: `${startPercent}%`,
-              width: `${endPercent - startPercent}%`,
+              width: `${Math.max(0, endPercent - startPercent)}%`,
             }}
           />
 
@@ -80,7 +92,7 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
           <input
             type="range"
             min={0}
-            max={35}
+            max={maxIdx}
             value={startIdx}
             onChange={handleStartSlider}
             aria-label={`${fields.startMonth} slider`}
@@ -91,7 +103,7 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
           <input
             type="range"
             min={0}
-            max={35}
+            max={maxIdx}
             value={endIdx}
             onChange={handleEndSlider}
             aria-label={`${fields.endMonth} slider`}
@@ -111,24 +123,26 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
           />
         </div>
 
-        {/* Year Ticks: 2025, 2026, 2027 */}
+        {/* Ticks */}
         <div className="flex justify-between text-[10px] font-medium text-text-secondary pt-1 px-1">
-          <span>2025</span>
-          <span>2026</span>
-          <span>2027</span>
+          <span>{periods[0]}</span>
+          <span>{periods[Math.floor(periods.length / 2)]}</span>
+          <span>{periods[periods.length - 1]}</span>
         </div>
       </div>
 
-      {/* Synced Month Pickers */}
+      {/* Synced Period Pickers */}
       <div className="flex gap-2 pt-1">
         <MonthPicker
           label={fields.startMonth}
           value={startDate}
+          grain={grain}
           onChange={handleStartPicker}
         />
         <MonthPicker
           label={fields.endMonth}
           value={endDate}
+          grain={grain}
           onChange={handleEndPicker}
         />
       </div>

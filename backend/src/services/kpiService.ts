@@ -7,6 +7,10 @@ export class KpiService {
     scope?: string;
     apg?: string;
     uom?: Uom;
+    measure?: string;
+    timeGrain?: string;
+    from?: string;
+    to?: string;
     scenarioId?: string;
   }): Promise<KpiItem[]> {
     return kpiRepository.getKpis(params);

@@ -25,7 +25,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
   onReset,
   hierarchyNodes,
 }) => {
-  const { scope, apg, setScope, setApg } = useViewStore();
+  const { scope, apg, timeGrain, setScope, setApg } = useViewStore();
   const { draftFilters, setDraftFilter, setTimeRangeDraft, applyFilters, resetDraft } = useFilterStore();
 
   // Draft state for scope/apg (committed on Apply)
@@ -38,7 +38,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
       setDraftScope(scope);
       setDraftApg(apg);
     }
-  }, [isOpen, scope, apg]);
+  }, [isOpen, scope, apg, timeGrain]);
 
   const handleApply = () => {
     setScope(draftScope);
@@ -68,12 +68,17 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
         <div className="space-y-5">
           {/* Time range slider */}
           <TimeRangeSlider
+            grain={timeGrain}
             range={draftFilters.timeRange}
             startDate={draftFilters.startDate}
             endDate={draftFilters.endDate}
-            onChangeRange={setTimeRangeDraft}
-            onChangeStartDate={(d) => setDraftFilter('startDate', d)}
-            onChangeEndDate={(d) => setDraftFilter('endDate', d)}
+            onChangeRange={(r) => setTimeRangeDraft(r, timeGrain)}
+            onChangeStartDate={(d) => {
+              setDraftFilter('startDate', d);
+            }}
+            onChangeEndDate={(d) => {
+              setDraftFilter('endDate', d);
+            }}
           />
 
           {/* Product hierarchy picker */}

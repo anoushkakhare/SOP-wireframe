@@ -1,22 +1,36 @@
 import { useQuery } from '@tanstack/react-query';
 import { tableService } from '../services/tableService';
 import { useViewStore } from '../store/viewStore';
+import { useFilterStore } from '../store/filterStore';
 import { useTableStore } from '../store/tableStore';
 
 export function useTableData() {
-  const { productLevel, scope, apg } = useViewStore();
+  const { productLevel, scope, apg, measure, timeGrain } = useViewStore();
+  const { appliedFilters } = useFilterStore();
   const { isDesegregated, desegregatedParent } = useTableStore();
 
   const scopeStr = scope.join(',') || undefined;
   const apgStr   = apg.join(',')   || undefined;
+  const from = appliedFilters.startDate;
+  const to   = appliedFilters.endDate;
+
+  const params = {
+    productLevel,
+    scope: scopeStr,
+    apg: apgStr,
+    timeGrain,
+    measure,
+    from,
+    to,
+  };
 
   const query = useQuery({
-    queryKey: ['table', productLevel, scopeStr, apgStr, isDesegregated],
+    queryKey: ['table', productLevel, scopeStr, apgStr, timeGrain, measure, from, to, isDesegregated],
     queryFn: () => {
       if (isDesegregated) {
-        return tableService.desegregate(desegregatedParent || scopeStr);
+        return tableService.desegregate(desegregatedParent || scopeStr, params);
       }
-      return tableService.getTable({ productLevel, scope: scopeStr, apg: apgStr });
+      return tableService.getTable(params);
     },
     staleTime: 1000 * 60 * 5,
   });

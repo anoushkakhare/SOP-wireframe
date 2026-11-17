@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { kpiService } from '../services/kpiService';
 import { useViewStore } from '../store/viewStore';
+import { useFilterStore } from '../store/filterStore';
 import { useScenarioStore } from '../store/scenarioStore';
 import { useTableStore } from '../store/tableStore';
 import { KpiItem } from '../types';
 
 export function useKpis() {
-  const { productLevel, scope, apg, measure } = useViewStore();
+  const { productLevel, scope, apg, measure, timeGrain } = useViewStore();
+  const { appliedFilters } = useFilterStore();
   const { activeScenario } = useScenarioStore();
   const { savedEdits } = useTableStore();
 
@@ -18,6 +20,10 @@ export function useKpis() {
     scope: scopeStr,
     apg: apgStr,
     uom: measure,
+    measure,
+    timeGrain,
+    from: appliedFilters.startDate,
+    to: appliedFilters.endDate,
     scenarioId: activeScenario?.id,
   };
 

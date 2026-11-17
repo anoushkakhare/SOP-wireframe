@@ -1,7 +1,9 @@
 export type Role = 'demand_planner' | 'leadership';
 
 export type ProductLevelNum = 1 | 2 | 3 | 4 | 5;
-export type Uom = 'units' | 'volume' | 'revenue';
+export type Uom = 'units' | 'volume' | 'revenue' | 'cases' | 'value';
+export type TimeGrain = 'year' | 'half' | 'half_year' | 'quarter' | 'month' | 'week';
+export type Measure = 'cases' | 'units' | 'value';
 
 // Keep old aliases for backward compat during migration
 export type ProductLevel = 'brand' | 'product';
@@ -51,6 +53,8 @@ export interface MetaOptions {
   productLevels: Array<{ value: ProductLevel; label: string }>;
   customerLevels: Array<{ value: CustomerLevel; label: string }>;
   uoms: Array<{ value: Uom; label: string }>;
+  timeGrains?: Array<{ value: string; label: string }>;
+  measures?: Array<{ value: string; label: string }>;
   filters: {
     categories: string[];
     brands: string[];
@@ -190,6 +194,9 @@ export interface DataQueryParams {
   productLevel?: ProductLevelNum;
   scope?: string;        // comma-separated node ids
   apg?: string;          // comma-separated APG names
+  timeGrain?: TimeGrain | string;
+  measure?: Measure | string;
+  uom?: Uom | string;
   from?: string;
   to?: string;
 }

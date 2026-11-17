@@ -1,17 +1,6 @@
-import { aggregate } from '../utils/aggregate';
+import { aggregate, getPeriodsForGrain } from '../utils/aggregate';
 import masterData from '../data/masterData.json';
 import { TableResponse, PlanningTableRow } from '../types';
-
-function levelField(level: number): string {
-  switch (level) {
-    case 1: return 'categoryId';
-    case 2: return 'sopId';
-    case 3: return 'brandId';
-    case 4: return 'fgId';
-    case 5: return 'fuId';
-    default: return 'brandId';
-  }
-}
 
 function mapProductLevel(n: number): 'brand' | 'product' {
   return n >= 4 ? 'product' : 'brand';
@@ -22,11 +11,28 @@ export class TableRepository {
     productLevel?: number;
     scope?: string;
     apg?: string;
+    timeGrain?: string;
+    measure?: string;
+    from?: string;
+    to?: string;
     filters?: any;
   }): Promise<TableResponse> {
     const level = params.productLevel || 3;
-    const groups = aggregate({ scope: params.scope, apg: params.apg, level });
-    const months = masterData.months as string[];
+    const { activePeriods, currentPeriodIndex } = getPeriodsForGrain(
+      params.timeGrain,
+      params.from,
+      params.to
+    );
+
+    const groups = aggregate({
+      scope: params.scope,
+      apg: params.apg,
+      level,
+      timeGrain: params.timeGrain,
+      measure: params.measure,
+      from: params.from,
+      to: params.to,
+    });
 
     const rows: PlanningTableRow[] = groups.map(g => {
       const pastActuals: Record<string, number> = {};
@@ -34,17 +40,16 @@ export class TableRepository {
       const actualFcst:  Record<string, number> = {};
       const risk:        Record<string, number> = {};
 
-      months.forEach((m, mIdx) => {
-        if (mIdx < masterData.currentMonthIndex) {
-          pastActuals[m] = g.monthlyActuals[m] || 0;
+      activePeriods.forEach((p, pIdx) => {
+        if (pIdx < currentPeriodIndex) {
+          pastActuals[p.label] = g.periodActuals[p.label] || 0;
         } else {
-          actualFcst[m]  = g.monthlyForecast[m] || 0;
-          opportunity[m] = g.monthlyOpportunity[m] || 0;
-          risk[m]        = g.monthlyRisk[m] || 0;
+          actualFcst[p.label]  = g.periodForecast[p.label] || 0;
+          opportunity[p.label] = g.periodOpportunity[p.label] || 0;
+          risk[p.label]        = g.periodRisk[p.label] || 0;
         }
       });
 
-      // Pull sample item for denormalized fields
       const sample = g.items[0] as any;
 
       const row: PlanningTableRow = {
@@ -64,17 +69,16 @@ export class TableRepository {
     });
 
     return {
-      period: months,
-      currentMonthIndex: masterData.currentMonthIndex,
+      period: activePeriods.map(p => p.label),
+      currentMonthIndex: currentPeriodIndex,
       level: mapProductLevel(level),
       productLevelNum: level,
       rows,
     };
   }
 
-  async desegregate(parentScope?: string): Promise<TableResponse> {
-    // Desegregate = show level 5 (forecast unit) rows
-    return this.getTable({ productLevel: 5, scope: parentScope });
+  async desegregate(scope?: string, params: { timeGrain?: string; measure?: string; from?: string; to?: string } = {}): Promise<TableResponse> {
+    return this.getTable({ productLevel: 5, scope, ...params });
   }
 }
 

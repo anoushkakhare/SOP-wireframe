@@ -4,7 +4,9 @@ export type ProductLevelNum = 1 | 2 | 3 | 4 | 5;
 // Legacy compat
 export type ProductLevel = 'brand' | 'product';
 export type CustomerLevel = 'customer' | 'customer_group';
-export type Uom = 'units' | 'volume' | 'revenue';
+export type Uom = 'units' | 'volume' | 'revenue' | 'cases' | 'value';
+export type TimeGrain = 'year' | 'half' | 'half_year' | 'quarter' | 'month' | 'week';
+export type Measure = 'cases' | 'units' | 'value';
 
 export interface User {
   id: string;
@@ -50,6 +52,8 @@ export interface MetaOptions {
   productLevels: Array<{ value: ProductLevel; label: string }>;
   customerLevels: Array<{ value: CustomerLevel; label: string }>;
   uoms: Array<{ value: Uom; label: string }>;
+  timeGrains?: Array<{ value: string; label: string }>;
+  measures?: Array<{ value: string; label: string }>;
   filters: {
     categories: string[];
     brands: string[];
@@ -181,4 +185,15 @@ export interface TableEdit {
   month: string;
   value: number;
   originalValue: number;
+}
+
+export interface DataQueryParams {
+  productLevel?: ProductLevelNum;
+  scope?: string;
+  apg?: string;
+  timeGrain?: TimeGrain | string;
+  measure?: Measure | string;
+  uom?: Uom | string;
+  from?: string;
+  to?: string;
 }

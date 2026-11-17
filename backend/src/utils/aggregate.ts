@@ -6,13 +6,22 @@ import masterData from '../data/masterData.json';
 
 export type MasterItem = typeof masterData.items[number];
 
+const TODAY = '2026-11-17';
+
+export interface PeriodInfo {
+  label: string;
+  start: string;
+  end: string;
+  isActual: boolean;
+  priorYearLabel?: string;
+  grain: string;
+}
+
 /** Resolve all descendant fuIds for a set of scope node-ids */
 function descendantFuIds(scopeIds: Set<string>): Set<string> {
-  if (scopeIds.size === 0) return new Set(); // empty = all
+  if (scopeIds.size === 0) return new Set();
 
   const nodes = masterData.nodes as Array<{ id: string; parentId: string | null; level: number }>;
-
-  // Build parent→children map
   const children: Record<string, string[]> = {};
   for (const n of nodes) {
     if (n.parentId) {
@@ -58,13 +67,134 @@ function levelNameField(level: number): string {
   }
 }
 
+/** Normalize time grain name */
+export function normalizeGrain(grain?: string): 'year' | 'half' | 'quarter' | 'month' | 'week' {
+  if (!grain) return 'month';
+  const g = grain.toLowerCase().trim();
+  if (g === 'year') return 'year';
+  if (g === 'half' || g === 'half-year' || g === 'half_year') return 'half';
+  if (g === 'quarter') return 'quarter';
+  if (g === 'month') return 'month';
+  if (g === 'week') return 'week';
+  return 'month';
+}
+
+/** Normalize measure name */
+export function normalizeMeasure(measure?: string): 'cases' | 'units' | 'value' {
+  if (!measure) return 'units';
+  const m = measure.toLowerCase().trim();
+  if (m === 'cases') return 'cases';
+  if (m === 'value' || m === 'revenue') return 'value';
+  return 'units';
+}
+
+/** Normalize period label for matching */
+export function normalizePeriodLabel(l: string): string {
+  return l.replace(/\b2025\b/g, '25').replace(/\b2026\b/g, '26').trim();
+}
+
+/** Generate period list for a grain */
+export function getPeriodsForGrain(grainName?: string, from?: string, to?: string) {
+  const grain = normalizeGrain(grainName);
+  const weeks = masterData.weeks as any[];
+
+  const grainFieldMap: Record<string, string> = {
+    week: 'wLabel',
+    month: 'mLabel',
+    quarter: 'qLabel',
+    half: 'hLabel',
+    year: 'yLabel',
+  };
+  const grainField = grainFieldMap[grain];
+
+  const map = new Map<string, { label: string; start: string; end: string }>();
+  for (const w of weeks) {
+    const label = w[grainField];
+    if (!map.has(label)) {
+      map.set(label, { label, start: w.start, end: w.end });
+    } else {
+      map.get(label)!.end = w.end;
+    }
+  }
+
+  const allPeriods: PeriodInfo[] = Array.from(map.values()).map(p => {
+    const prior = p.label.endsWith('26')
+      ? p.label.replace(/26$/, '25')
+      : undefined;
+    return {
+      label: p.label,
+      start: p.start,
+      end: p.end,
+      isActual: p.end < TODAY,
+      priorYearLabel: prior,
+      grain,
+    };
+  });
+
+  // Default range per grain:
+  // Year = all years; Half/Quarter/Month = current FY (2026); Week = current quarter (Q4 26)
+  let defaultFrom = allPeriods[0].label;
+  let defaultTo = allPeriods[allPeriods.length - 1].label;
+
+  if (grain === 'year') {
+    defaultFrom = 'FY25';
+    defaultTo = 'FY26';
+  } else if (grain === 'half') {
+    defaultFrom = 'H1 26';
+    defaultTo = 'H2 26';
+  } else if (grain === 'quarter') {
+    defaultFrom = 'Q1 26';
+    defaultTo = 'Q4 26';
+  } else if (grain === 'month') {
+    defaultFrom = 'Jan 26';
+    defaultTo = 'Dec 26';
+  } else if (grain === 'week') {
+    const q4Weeks = allPeriods.filter(p => {
+      const match = weeks.find(w => w.wLabel === p.label);
+      return match && match.qLabel === 'Q4 26';
+    });
+    if (q4Weeks.length > 0) {
+      defaultFrom = q4Weeks[0].label;
+      defaultTo = q4Weeks[q4Weeks.length - 1].label;
+    }
+  }
+
+  const normFrom = from ? normalizePeriodLabel(from) : defaultFrom;
+  const normTo = to ? normalizePeriodLabel(to) : defaultTo;
+
+  let fromIdx = allPeriods.findIndex(p => p.label === normFrom);
+  let toIdx = allPeriods.findIndex(p => p.label === normTo);
+
+  if (fromIdx < 0) fromIdx = allPeriods.findIndex(p => p.label === defaultFrom);
+  if (toIdx < 0) toIdx = allPeriods.findIndex(p => p.label === defaultTo);
+  if (fromIdx < 0) fromIdx = 0;
+  if (toIdx < 0) toIdx = allPeriods.length - 1;
+  if (fromIdx > toIdx) [fromIdx, toIdx] = [toIdx, fromIdx];
+
+  // Cap at 104 periods
+  if (toIdx - fromIdx + 1 > 104) {
+    toIdx = fromIdx + 103;
+  }
+
+  const activePeriods = allPeriods.slice(fromIdx, toIdx + 1);
+  const firstForecastIdx = activePeriods.findIndex(p => !p.isActual);
+  const currentPeriodIndex = firstForecastIdx >= 0 ? firstForecastIdx : activePeriods.length;
+
+  return {
+    allPeriods,
+    activePeriods,
+    currentPeriodIndex,
+    defaultFrom,
+    defaultTo,
+  };
+}
+
 export interface AggregateParams {
-  /** If provided, filter to descendants of these node ids */
-  scope?: string;        // comma-separated
-  /** Group-by level (1-5) */
+  scope?: string;
   level?: number;
-  /** APG filter */
-  apg?: string;          // comma-separated
+  apg?: string;
+  timeGrain?: string;
+  measure?: string;
   from?: string;
   to?: string;
 }
@@ -75,6 +205,10 @@ export interface AggregatedGroup {
   level: number;
   parentId?: string | null;
   items: MasterItem[];
+  periodForecast: Record<string, number>;
+  periodActuals: Record<string, number>;
+  periodOpportunity: Record<string, number>;
+  periodRisk: Record<string, number>;
   monthlyForecast: Record<string, number>;
   monthlyActuals: Record<string, number>;
   monthlyOpportunity: Record<string, number>;
@@ -82,20 +216,25 @@ export interface AggregatedGroup {
   totalForecast: number;
   totalOpportunity: number;
   totalRisk: number;
+  priorTotalForecast: number;
+  ytdForecast: number;
+  priorYtdForecast: number;
+  ytgForecast: number;
+  priorYtgForecast: number;
 }
 
 export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
-  const { scope, level = 3, apg, from, to } = params;
+  const { scope, level = 3, apg, timeGrain, measure, from, to } = params;
+  const normGrain = normalizeGrain(timeGrain);
+  const normMeas = normalizeMeasure(measure);
 
   let items = masterData.items as any[];
 
-  // APG filter
   if (apg) {
     const apgSet = new Set(apg.split(',').map(s => s.trim()));
     items = items.filter(it => apgSet.has(it.apg));
   }
 
-  // Scope filter
   if (scope) {
     const scopeIds = new Set(scope.split(',').map(s => s.trim()).filter(Boolean));
     const fuIds = descendantFuIds(scopeIds);
@@ -104,19 +243,34 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
     }
   }
 
-  // Month range
-  const months = masterData.months as string[];
-  const fromIdx = from ? months.indexOf(from) : 0;
-  const toIdx   = to   ? months.indexOf(to)   : months.length - 1;
-  const activeMonths = months.slice(
-    fromIdx < 0 ? 0 : fromIdx,
-    toIdx < 0 ? months.length : toIdx + 1
-  );
+  const { activePeriods, allPeriods } = getPeriodsForGrain(normGrain, from, to);
+  const weeks = masterData.weeks as any[];
+
+  const grainFieldMap: Record<string, string> = {
+    week: 'wLabel',
+    month: 'mLabel',
+    quarter: 'qLabel',
+    half: 'hLabel',
+    year: 'yLabel',
+  };
+  const grainField = grainFieldMap[normGrain];
+
+  const weeksByPeriod: Record<string, any[]> = {};
+  for (const w of weeks) {
+    const pLabel = w[grainField];
+    (weeksByPeriod[pLabel] ||= []).push(w);
+  }
+
+  // Also pre-map prior year periods
+  const priorPeriodMap: Record<string, string | undefined> = {};
+  for (const p of activePeriods) {
+    if (p.priorYearLabel && allPeriods.some(ap => ap.label === p.priorYearLabel)) {
+      priorPeriodMap[p.label] = p.priorYearLabel;
+    }
+  }
 
   const groupField = levelField(level);
-  const nameField  = levelNameField(level);
-
-  // Build node lookup for parentId
+  const nameField = levelNameField(level);
   const nodeById: Record<string, any> = Object.fromEntries(
     (masterData.nodes as any[]).map((n: any) => [n.id, n])
   );
@@ -133,6 +287,10 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
         level,
         parentId: node?.parentId ?? null,
         items: [],
+        periodForecast: {},
+        periodActuals: {},
+        periodOpportunity: {},
+        periodRisk: {},
         monthlyForecast: {},
         monthlyActuals: {},
         monthlyOpportunity: {},
@@ -140,30 +298,112 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
         totalForecast: 0,
         totalOpportunity: 0,
         totalRisk: 0,
+        priorTotalForecast: 0,
+        ytdForecast: 0,
+        priorYtdForecast: 0,
+        ytgForecast: 0,
+        priorYtgForecast: 0,
       };
     }
-
     const g = groups[groupId];
     g.items.push(it);
 
-    for (const m of activeMonths) {
-      const mIdx = months.indexOf(m);
-      if (mIdx < masterData.currentMonthIndex) {
-        const v = it.pastActuals[m] || 0;
-        g.monthlyActuals[m] = (g.monthlyActuals[m] || 0) + v;
-        g.monthlyForecast[m] = (g.monthlyForecast[m] || 0) + v;
-        g.totalForecast += v;
-      } else {
-        const f = it.definitions.actualFcst[m] || 0;
-        const o = it.definitions.opportunity[m] || 0;
-        const r = it.definitions.risk[m] || 0;
-        g.monthlyForecast[m]    = (g.monthlyForecast[m] || 0) + f;
-        g.monthlyOpportunity[m] = (g.monthlyOpportunity[m] || 0) + o;
-        g.monthlyRisk[m]        = (g.monthlyRisk[m] || 0) + r;
-        g.totalForecast    += f;
-        g.totalOpportunity += o;
-        g.totalRisk        += r;
+    const unitsPerCase = it.unitsPerCase || 12;
+    const price = it.price || 100;
+
+    const convert = (baseUnits: number): number => {
+      if (normMeas === 'cases') return baseUnits / unitsPerCase;
+      if (normMeas === 'value') return baseUnits * price;
+      return baseUnits;
+    };
+
+    // Aggregate for each active period
+    for (const p of activePeriods) {
+      const pWeeks = weeksByPeriod[p.label] || [];
+      let pUnits = 0;
+      let pOpp = 0;
+      let pRisk = 0;
+
+      for (const w of pWeeks) {
+        if (p.isActual) {
+          const u = it.weeklyActuals?.[w.wLabel] ?? (it.weeklyForecast?.[w.wLabel] || 0);
+          pUnits += u;
+        } else {
+          const u = it.weeklyForecast?.[w.wLabel] || 0;
+          pUnits += u;
+          pOpp += it.weeklyOpportunity?.[w.wLabel] || 0;
+          pRisk += it.weeklyRisk?.[w.wLabel] || 0;
+        }
       }
+
+      const val = convert(pUnits);
+      const opp = convert(pOpp);
+      const rsk = convert(pRisk);
+
+      if (p.isActual) {
+        g.periodActuals[p.label] = (g.periodActuals[p.label] || 0) + val;
+        g.periodForecast[p.label] = (g.periodForecast[p.label] || 0) + val;
+        g.ytdForecast += val;
+      } else {
+        g.periodForecast[p.label] = (g.periodForecast[p.label] || 0) + val;
+        g.periodOpportunity[p.label] = (g.periodOpportunity[p.label] || 0) + opp;
+        g.periodRisk[p.label] = (g.periodRisk[p.label] || 0) + rsk;
+        g.totalOpportunity += opp;
+        g.totalRisk += rsk;
+        g.ytgForecast += val;
+      }
+      g.totalForecast += val;
+
+      // Backward compat aliases
+      g.monthlyForecast[p.label] = g.periodForecast[p.label];
+      g.monthlyActuals[p.label] = g.periodActuals[p.label] || 0;
+      g.monthlyOpportunity[p.label] = g.periodOpportunity[p.label] || 0;
+      g.monthlyRisk[p.label] = g.periodRisk[p.label] || 0;
+
+      // Prior year comparison
+      const priorLabel = priorPeriodMap[p.label];
+      if (priorLabel) {
+        const priorWeeks = weeksByPeriod[priorLabel] || [];
+        let priorUnits = 0;
+        for (const pw of priorWeeks) {
+          priorUnits += (it.weeklyActuals?.[pw.wLabel] ?? (it.weeklyForecast?.[pw.wLabel] || 0));
+        }
+        const priorVal = convert(priorUnits);
+        g.priorTotalForecast += priorVal;
+        if (p.isActual) {
+          g.priorYtdForecast += priorVal;
+        } else {
+          g.priorYtgForecast += priorVal;
+        }
+      }
+    }
+  }
+
+  // Round totals appropriately for cases/value/units
+  for (const g of Object.values(groups)) {
+    g.totalForecast = Math.round(g.totalForecast);
+    g.totalOpportunity = Math.round(g.totalOpportunity);
+    g.totalRisk = Math.round(g.totalRisk);
+    g.priorTotalForecast = Math.round(g.priorTotalForecast);
+    g.ytdForecast = Math.round(g.ytdForecast);
+    g.priorYtdForecast = Math.round(g.priorYtdForecast);
+    g.ytgForecast = Math.round(g.ytgForecast);
+    g.priorYtgForecast = Math.round(g.priorYtgForecast);
+    for (const k of Object.keys(g.periodForecast)) {
+      g.periodForecast[k] = Math.round(g.periodForecast[k]);
+      g.monthlyForecast[k] = g.periodForecast[k];
+    }
+    for (const k of Object.keys(g.periodActuals)) {
+      g.periodActuals[k] = Math.round(g.periodActuals[k]);
+      g.monthlyActuals[k] = g.periodActuals[k];
+    }
+    for (const k of Object.keys(g.periodOpportunity)) {
+      g.periodOpportunity[k] = Math.round(g.periodOpportunity[k]);
+      g.monthlyOpportunity[k] = g.periodOpportunity[k];
+    }
+    for (const k of Object.keys(g.periodRisk)) {
+      g.periodRisk[k] = Math.round(g.periodRisk[k]);
+      g.monthlyRisk[k] = g.periodRisk[k];
     }
   }
 
@@ -171,4 +411,3 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
 }
 
 export { masterData, levelNameField };
-

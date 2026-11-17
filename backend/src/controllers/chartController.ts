@@ -6,10 +6,12 @@ import { DataQueryParams } from '../types';
 function extractParams(req: AuthenticatedRequest): DataQueryParams {
   return {
     productLevel: req.query.productLevel ? Number(req.query.productLevel) as any : undefined,
-    scope: req.query.scope as string | undefined,
-    apg:   req.query.apg   as string | undefined,
-    from:  req.query.from  as string | undefined,
-    to:    req.query.to    as string | undefined,
+    scope:     req.query.scope     as string | undefined,
+    apg:       req.query.apg       as string | undefined,
+    timeGrain: req.query.timeGrain as string | undefined,
+    measure:   (req.query.measure || req.query.uom) as string | undefined,
+    from:      req.query.from      as string | undefined,
+    to:        req.query.to        as string | undefined,
   };
 }
 

@@ -11,6 +11,7 @@ import {
   MetaOptions,
   HierarchyNode,
   Uom,
+  TimeGrain,
 } from '../../types';
 import { ProductLevelNum } from '../../types';
 import { CustomerViewOption } from '../../store/viewStore';
@@ -26,10 +27,12 @@ interface AppShellProps {
   allowedLevels: ProductLevelNum[];
   customerView: CustomerViewOption;
   measure: Uom;
+  timeGrain?: TimeGrain;
   apg: string[];
   onProductLevelChange: (val: ProductLevelNum) => void;
   onCustomerViewChange: (val: CustomerViewOption) => void;
   onMeasureChange: (val: Uom) => void;
+  onTimeGrainChange?: (val: TimeGrain) => void;
   onApgChange: (val: string[]) => void;
   onResetHeaderOnly: () => void;
 
@@ -70,10 +73,12 @@ export const AppShell: React.FC<AppShellProps> = ({
   allowedLevels,
   customerView,
   measure,
+  timeGrain = 'month',
   apg,
   onProductLevelChange,
   onCustomerViewChange,
   onMeasureChange,
+  onTimeGrainChange,
   onApgChange,
   onResetHeaderOnly,
   isTableActive,
@@ -109,9 +114,12 @@ export const AppShell: React.FC<AppShellProps> = ({
         allowedLevels={allowedLevels}
         customerView={customerView}
         measure={measure}
+        timeGrain={timeGrain}
+        timeGrainOptions={metaOptions?.timeGrains}
         onProductLevelChange={onProductLevelChange}
         onCustomerViewChange={onCustomerViewChange}
         onMeasureChange={onMeasureChange}
+        onTimeGrainChange={onTimeGrainChange}
         onResetHeaderOnly={onResetHeaderOnly}
         onSaveScenario={() => onCloseSaveModal()}
         onCommitScenario={() => onCloseCommitModal()}

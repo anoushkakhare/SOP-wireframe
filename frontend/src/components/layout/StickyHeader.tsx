@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { RoleBadge } from '../header/RoleBadge';
 import { LabeledSelect } from '../header/LabeledSelect';
 import { HeaderActions } from '../header/HeaderActions';
-import { Uom, ProductLevelNum } from '../../types';
+import { Uom, ProductLevelNum, TimeGrain } from '../../types';
 import { CustomerViewOption } from '../../store/viewStore';
 import { SlidersHorizontal, X, RotateCcw } from 'lucide-react';
 import { labels } from '../../constants/labels';
@@ -15,9 +15,12 @@ interface StickyHeaderProps {
   allowedLevels: ProductLevelNum[];
   customerView: CustomerViewOption;
   measure: Uom;
+  timeGrain?: TimeGrain;
+  timeGrainOptions?: Array<{ value: string; label: string }>;
   onProductLevelChange: (val: ProductLevelNum) => void;
   onCustomerViewChange: (val: CustomerViewOption) => void;
   onMeasureChange: (val: Uom) => void;
+  onTimeGrainChange?: (val: TimeGrain) => void;
   onResetHeaderOnly: () => void;
   onSaveScenario: () => void;
   onCommitScenario: () => void;
@@ -35,9 +38,12 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
   allowedLevels,
   customerView,
   measure,
+  timeGrain = 'month',
+  timeGrainOptions,
   onProductLevelChange,
   onCustomerViewChange,
   onMeasureChange,
+  onTimeGrainChange,
   onResetHeaderOnly,
   onSaveScenario,
   onCommitScenario,
@@ -59,6 +65,18 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
   const customerViewOptions = [
     { value: 'apg', label: 'APG' },
   ];
+
+  const defaultTimeGrains = [
+    { value: 'year',    label: 'Year' },
+    { value: 'half',    label: 'Half-year' },
+    { value: 'quarter', label: 'Quarter' },
+    { value: 'month',   label: 'Month' },
+    { value: 'week',    label: 'Week' },
+  ];
+
+  const resolvedTimeGrains = timeGrainOptions && timeGrainOptions.length > 0
+    ? timeGrainOptions
+    : defaultTimeGrains;
 
   const uomOptions = [
     { value: 'units',   label: selects.measureOptions.units   },
@@ -83,6 +101,13 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
             {o.label}
           </span>
         )}
+      />
+      {/* Time view */}
+      <LabeledSelect
+        label="Time view"
+        value={timeGrain}
+        options={resolvedTimeGrains}
+        onChange={(v) => onTimeGrainChange?.(v as TimeGrain)}
       />
       {/* Customer view */}
       <LabeledSelect
@@ -146,12 +171,18 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
 
       {isMobileMenuOpen && (
         <div className="lg:hidden mt-3 pt-3 border-t border-white/20 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
             <LabeledSelect
               label={selects.productView}
               value={String(productLevel)}
               options={productLevelOptions.map(o => ({ value: o.value, label: o.label }))}
               onChange={(v) => onProductLevelChange(Number(v) as ProductLevelNum)}
+            />
+            <LabeledSelect
+              label="Time view"
+              value={timeGrain}
+              options={resolvedTimeGrains}
+              onChange={(v) => onTimeGrainChange?.(v as TimeGrain)}
             />
             <LabeledSelect
               label={selects.customerView}

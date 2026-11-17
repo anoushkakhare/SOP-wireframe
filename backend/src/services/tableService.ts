@@ -6,13 +6,17 @@ export class TableService {
     productLevel?: number;
     scope?: string;
     apg?: string;
+    timeGrain?: string;
+    measure?: string;
+    from?: string;
+    to?: string;
     filters?: any;
   }): Promise<TableResponse> {
     return tableRepository.getTable(params);
   }
 
-  async desegregate(scope?: string): Promise<TableResponse> {
-    return tableRepository.desegregate(scope);
+  async desegregate(scope?: string, params: { timeGrain?: string; measure?: string; from?: string; to?: string } = {}): Promise<TableResponse> {
+    return tableRepository.desegregate(scope, params);
   }
 }
 

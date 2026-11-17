@@ -21,9 +21,21 @@ export class MetaRepository {
         { value: 'customer_group', label: 'Customer group' },
       ],
       uoms: [
+        { value: 'cases',   label: 'Cases'  },
         { value: 'units',   label: 'Units'  },
-        { value: 'volume',  label: 'Volume' },
-        { value: 'revenue', label: 'Value'  },
+        { value: 'value',   label: 'Value'  },
+      ],
+      timeGrains: [
+        { value: 'year',      label: 'Year'      },
+        { value: 'half',      label: 'Half-year' },
+        { value: 'quarter',   label: 'Quarter'   },
+        { value: 'month',     label: 'Month'     },
+        { value: 'week',      label: 'Week'      },
+      ],
+      measures: [
+        { value: 'cases', label: 'Cases' },
+        { value: 'units', label: 'Units' },
+        { value: 'value', label: 'Value' },
       ],
       filters: { categories, brands, products, customerGroups, customers, businessUnits },
     };

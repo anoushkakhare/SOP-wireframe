@@ -1,4 +1,4 @@
-import { aggregate } from '../utils/aggregate';
+import { aggregate, getPeriodsForGrain } from '../utils/aggregate';
 import masterData from '../data/masterData.json';
 import {
   ForecastLineResponse,
@@ -24,25 +24,38 @@ function resolveProductLevel(params: DataQueryParams): number {
 
 export class ChartRepository {
   async getForecastLine(params: DataQueryParams = {}): Promise<ForecastLineResponse> {
-    const groups = aggregate({ scope: params.scope, apg: params.apg, level: 5 });
+    const { activePeriods, currentPeriodIndex } = getPeriodsForGrain(
+      params.timeGrain as string,
+      params.from,
+      params.to
+    );
 
-    const months = masterData.months as string[];
-    const points = months.map((m, mIdx) => {
+    const groups = aggregate({
+      scope: params.scope,
+      apg: params.apg,
+      level: 5,
+      timeGrain: params.timeGrain as string,
+      measure: params.measure,
+      from: params.from,
+      to: params.to,
+    });
+
+    const points = activePeriods.map((p, pIdx) => {
       let forecast = 0, opp = 0, risk = 0;
       for (const g of groups) {
-        if (mIdx < masterData.currentMonthIndex) {
-          forecast += g.monthlyActuals[m] || 0;
+        if (pIdx < currentPeriodIndex) {
+          forecast += g.periodActuals[p.label] || 0;
         } else {
-          forecast += g.monthlyForecast[m] || 0;
-          opp      += g.monthlyOpportunity[m] || 0;
-          risk     += g.monthlyRisk[m] || 0;
+          forecast += g.periodForecast[p.label] || 0;
+          opp      += g.periodOpportunity[p.label] || 0;
+          risk     += g.periodRisk[p.label] || 0;
         }
       }
       return {
-        time: m,
-        forecast,
-        worstCase: Math.round(forecast + (mIdx < masterData.currentMonthIndex ? 0 : risk)),
-        bestCase:  Math.round(forecast + (mIdx < masterData.currentMonthIndex ? 0 : opp)),
+        time: p.label,
+        forecast: Math.round(forecast),
+        worstCase: Math.round(forecast + (pIdx < currentPeriodIndex ? 0 : risk)),
+        bestCase:  Math.round(forecast + (pIdx < currentPeriodIndex ? 0 : opp)),
       };
     });
     return { points };
@@ -50,48 +63,47 @@ export class ChartRepository {
 
   async getStackedBar(params: DataQueryParams = {}): Promise<StackedBarResponse> {
     const level = resolveProductLevel(params);
-    const groups = aggregate({ scope: params.scope, apg: params.apg, level });
+    const groups = aggregate({
+      scope: params.scope,
+      apg: params.apg,
+      level,
+      timeGrain: params.timeGrain as string,
+      measure: params.measure,
+      from: params.from,
+      to: params.to,
+    });
     const availableCustomerGroups = ['Modern Trade', 'General Trade', 'E-commerce', 'Quick Commerce'];
 
-    const childLevel = Math.min(level + 1, 5);
     const hasChild = level < 5;
 
-    // For each group, also aggregate by APG to get segments
     const items: StackedBarItem[] = groups.map(g => {
-      const scopeForGroup = g.id;
-      const apgGroups = aggregate({ scope: scopeForGroup, level: 5 });
-      const segments: Record<string, number> = {};
-      for (const ag of apgGroups) {
-        for (const item of ag.items) {
-          const seg = item.apg as string;
-          segments[seg] = (segments[seg] || 0) + ag.totalForecast / ag.items.length;
-        }
-      }
-      // Simpler: group items by apg directly
       const segMap: Record<string, number> = {};
       for (const item of g.items) {
-        const months = masterData.months as string[];
-        let v = 0;
-        for (const m of months) {
-          const mIdx = months.indexOf(m);
-          if (mIdx < masterData.currentMonthIndex) {
-            v += (item as any).pastActuals[m] || 0;
-          } else {
-            v += (item as any).definitions.actualFcst[m] || 0;
-          }
-        }
-        segMap[(item as any).apg] = (segMap[(item as any).apg] || 0) + v;
+        // Aggregate across this item's contribution
+        const itemGroups = aggregate({
+          scope: item.fuId,
+          level: 5,
+          timeGrain: params.timeGrain as string,
+          measure: params.measure,
+          from: params.from,
+          to: params.to,
+        });
+        const itemTotal = itemGroups.reduce((s, ig) => s + ig.totalForecast, 0);
+        segMap[item.apg] = (segMap[item.apg] || 0) + itemTotal;
+      }
+
+      for (const k of Object.keys(segMap)) {
+        segMap[k] = Math.round(segMap[k]);
       }
 
       return {
         category: g.name,
         hasDrillDown: hasChild,
         segments: segMap,
-        total: g.totalForecast,
+        total: Math.round(g.totalForecast),
       };
     });
 
-    // Map numeric level to old ProductLevel for backward compat
     const levelStr: ProductLevel = level <= 3 ? 'brand' : 'product';
 
     return {
@@ -102,17 +114,31 @@ export class ChartRepository {
   }
 
   async getWaterfall(params: DataQueryParams = {}): Promise<WaterfallResponse> {
-    const groups = aggregate({ scope: params.scope, apg: params.apg, level: 5 });
-    const allGroups = aggregate({ level: 5 });
+    const groups = aggregate({
+      scope: params.scope,
+      apg: params.apg,
+      level: 5,
+      timeGrain: params.timeGrain as string,
+      measure: params.measure,
+      from: params.from,
+      to: params.to,
+    });
+    const allGroups = aggregate({
+      level: 5,
+      timeGrain: params.timeGrain as string,
+      measure: params.measure,
+      from: params.from,
+      to: params.to,
+    });
 
     const totalAll = allGroups.reduce((s, g) => s + g.totalForecast, 0);
     const totalScope = groups.reduce((s, g) => s + g.totalForecast, 0);
     const share = totalAll > 0 ? totalScope / totalAll : 1;
 
-    const baseline         = Math.round(masterData.targets.baseline * share);
-    const demandDrivers    = Math.round(masterData.targets.demandDrivers * share);
-    const manualAdjustment = Math.round(masterData.targets.manualAdjustment * share);
-    const finalForecast    = baseline + demandDrivers + manualAdjustment;
+    const baseline         = Math.round(totalScope * 0.88);
+    const demandDrivers    = Math.round(totalScope * 0.098);
+    const manualAdjustment = totalScope - baseline - demandDrivers;
+    const finalForecast    = totalScope;
 
     const steps: WaterfallStep[] = [
       { name: 'Baseline',           value: baseline,         type: 'total'    },
@@ -125,7 +151,15 @@ export class ChartRepository {
 
   async getTreemap(params: DataQueryParams = {}): Promise<TreemapResponse> {
     const level = resolveProductLevel(params);
-    const groups = aggregate({ scope: params.scope, apg: params.apg, level });
+    const groups = aggregate({
+      scope: params.scope,
+      apg: params.apg,
+      level,
+      timeGrain: params.timeGrain as string,
+      measure: params.measure,
+      from: params.from,
+      to: params.to,
+    });
 
     const color = LEVEL_COLORS[level] || '#0F0E9A';
     const levelStr: ProductLevel = level <= 3 ? 'brand' : 'product';
@@ -140,8 +174,15 @@ export class ChartRepository {
       return { level: levelStr, data: nodes };
     }
 
-    // Build nested by grouping level+1 children under each group
-    const childGroups = aggregate({ scope: params.scope, apg: params.apg, level: level + 1 });
+    const childGroups = aggregate({
+      scope: params.scope,
+      apg: params.apg,
+      level: level + 1,
+      timeGrain: params.timeGrain as string,
+      measure: params.measure,
+      from: params.from,
+      to: params.to,
+    });
     const parentMap: Record<string, TreemapNode[]> = {};
     for (const cg of childGroups) {
       const pid = cg.parentId as string | null;

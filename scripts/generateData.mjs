@@ -19,15 +19,50 @@ function rand(min, max) {
   return Math.floor(t * (max - min + 1)) + min;
 }
 
-// ─── Months Jan 2025 – Dec 2026 ──────────────────────────────────────────────
-const MONTHS = [];
-for (const yr of [2025, 2026]) {
-  for (const mo of ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']) {
-    MONTHS.push(`${mo} ${yr}`);
-  }
+const TODAY = '2026-11-17';
+
+// ─── ISO Weeks Jan 2025 – Dec 2026 ───────────────────────────────────────────
+// A week belongs to the month containing its Thursday; no split weeks.
+const WEEKS = [];
+let d = new Date(Date.UTC(2024, 11, 30)); // Mon Dec 30 2024
+while (true) {
+  const thu = new Date(d.getTime() + 3 * 86400000);
+  const yr = thu.getUTCFullYear();
+  if (yr > 2026) break;
+  const end = new Date(d.getTime() + 6 * 86400000); // Sunday
+  const jan4 = new Date(Date.UTC(yr, 0, 4));
+  const jan4Day = (jan4.getUTCDay() + 6) % 7;
+  const thu1 = new Date(jan4.getTime() + (3 - jan4Day) * 86400000);
+  const weekNum = 1 + Math.round((thu.getTime() - thu1.getTime()) / (7 * 86400000));
+  const yrStr = String(yr).slice(2);
+  const wLabel = `W${String(weekNum).padStart(2, '0')} ${yrStr}`;
+  const moIdx = thu.getUTCMonth();
+  const moNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const mLabel = `${moNames[moIdx]} ${yrStr}`;
+  const qNum = Math.floor(moIdx / 3) + 1;
+  const qLabel = `Q${qNum} ${yrStr}`;
+  const hNum = moIdx < 6 ? 1 : 2;
+  const hLabel = `H${hNum} ${yrStr}`;
+  const yLabel = `FY${yrStr}`;
+  const sStr = d.toISOString().slice(0, 10);
+  const eStr = end.toISOString().slice(0, 10);
+  const thuStr = thu.toISOString().slice(0, 10);
+
+  WEEKS.push({
+    wLabel,
+    mLabel,
+    qLabel,
+    hLabel,
+    yLabel,
+    start: sStr,
+    end: eStr,
+    thu: thuStr,
+    weekNum,
+    year: yr,
+    isActual: eStr < TODAY,
+  });
+  d = new Date(d.getTime() + 7 * 86400000);
 }
-// Current month: Nov 2026 → index 22 (0-based)
-const CURRENT_MONTH_IDX = MONTHS.indexOf('Nov 2026');
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 const SKELETON = [
@@ -271,13 +306,32 @@ const SKELETON = [
   },
 ];
 
-// APGs + brand×APG gaps (some brands don't sell in all channels)
+// APGs + brand×APG gaps
 const APGS = ['Modern Trade', 'General Trade', 'E-commerce', 'Quick Commerce'];
 const APG_GAPS = new Set(['br_ponds_Quick Commerce', 'br_dom_Quick Commerce', 'br_close_E-commerce']);
 
-// ─── Hierarchy nodes ──────────────────────────────────────────────────────────
-const nodes = []; // {id,name,level,parentId}
+// ─── Pack details: unitsPerCase (6, 12, 24, 48) and unit price ──────────────
+function getPackDetails(name) {
+  let unitsPerCase = 12;
+  if (/50g|50ml|75g|80g|25 bags|54g/i.test(name)) unitsPerCase = 48;
+  else if (/90g|100g|100ml|120g|150g|150ml|180ml|200g|200ml|50 bags/i.test(name)) unitsPerCase = 24;
+  else if (/250g|250ml|335ml|340ml|400ml|430ml|500g|500ml|100 bags|100pc/i.test(name)) unitsPerCase = 12;
+  else unitsPerCase = 6;
 
+  let price = 120;
+  if (/shampoo|conditioner|cream|face wash|lotion/i.test(name)) price = 220;
+  if (/soap|bar/i.test(name)) price = 45;
+  if (/spray|roll-on/i.test(name)) price = 180;
+  if (/bleach|liquid|clean/i.test(name)) price = 160;
+  if (/tea|mayo|soup|stock/i.test(name)) price = 140;
+  if (unitsPerCase === 48) price = Math.round(price * 0.4);
+  else if (unitsPerCase === 6) price = Math.round(price * 2.5);
+
+  return { unitsPerCase, price };
+}
+
+// ─── Hierarchy nodes ──────────────────────────────────────────────────────────
+const nodes = [];
 for (const cat of SKELETON) {
   nodes.push({ id: cat.categoryId, name: cat.category, level: 1, parentId: null });
   for (const sop of cat.sops) {
@@ -302,7 +356,7 @@ function ancestorAt(nodeId, level) {
   return cur;
 }
 
-// ─── Monthly facts ────────────────────────────────────────────────────────────
+// ─── Items with Weekly facts ──────────────────────────────────────────────────
 const items = [];
 let itemNum = 0;
 
@@ -316,28 +370,47 @@ for (const cat of SKELETON) {
         for (const fg of br.fgs) {
           for (const fu of fg.fus) {
             itemNum++;
-            const baseUnits = rand(8000, 25000);
+            const pack = getPackDetails(fu.fu);
+            const weeklyBaseUnits = rand(2000, 6000);
 
+            const weeklyActuals = {};
+            const weeklyForecast = {};
+            const weeklyOpportunity = {};
+            const weeklyRisk = {};
+
+            // Also maintain rolled-up monthly facts for compatibility
             const pastActuals = {};
             const actualFcst = {};
             const opportunity = {};
             const risk = {};
 
-            MONTHS.forEach((m, idx) => {
-              const seasonal = 1 + 0.15 * Math.sin((idx / 12) * 2 * Math.PI);
-              const v = Math.round(baseUnits * seasonal * (0.9 + rand(0,20)/100));
-              if (idx < CURRENT_MONTH_IDX) {
-                pastActuals[m] = v;
+            WEEKS.forEach((w, wIdx) => {
+              const seasonal = 1 + 0.15 * Math.sin((wIdx / 52) * 2 * Math.PI);
+              const v = Math.round(weeklyBaseUnits * seasonal * (0.9 + rand(0, 20) / 100));
+
+              if (w.isActual) {
+                weeklyActuals[w.wLabel] = v;
+                weeklyForecast[w.wLabel] = v;
+                weeklyOpportunity[w.wLabel] = 0;
+                weeklyRisk[w.wLabel] = 0;
               } else {
-                actualFcst[m] = v;
-                opportunity[m] = Math.round(v * (0.05 + rand(0,10)/100));
-                risk[m] = -Math.round(v * (0.03 + rand(0,8)/100));
+                weeklyActuals[w.wLabel] = 0;
+                weeklyForecast[w.wLabel] = v;
+                weeklyOpportunity[w.wLabel] = Math.round(v * (0.05 + rand(0, 10) / 100));
+                weeklyRisk[w.wLabel] = -Math.round(v * (0.03 + rand(0, 8) / 100));
+              }
+
+              // Rollup into month label
+              const m = w.mLabel;
+              if (w.isActual) {
+                pastActuals[m] = (pastActuals[m] || 0) + v;
+                actualFcst[m] = (actualFcst[m] || 0) + v;
+              } else {
+                actualFcst[m] = (actualFcst[m] || 0) + v;
+                opportunity[m] = (opportunity[m] || 0) + weeklyOpportunity[w.wLabel];
+                risk[m] = (risk[m] || 0) + weeklyRisk[w.wLabel];
               }
             });
-
-            const catNode = ancestorAt(fu.fuId, 1) || { name: cat.category, id: cat.categoryId };
-            const sopNode = ancestorAt(fu.fuId, 2) || { name: sop.sop, id: sop.sopId };
-            const brNode  = ancestorAt(fu.fuId, 3) || { name: br.brand, id: br.brandId };
 
             items.push({
               id: `item_${itemNum}`,
@@ -346,13 +419,18 @@ for (const cat of SKELETON) {
               brandId: br.brandId,
               sopId: sop.sopId,
               categoryId: cat.categoryId,
-              // Human-readable denormalised fields
               forecastUnit: fu.fu,
               forecastGroup: fg.fg,
               brand: br.brand,
               sop: sop.sop,
               category: cat.category,
               apg,
+              unitsPerCase: pack.unitsPerCase,
+              price: pack.price,
+              weeklyActuals,
+              weeklyForecast,
+              weeklyOpportunity,
+              weeklyRisk,
               pastActuals,
               definitions: { opportunity, actualFcst, risk },
             });
@@ -363,9 +441,20 @@ for (const cat of SKELETON) {
   }
 }
 
+// Build distinct period lists
+const monthsList = Array.from(new Set(WEEKS.map(w => w.mLabel)));
+const quartersList = Array.from(new Set(WEEKS.map(w => w.qLabel)));
+const halvesList = Array.from(new Set(WEEKS.map(w => w.hLabel)));
+const yearsList = Array.from(new Set(WEEKS.map(w => w.yLabel)));
+
 const output = {
-  months: MONTHS,
-  currentMonthIndex: CURRENT_MONTH_IDX,
+  today: TODAY,
+  weeks: WEEKS,
+  months: monthsList,
+  quarters: quartersList,
+  halves: halvesList,
+  years: yearsList,
+  currentMonthIndex: monthsList.indexOf('Nov 26'),
   targets: {
     totalForecast: 1820000,
     forecastAdjustment: 42000,
@@ -419,5 +508,4 @@ const output = {
 };
 
 writeFileSync(OUT, JSON.stringify(output, null, 2));
-console.log(`Written ${items.length} items and ${nodes.length} nodes → ${OUT}`);
-
+console.log(`Written ${items.length} items, ${nodes.length} nodes, ${WEEKS.length} weeks → ${OUT}`);

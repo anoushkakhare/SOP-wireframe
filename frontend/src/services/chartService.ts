@@ -10,6 +10,8 @@ export interface DataParams {
   productLevel?: number;
   scope?: string;
   apg?: string;
+  timeGrain?: string;
+  measure?: string;
   from?: string;
   to?: string;
 }
@@ -17,10 +19,12 @@ export interface DataParams {
 function toQs(params: DataParams): string {
   const p = new URLSearchParams();
   if (params.productLevel !== undefined) p.set('productLevel', String(params.productLevel));
-  if (params.scope)  p.set('scope',  params.scope);
-  if (params.apg)    p.set('apg',    params.apg);
-  if (params.from)   p.set('from',   params.from);
-  if (params.to)     p.set('to',     params.to);
+  if (params.scope)     p.set('scope',     params.scope);
+  if (params.apg)       p.set('apg',       params.apg);
+  if (params.timeGrain) p.set('timeGrain', params.timeGrain);
+  if (params.measure)   p.set('measure',   params.measure);
+  if (params.from)      p.set('from',      params.from);
+  if (params.to)        p.set('to',        params.to);
   const s = p.toString();
   return s ? `?${s}` : '';
 }

@@ -137,10 +137,10 @@ export const HierarchyTreePicker: React.FC<HierarchyTreePickerProps> = ({
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  const childMap  = useMemo(() => buildChildMap(nodes), [nodes]);
-  const nodeById  = useMemo(() => new Map(nodes.map(n => [n.id, n])), [nodes]);
-  const roots     = useMemo(() => nodes.filter(n => !n.parentId), [nodes]);
-  const selected  = useMemo(() => new Set(value), [value]);
+  const childMap = useMemo(() => buildChildMap(nodes), [nodes]);
+  const nodeById = useMemo(() => new Map(nodes.map(n => [n.id, n])), [nodes]);
+  const roots = useMemo(() => nodes.filter(n => !n.parentId), [nodes]);
+  const selected = useMemo(() => new Set(value), [value]);
 
   const getCheckState = useCallback((id: string): CheckState => {
     return getNodeCheckState(id, selected, nodeById, childMap);
@@ -214,7 +214,7 @@ export const HierarchyTreePicker: React.FC<HierarchyTreePickerProps> = ({
     const handleKey = (e: KeyboardEvent<HTMLDivElement>) => {
       if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(nodeId); }
       if (e.key === 'ArrowRight' && hasChildren) { setExpanded(p => new Set([...p, nodeId])); }
-      if (e.key === 'ArrowLeft' && hasChildren)  { setExpanded(p => { const nx = new Set(p); nx.delete(nodeId); return nx; }); }
+      if (e.key === 'ArrowLeft' && hasChildren) { setExpanded(p => { const nx = new Set(p); nx.delete(nodeId); return nx; }); }
     };
 
     return (
