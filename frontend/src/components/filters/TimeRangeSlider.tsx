@@ -3,9 +3,11 @@ import { MonthPicker } from './MonthPicker';
 import {
   dateStringToMonthIndex,
   getGrainPeriods,
+  normalizeGrain,
 } from '../../utils/dateRange';
 import { labels } from '../../constants/labels';
 import { TimeGrain } from '../../types';
+import { useUiStore } from '../../store/uiStore';
 
 interface TimeRangeSliderProps {
   range: [number, number];
@@ -15,6 +17,23 @@ interface TimeRangeSliderProps {
   onChangeRange: (newRange: [number, number]) => void;
   onChangeStartDate: (date: string) => void;
   onChangeEndDate: (date: string) => void;
+}
+
+function getGrainPopoverLabels(grain?: string): { startLabel: string; endLabel: string } {
+  const g = normalizeGrain(grain);
+  switch (g) {
+    case 'year':
+      return { startLabel: 'START YEAR', endLabel: 'END YEAR' };
+    case 'half':
+      return { startLabel: 'START HALF', endLabel: 'END HALF' };
+    case 'quarter':
+      return { startLabel: 'START QUARTER', endLabel: 'END QUARTER' };
+    case 'week':
+      return { startLabel: 'START WEEK', endLabel: 'END WEEK' };
+    case 'month':
+    default:
+      return { startLabel: 'START MONTH', endLabel: 'END MONTH' };
+  }
 }
 
 export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
@@ -33,6 +52,7 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
   const endIdx = Math.max(startIdx, Math.min(maxIdx, range[1]));
 
   const { fields } = labels.filterDrawer;
+  const { startLabel, endLabel } = getGrainPopoverLabels(grain);
 
   // Dragging states
   const [isDraggingStart, setIsDraggingStart] = useState(false);
@@ -50,6 +70,7 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
   const startContainerRef = useRef<HTMLDivElement>(null);
   const endContainerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const isCappedRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -148,7 +169,19 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
     if (!isDraggingStart || !trackRef.current) return;
     const rect = trackRef.current.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const newStart = Math.min(Math.round(pct * maxIdx), endIdx);
+    let newStart = Math.min(Math.round(pct * maxIdx), endIdx);
+
+    // 104-period cap with deduplicated transition toast
+    if (endIdx - newStart + 1 > 104) {
+      newStart = endIdx - 103;
+      if (!isCappedRef.current) {
+        isCappedRef.current = true;
+        useUiStore.getState().addToast('Time range capped at 104 periods', 'info', 'range-cap');
+      }
+    } else {
+      isCappedRef.current = false;
+    }
+
     if (newStart !== startIdx) {
       onChangeRange([newStart, endIdx]);
       onChangeStartDate(periods[newStart]);
@@ -180,7 +213,19 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
     if (!isDraggingEnd || !trackRef.current) return;
     const rect = trackRef.current.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const newEnd = Math.max(startIdx, Math.min(maxIdx, Math.round(pct * maxIdx)));
+    let newEnd = Math.max(startIdx, Math.min(maxIdx, Math.round(pct * maxIdx)));
+
+    // 104-period cap with deduplicated transition toast
+    if (newEnd - startIdx + 1 > 104) {
+      newEnd = startIdx + 103;
+      if (!isCappedRef.current) {
+        isCappedRef.current = true;
+        useUiStore.getState().addToast('Time range capped at 104 periods', 'info', 'range-cap');
+      }
+    } else {
+      isCappedRef.current = false;
+    }
+
     if (newEnd !== endIdx) {
       onChangeRange([startIdx, newEnd]);
       onChangeEndDate(periods[newEnd]);
@@ -204,6 +249,17 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
     else if (e.key === 'End') newStart = endIdx;
     else return;
     e.preventDefault();
+
+    if (endIdx - newStart + 1 > 104) {
+      newStart = endIdx - 103;
+      if (!isCappedRef.current) {
+        isCappedRef.current = true;
+        useUiStore.getState().addToast('Time range capped at 104 periods', 'info', 'range-cap');
+      }
+    } else {
+      isCappedRef.current = false;
+    }
+
     onChangeRange([newStart, endIdx]);
     onChangeStartDate(periods[newStart]);
   };
@@ -216,6 +272,17 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
     else if (e.key === 'End') newEnd = maxIdx;
     else return;
     e.preventDefault();
+
+    if (newEnd - startIdx + 1 > 104) {
+      newEnd = startIdx + 103;
+      if (!isCappedRef.current) {
+        isCappedRef.current = true;
+        useUiStore.getState().addToast('Time range capped at 104 periods', 'info', 'range-cap');
+      }
+    } else {
+      isCappedRef.current = false;
+    }
+
     onChangeRange([startIdx, newEnd]);
     onChangeEndDate(periods[newEnd]);
   };
@@ -229,11 +296,33 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
     const clickedIdx = Math.round(pct * maxIdx);
 
     if (clickedIdx < startIdx) {
-      onChangeRange([clickedIdx, endIdx]);
-      onChangeStartDate(periods[clickedIdx]);
+      let newStart = clickedIdx;
+      let newEnd = endIdx;
+      if (newEnd - newStart + 1 > 104) {
+        newStart = newEnd - 103;
+        if (!isCappedRef.current) {
+          isCappedRef.current = true;
+          useUiStore.getState().addToast('Time range capped at 104 periods', 'info', 'range-cap');
+        }
+      } else {
+        isCappedRef.current = false;
+      }
+      onChangeRange([newStart, newEnd]);
+      onChangeStartDate(periods[newStart]);
     } else if (clickedIdx > endIdx) {
-      onChangeRange([startIdx, clickedIdx]);
-      onChangeEndDate(periods[clickedIdx]);
+      let newStart = startIdx;
+      let newEnd = clickedIdx;
+      if (newEnd - newStart + 1 > 104) {
+        newEnd = newStart + 103;
+        if (!isCappedRef.current) {
+          isCappedRef.current = true;
+          useUiStore.getState().addToast('Time range capped at 104 periods', 'info', 'range-cap');
+        }
+      } else {
+        isCappedRef.current = false;
+      }
+      onChangeRange([newStart, newEnd]);
+      onChangeEndDate(periods[newEnd]);
     } else {
       if (clickedIdx - startIdx <= endIdx - clickedIdx) {
         onChangeRange([clickedIdx, endIdx]);
@@ -245,10 +334,21 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
     }
   };
 
-  // MonthPicker dropdown handlers inside popovers
+  // Dropdown handlers inside popovers
   const handleStartPicker = (date: string) => {
     const idx = dateStringToMonthIndex(date, grain);
-    const newEnd = Math.max(endIdx, idx);
+    let newEnd = Math.max(endIdx, idx);
+
+    if (newEnd - idx + 1 > 104) {
+      newEnd = idx + 103;
+      if (!isCappedRef.current) {
+        isCappedRef.current = true;
+        useUiStore.getState().addToast('Time range capped at 104 periods', 'info', 'range-cap');
+      }
+    } else {
+      isCappedRef.current = false;
+    }
+
     onChangeRange([idx, newEnd]);
     onChangeStartDate(periods[idx]);
     if (newEnd !== endIdx) {
@@ -258,7 +358,18 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
 
   const handleEndPicker = (date: string) => {
     const idx = dateStringToMonthIndex(date, grain);
-    const newStart = Math.min(startIdx, idx);
+    let newStart = Math.min(startIdx, idx);
+
+    if (idx - newStart + 1 > 104) {
+      newStart = idx - 103;
+      if (!isCappedRef.current) {
+        isCappedRef.current = true;
+        useUiStore.getState().addToast('Time range capped at 104 periods', 'info', 'range-cap');
+      }
+    } else {
+      isCappedRef.current = false;
+    }
+
     onChangeRange([newStart, idx]);
     onChangeEndDate(periods[idx]);
     if (newStart !== startIdx) {
@@ -319,7 +430,7 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
             {/* Popover */}
             {showStartPopover && (
               <div
-                className="absolute bottom-full mb-2 z-50 min-w-[150px] bg-surface border border-border rounded-card p-2 shadow-lg pointer-events-auto"
+                className="absolute bottom-full mb-2 z-50 min-w-[160px] bg-surface border border-border rounded-card p-2 shadow-lg pointer-events-auto"
                 style={{
                   left: '0',
                   transform: `translateX(-${startPercent}%)`,
@@ -328,7 +439,7 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
                 {/* Invisible hover bridge to thumb */}
                 <div className="absolute top-full left-0 right-0 h-3" />
                 <MonthPicker
-                  label={fields.startMonth}
+                  label={startLabel}
                   value={startDate}
                   grain={grain}
                   onChange={handleStartPicker}
@@ -341,7 +452,7 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
             <div
               tabIndex={0}
               role="slider"
-              aria-label={`${fields.startMonth} slider`}
+              aria-label={`${startLabel} slider`}
               aria-valuenow={startIdx}
               aria-valuemin={0}
               aria-valuemax={endIdx}
@@ -370,7 +481,7 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
             {/* Popover */}
             {showEndPopover && (
               <div
-                className="absolute bottom-full mb-2 z-50 min-w-[150px] bg-surface border border-border rounded-card p-2 shadow-lg pointer-events-auto"
+                className="absolute bottom-full mb-2 z-50 min-w-[160px] bg-surface border border-border rounded-card p-2 shadow-lg pointer-events-auto"
                 style={{
                   left: '0',
                   transform: `translateX(-${endPercent}%)`,
@@ -379,7 +490,7 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
                 {/* Invisible hover bridge to thumb */}
                 <div className="absolute top-full left-0 right-0 h-3" />
                 <MonthPicker
-                  label={fields.endMonth}
+                  label={endLabel}
                   value={endDate}
                   grain={grain}
                   onChange={handleEndPicker}
@@ -392,7 +503,7 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
             <div
               tabIndex={0}
               role="slider"
-              aria-label={`${fields.endMonth} slider`}
+              aria-label={`${endLabel} slider`}
               aria-valuenow={endIdx}
               aria-valuemin={startIdx}
               aria-valuemax={maxIdx}

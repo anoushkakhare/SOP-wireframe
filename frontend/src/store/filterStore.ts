@@ -21,6 +21,8 @@ const initialFilters: FilterState = {
   businessUnits: [],
 };
 
+let wasCapped = false;
+
 interface FilterStoreState {
   appliedFilters: FilterState;
   draftFilters: FilterState;
@@ -55,7 +57,12 @@ export const useFilterStore = create<FilterStoreState>((set, get) => ({
     // Cap at 104 periods
     if (endIdx - startIdx + 1 > 104) {
       endIdx = startIdx + 103;
-      useUiStore.getState().addToast('Time range capped at 104 periods', 'info');
+      if (!wasCapped) {
+        wasCapped = true;
+        useUiStore.getState().addToast('Time range capped at 104 periods', 'info', 'range-cap');
+      }
+    } else {
+      wasCapped = false;
     }
 
     const clampedRange: [number, number] = [startIdx, endIdx];
