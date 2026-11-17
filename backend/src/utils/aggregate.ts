@@ -93,6 +93,63 @@ export function normalizePeriodLabel(l: string): string {
   return l.replace(/\b2025\b/g, '25').replace(/\b2026\b/g, '26').trim();
 }
 
+const MO_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export interface WeekWeight {
+  week: any;
+  weight: number;
+}
+
+/**
+ * Returns period-to-weeks weights using allocation by days.
+ * A week that straddles two months/quarters/years is split proportionally by days (d/7).
+ */
+export function getWeekWeightsForGrain(grainName?: string): Record<string, WeekWeight[]> {
+  const norm = normalizeGrain(grainName);
+  const weeks = masterData.weeks as any[];
+  const result: Record<string, Map<string, { week: any; weight: number }>> = {};
+
+  for (const w of weeks) {
+    if (norm === 'week') {
+      if (!result[w.wLabel]) result[w.wLabel] = new Map();
+      result[w.wLabel].set(w.wLabel, { week: w, weight: 1.0 });
+      continue;
+    }
+
+    const s = new Date(w.start + 'T00:00:00Z');
+    for (let i = 0; i < 7; i++) {
+      const cur = new Date(s.getTime() + i * 86400000);
+      const yr = cur.getUTCFullYear();
+      const yrStr = String(yr).slice(2);
+      const mo = cur.getUTCMonth();
+      let label = '';
+      if (norm === 'month') {
+        label = `${MO_NAMES[mo]} ${yrStr}`;
+      } else if (norm === 'quarter') {
+        label = `Q${Math.floor(mo / 3) + 1} ${yrStr}`;
+      } else if (norm === 'half') {
+        label = `H${mo < 6 ? 1 : 2} ${yrStr}`;
+      } else if (norm === 'year') {
+        label = `FY${yrStr}`;
+      }
+
+      if (!result[label]) result[label] = new Map();
+      const existing = result[label].get(w.wLabel);
+      if (existing) {
+        existing.weight += 1 / 7;
+      } else {
+        result[label].set(w.wLabel, { week: w, weight: 1 / 7 });
+      }
+    }
+  }
+
+  const out: Record<string, WeekWeight[]> = {};
+  for (const [pLabel, map] of Object.entries(result)) {
+    out[pLabel] = Array.from(map.values());
+  }
+  return out;
+}
+
 /** Generate period list for a grain */
 export function getPeriodsForGrain(grainName?: string, from?: string, to?: string) {
   const grain = normalizeGrain(grainName);
@@ -108,12 +165,35 @@ export function getPeriodsForGrain(grainName?: string, from?: string, to?: strin
   const grainField = grainFieldMap[grain];
 
   const map = new Map<string, { label: string; start: string; end: string }>();
-  for (const w of weeks) {
-    const label = w[grainField];
-    if (!map.has(label)) {
-      map.set(label, { label, start: w.start, end: w.end });
-    } else {
-      map.get(label)!.end = w.end;
+
+  if (grain === 'week') {
+    for (const w of weeks) {
+      map.set(w.wLabel, { label: w.wLabel, start: w.start, end: w.end });
+    }
+  } else {
+    // Generate chronological periods using day-based calendar
+    for (const w of weeks) {
+      const s = new Date(w.start + 'T00:00:00Z');
+      for (let i = 0; i < 7; i++) {
+        const cur = new Date(s.getTime() + i * 86400000);
+        const yr = cur.getUTCFullYear();
+        const yrStr = String(yr).slice(2);
+        const mo = cur.getUTCMonth();
+        let label = '';
+        if (grain === 'month') label = `${MO_NAMES[mo]} ${yrStr}`;
+        else if (grain === 'quarter') label = `Q${Math.floor(mo / 3) + 1} ${yrStr}`;
+        else if (grain === 'half') label = `H${mo < 6 ? 1 : 2} ${yrStr}`;
+        else if (grain === 'year') label = `FY${yrStr}`;
+
+        const isoDate = cur.toISOString().slice(0, 10);
+        if (!map.has(label)) {
+          map.set(label, { label, start: isoDate, end: isoDate });
+        } else {
+          const item = map.get(label)!;
+          if (isoDate < item.start) item.start = isoDate;
+          if (isoDate > item.end) item.end = isoDate;
+        }
+      }
     }
   }
 
@@ -261,22 +341,7 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
   }
 
   const { activePeriods, allPeriods } = getPeriodsForGrain(normGrain, from, to);
-  const weeks = masterData.weeks as any[];
-
-  const grainFieldMap: Record<string, string> = {
-    week: 'wLabel',
-    month: 'mLabel',
-    quarter: 'qLabel',
-    half: 'hLabel',
-    year: 'yLabel',
-  };
-  const grainField = grainFieldMap[normGrain];
-
-  const weeksByPeriod: Record<string, any[]> = {};
-  for (const w of weeks) {
-    const pLabel = w[grainField];
-    (weeksByPeriod[pLabel] ||= []).push(w);
-  }
+  const periodWeights = getWeekWeightsForGrain(normGrain);
 
   // Also pre-map prior year periods
   const priorPeriodMap: Record<string, string | undefined> = {};
@@ -356,20 +421,20 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
 
     // Aggregate for each active period
     for (const p of activePeriods) {
-      const pWeeks = weeksByPeriod[p.label] || [];
+      const pWeights = periodWeights[p.label] || [];
       let pUnits = 0;
       let pOpp = 0;
       let pRisk = 0;
 
-      for (const w of pWeeks) {
+      for (const { week: w, weight } of pWeights) {
         if (p.isActual) {
           const u = it.weeklyActuals?.[w.wLabel] ?? (it.weeklyForecast?.[w.wLabel] || 0);
-          pUnits += u;
+          pUnits += u * weight;
         } else {
           const u = it.weeklyForecast?.[w.wLabel] || 0;
-          pUnits += u;
-          pOpp += it.weeklyOpportunity?.[w.wLabel] || 0;
-          pRisk += it.weeklyRisk?.[w.wLabel] || 0;
+          pUnits += u * weight;
+          pOpp += (it.weeklyOpportunity?.[w.wLabel] || 0) * weight;
+          pRisk += (it.weeklyRisk?.[w.wLabel] || 0) * weight;
         }
       }
 
@@ -408,10 +473,10 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
       // Prior year comparison
       const priorLabel = priorPeriodMap[p.label];
       if (priorLabel) {
-        const priorWeeks = weeksByPeriod[priorLabel] || [];
+        const priorPWeights = periodWeights[priorLabel] || [];
         let priorUnits = 0;
-        for (const pw of priorWeeks) {
-          priorUnits += (it.weeklyActuals?.[pw.wLabel] ?? (it.weeklyForecast?.[pw.wLabel] || 0));
+        for (const { week: pw, weight } of priorPWeights) {
+          priorUnits += (it.weeklyActuals?.[pw.wLabel] ?? (it.weeklyForecast?.[pw.wLabel] || 0)) * weight;
         }
         if (factor !== 1.0) {
           priorUnits = priorUnits * factor;

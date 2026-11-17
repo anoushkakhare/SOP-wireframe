@@ -2,6 +2,7 @@ import React from 'react';
 import { Save, CloudUpload, Table, Filter, Menu } from 'lucide-react';
 import { HeaderIconButton } from './HeaderIconButton';
 import { labels } from '../../constants/labels';
+import { useTableStore } from '../../store/tableStore';
 
 interface HeaderActionsProps {
   onSaveScenario: () => void;
@@ -25,6 +26,8 @@ export const HeaderActions: React.FC<HeaderActionsProps> = ({
   activeFilterCount = 0,
 }) => {
   const { actions } = labels.header;
+  const { draftEdits } = useTableStore();
+  const hasDraft = Object.keys(draftEdits).length > 0;
 
   return (
     <div className="flex items-center gap-2">
@@ -51,6 +54,11 @@ export const HeaderActions: React.FC<HeaderActionsProps> = ({
         onClick={onToggleTable}
         active={isTableActive}
         ariaLabel={actions.tableView}
+        badge={
+          hasDraft ? (
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-warning ring-2 ring-white" />
+          ) : undefined
+        }
       />
 
       {/* Filters */}

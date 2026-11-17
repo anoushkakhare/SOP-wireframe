@@ -15,6 +15,7 @@ import { labels } from '../../constants/labels';
 import { ChartEmptyState } from './ChartEmptyState';
 import { useViewStore } from '../../store/viewStore';
 import { VerticalZoomSlider } from './VerticalZoomSlider';
+import { getStraddlingTooltip } from '../../utils/weekSplit';
 
 // ── Design-system colour constants for Recharts (needs hex)
 // APG series colours – indigo tints only, in order
@@ -58,12 +59,13 @@ interface StackedBarChartProps {
 const CustomXAxisTick = (props: any) => {
   const { x, y, payload } = props;
   const fullText = String(payload?.value || '');
+  const splitTooltip = getStraddlingTooltip(fullText);
   const maxChars = 12; // ~90px at 11px font
   const displayText = fullText.length > maxChars ? `${fullText.slice(0, maxChars)}…` : fullText;
 
   return (
     <g transform={`translate(${x},${y})`}>
-      <title>{fullText}</title>
+      <title>{splitTooltip || fullText}</title>
       <text
         x={0}
         y={0}
@@ -71,9 +73,9 @@ const CustomXAxisTick = (props: any) => {
         dx={-4}
         textAnchor="end"
         transform="rotate(-35)"
-        fill={AXIS_COLOR}
+        fill={splitTooltip ? '#B7791F' : AXIS_COLOR}
         fontSize={11}
-        fontWeight={500}
+        fontWeight={splitTooltip ? 600 : 500}
       >
         {displayText}
       </text>

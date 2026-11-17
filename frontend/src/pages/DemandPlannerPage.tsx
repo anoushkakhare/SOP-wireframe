@@ -246,7 +246,14 @@ export const DemandPlannerPage: React.FC = () => {
     >
       {/* 1. KPI row */}
       <section aria-label="Key performance indicators">
-        <KpiCardRow kpis={kpis} isLoading={isKpisLoading} isError={isKpisError} error={kpisError as Error} onRetry={refetchKpis} />
+        <KpiCardRow
+          hierarchyNodes={hierarchyNodes}
+          kpis={kpis}
+          isLoading={isKpisLoading}
+          isError={isKpisError}
+          error={kpisError as Error}
+          onRetry={refetchKpis}
+        />
       </section>
 
       {/* 2. Charts */}
