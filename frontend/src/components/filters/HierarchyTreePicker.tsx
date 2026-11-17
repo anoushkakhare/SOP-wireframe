@@ -3,16 +3,16 @@ import { ChevronRight, ChevronDown, Minus, Check } from 'lucide-react';
 import { HierarchyNode } from '../../types';
 import { LEVEL_MAP } from '../../constants/hierarchy';
 
-interface HierarchyTreePickerProps {
+export interface HierarchyTreePickerProps {
   nodes: HierarchyNode[];
   value: string[];                        // selected node ids
   onChange: (ids: string[]) => void;
   placeholder?: string;
 }
 
-type CheckState = 'checked' | 'unchecked' | 'indeterminate';
+export type CheckState = 'checked' | 'unchecked' | 'indeterminate';
 
-function buildChildMap(nodes: HierarchyNode[]): Record<string, string[]> {
+export function buildChildMap(nodes: HierarchyNode[]): Record<string, string[]> {
   const m: Record<string, string[]> = {};
   for (const n of nodes) {
     if (n.parentId) (m[n.parentId] ||= []).push(n.id);
@@ -20,7 +20,7 @@ function buildChildMap(nodes: HierarchyNode[]): Record<string, string[]> {
   return m;
 }
 
-function allDescendants(id: string, childMap: Record<string, string[]>): string[] {
+export function allDescendants(id: string, childMap: Record<string, string[]>): string[] {
   const result: string[] = [];
   const queue = [id];
   while (queue.length) {
@@ -30,6 +30,102 @@ function allDescendants(id: string, childMap: Record<string, string[]>): string[
     queue.push(...ch);
   }
   return result;
+}
+
+export function getNodeCheckState(
+  id: string,
+  selection: Set<string>,
+  nodeById: Map<string, HierarchyNode>,
+  childMap: Record<string, string[]>
+): CheckState {
+  let curr: HierarchyNode | undefined = nodeById.get(id);
+  while (curr) {
+    if (selection.has(curr.id)) return 'checked';
+    curr = curr.parentId ? nodeById.get(curr.parentId) : undefined;
+  }
+
+  const queue = childMap[id] ? [...childMap[id]] : [];
+  while (queue.length > 0) {
+    const cur = queue.pop()!;
+    if (selection.has(cur)) return 'indeterminate';
+    const ch = childMap[cur];
+    if (ch) {
+      for (let i = 0; i < ch.length; i++) {
+        queue.push(ch[i]);
+      }
+    }
+  }
+
+  return 'unchecked';
+}
+
+export function normaliseUpward(
+  selection: Set<string>,
+  nodeById: Map<string, HierarchyNode>,
+  childMap: Record<string, string[]>
+): Set<string> {
+  const result = new Set(selection);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [parentId, children] of Object.entries(childMap)) {
+      if (children.length > 0 && children.every(cid => result.has(cid))) {
+        for (const cid of children) {
+          result.delete(cid);
+        }
+        result.add(parentId);
+        changed = true;
+      }
+    }
+  }
+  return result;
+}
+
+export function toggleNode(
+  id: string,
+  currentSelection: Set<string>,
+  nodeById: Map<string, HierarchyNode>,
+  childMap: Record<string, string[]>
+): Set<string> {
+  const currentState = getNodeCheckState(id, currentSelection, nodeById, childMap);
+  const next = new Set(currentSelection);
+
+  if (currentState === 'checked') {
+    const pathFromNodeToS: string[] = [];
+    let curr: HierarchyNode | undefined = nodeById.get(id);
+    let S: string | null = null;
+    while (curr) {
+      pathFromNodeToS.push(curr.id);
+      if (next.has(curr.id)) {
+        S = curr.id;
+        break;
+      }
+      curr = curr.parentId ? nodeById.get(curr.parentId) : undefined;
+    }
+
+    if (S) {
+      next.delete(S);
+      const path = pathFromNodeToS.reverse();
+      for (let i = 1; i < path.length; i++) {
+        const parentId = path[i - 1];
+        const currentPathNodeId = path[i];
+        const siblings = childMap[parentId] || [];
+        for (const sibId of siblings) {
+          if (sibId !== currentPathNodeId) {
+            next.add(sibId);
+          }
+        }
+      }
+    }
+  } else {
+    const desc = allDescendants(id, childMap);
+    for (const d of desc) {
+      next.delete(d);
+    }
+    next.add(id);
+  }
+
+  return normaliseUpward(next, nodeById, childMap);
 }
 
 export const HierarchyTreePicker: React.FC<HierarchyTreePickerProps> = ({
@@ -47,43 +143,16 @@ export const HierarchyTreePicker: React.FC<HierarchyTreePickerProps> = ({
   const selected  = useMemo(() => new Set(value), [value]);
 
   const getCheckState = useCallback((id: string): CheckState => {
-    if (selected.has(id)) return 'checked';
-    const desc = allDescendants(id, childMap);
-    if (desc.length === 0) return 'unchecked';
-    const checkedCount = desc.filter(d => selected.has(d)).length;
-    if (checkedCount === 0) return 'unchecked';
-    if (checkedCount === desc.length) return 'checked';
-    return 'indeterminate';
-  }, [selected, childMap]);
+    return getNodeCheckState(id, selected, nodeById, childMap);
+  }, [selected, nodeById, childMap]);
 
   const toggle = useCallback((id: string) => {
-    const desc = allDescendants(id, childMap);
-    const all  = [id, ...desc];
-    const cur  = getCheckState(id);
-
-    if (cur === 'checked') {
-      // Deselect self + descendants
-      onChange(value.filter(v => !all.includes(v)));
-    } else {
-      // Select self (and deselect descendants – parent covers them)
-      const withoutDesc = value.filter(v => !all.includes(v) && !isAncestorSelected(v, id));
-      onChange([...new Set([...withoutDesc, id])]);
-    }
-  }, [value, childMap, getCheckState, onChange]);
-
-  function isAncestorSelected(candidateId: string, targetId: string): boolean {
-    // Is targetId an ancestor of candidateId?
-    let cur = nodeById.get(candidateId);
-    while (cur?.parentId) {
-      if (cur.parentId === targetId) return true;
-      cur = nodeById.get(cur.parentId);
-    }
-    return false;
-  }
+    const nextSelection = toggleNode(id, selected, nodeById, childMap);
+    onChange(Array.from(nextSelection));
+  }, [selected, nodeById, childMap, onChange]);
 
   const selectAll = () => {
-    // Select root nodes (covers all)
-    onChange(roots.map(r => r.id));
+    onChange(nodes.filter(n => n.level === 1).map(n => n.id));
   };
 
   const reset = () => onChange([]);
@@ -253,7 +322,7 @@ export const HierarchyTreePicker: React.FC<HierarchyTreePickerProps> = ({
 
       {value.length > 0 && (
         <p className="text-[10px] text-text-secondary">
-          {value.length} node{value.length !== 1 ? 's' : ''} selected
+          {value.length} selected
         </p>
       )}
     </div>
