@@ -186,7 +186,7 @@ export const DevGalleryPage: React.FC = () => {
             <ForecastLineChart data={sampleLinePoints} />
           </ChartCard>
 
-          <ChartCard title={labels.charts.forecastBy('brand')}>
+          <ChartCard title={labels.charts.forecastBy('Brand')}>
             <StackedBarChart
               data={sampleStackedItems}
               level="brand"

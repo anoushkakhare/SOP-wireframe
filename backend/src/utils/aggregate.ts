@@ -223,7 +223,18 @@ export interface AggregatedGroup {
   priorYtdForecast: number;
   ytgForecast: number;
   priorYtgForecast: number;
+  apgForecast: Record<string, number>;
 }
+
+export const APG_DISPLAY_NAMES: Record<string, string> = {
+  'Modern Trade': 'Modern trade',
+  'General Trade': 'General trade',
+  'E-commerce': 'E-commerce',
+  'Quick Commerce': 'Quick commerce',
+  'Modern trade': 'Modern trade',
+  'General trade': 'General trade',
+  'Quick commerce': 'Quick commerce',
+};
 
 export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
   const { scope, level = 3, apg, timeGrain, measure, from, to, planningCycle, activity } = params;
@@ -307,6 +318,7 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
         priorYtdForecast: 0,
         ytgForecast: 0,
         priorYtgForecast: 0,
+        apgForecast: {},
       };
     }
     const g = groups[groupId];
@@ -382,6 +394,8 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
         g.ytgForecast += val;
       }
       g.totalForecast += val;
+      const apgKey = APG_DISPLAY_NAMES[it.apg] || it.apg;
+      g.apgForecast[apgKey] = (g.apgForecast[apgKey] || 0) + val;
 
       // Backward compat aliases
       g.monthlyForecast[p.label] = g.periodForecast[p.label];
@@ -436,6 +450,16 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
     for (const k of Object.keys(g.periodRisk)) {
       g.periodRisk[k] = Math.round(g.periodRisk[k]);
       g.monthlyRisk[k] = g.periodRisk[k];
+    }
+    let apgSum = 0;
+    for (const k of Object.keys(g.apgForecast)) {
+      g.apgForecast[k] = Math.round(g.apgForecast[k]);
+      apgSum += g.apgForecast[k];
+    }
+    if (apgSum !== g.totalForecast && Object.keys(g.apgForecast).length > 0) {
+      const diff = g.totalForecast - apgSum;
+      const largestKey = Object.entries(g.apgForecast).sort((a, b) => b[1] - a[1])[0][0];
+      g.apgForecast[largestKey] += diff;
     }
   }
 

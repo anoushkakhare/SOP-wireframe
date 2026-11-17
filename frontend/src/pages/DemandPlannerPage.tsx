@@ -6,6 +6,7 @@ import { ChartCard } from '../components/charts/ChartCard';
 import { FullscreenChartFrame } from '../components/charts/FullscreenChartFrame';
 import { ForecastLineChart } from '../components/charts/ForecastLineChart';
 import { StackedBarChart } from '../components/charts/StackedBarChart';
+import { DrillToolbar } from '../components/charts/DrillToolbar';
 import { WaterfallChart } from '../components/charts/WaterfallChart';
 import { TreemapChart } from '../components/charts/TreemapChart';
 import { BottomDock } from '../components/table/BottomDock';
@@ -45,8 +46,11 @@ export const DemandPlannerPage: React.FC = () => {
     setScope,
     drillDown,
     drillUp,
+    drillHistory,
     resetHeaderOnly,
   } = useViewStore();
+
+  const [barDrillOn, setBarDrillOn] = React.useState(false);
 
   const { appliedFilters, applyFilters, resetAll, syncWithGrain } = useFilterStore();
   const { activeScenario } = useScenarioStore();
@@ -104,26 +108,27 @@ export const DemandPlannerPage: React.FC = () => {
   }, [allowed, productLevel, setProductLevel]);
 
   // Drill down: go to clicked bar's nodeId at level+1
-  const handleDrillDown = (barLabel: string) => {
-    // Find node matching barLabel at current productLevel
+  const handleDrillDown = (barNodeIdOrLabel: string) => {
+    const matchById = hierarchyNodes.find(n => n.id === barNodeIdOrLabel);
+    if (matchById) {
+      drillDown(matchById.id);
+      setDesegregated(true, matchById.id);
+      openDock();
+      return;
+    }
     const matchNode = hierarchyNodes.find(
-      n => n.name === barLabel && n.level === productLevel
-    );
-    const childLevel = Math.min(productLevel + 1, 5) as ProductLevelNum;
+      n => n.name === barNodeIdOrLabel && n.level === productLevel
+    ) || hierarchyNodes.find(n => n.name === barNodeIdOrLabel);
+
     if (matchNode) {
-      drillDown(matchNode.id, childLevel);
+      drillDown(matchNode.id);
       setDesegregated(true, matchNode.id);
       openDock();
     }
   };
 
   const handleDrillUp = () => {
-    // Go up: productLevel-1, scope = parents of current scope nodes
-    const parentLevel = Math.max(productLevel - 1, 1) as ProductLevelNum;
-    const parentIds = scope
-      .map(id => hierarchyNodes.find(n => n.id === id)?.parentId)
-      .filter((id): id is string => !!id);
-    drillUp(parentIds.length ? parentIds : [], parentLevel);
+    drillUp(hierarchyNodes);
     setDesegregated(false, undefined);
   };
 
@@ -171,21 +176,22 @@ export const DemandPlannerPage: React.FC = () => {
 
   const { charts: cl } = labels;
   const levelLabel = LEVEL_MAP[productLevel]?.label || 'Brand';
-  const stackedBarTitle = cl.forecastBy(levelLabel.toLowerCase());
+  const stackedBarTitle = `Forecast by ${levelLabel} and APG`;
 
   // Map numeric level to legacy 'brand'|'product' for chart components
   const legacyLevel = productLevel >= 4 ? 'product' : 'brand';
 
-  const drillUpButton = productLevel > 1 ? (
-    <button
-      type="button"
-      onClick={handleDrillUp}
-      title={cl.drillUp}
-      className="text-[10px] font-semibold text-primary-700 bg-primary-50 border border-primary-300 px-2 py-0.5 rounded-full hover:bg-primary-100 transition-colors"
-    >
-      ▲ {cl.drillUp}
-    </button>
-  ) : undefined;
+  const drillToolbar = (
+    <DrillToolbar
+      level={productLevel}
+      minLevel={allowed[0] ?? 1}
+      maxLevel={5}
+      drillOn={barDrillOn}
+      onUp={handleDrillUp}
+      onToggleDown={() => setBarDrillOn((v) => !v)}
+      drillHistoryEmpty={drillHistory.length === 0}
+    />
+  );
 
   return (
     <AppShell
@@ -247,13 +253,12 @@ export const DemandPlannerPage: React.FC = () => {
               </FullscreenChartFrame>
             )}
             {fullscreenChartId === 'chart-stacked' && (
-              <FullscreenChartFrame title={stackedBarTitle} onClose={closeFullscreen} headerAction={drillUpButton}>
+              <FullscreenChartFrame title={stackedBarTitle} onClose={closeFullscreen} headerAction={drillToolbar}>
                 <StackedBarChart
                   data={chartData.stackedBar.data?.items}
-                  level={legacyLevel}
-                  parentBrand={scope[0]}
+                  drillOn={barDrillOn}
+                  onToggleDrillOn={setBarDrillOn}
                   onDrillDown={handleDrillDown}
-                  onDrillUp={handleDrillUp}
                   isLoading={chartData.stackedBar.isLoading}
                   isError={chartData.stackedBar.isError}
                   onRetry={chartData.stackedBar.refetch}
@@ -293,13 +298,12 @@ export const DemandPlannerPage: React.FC = () => {
               />
             </ChartCard>
 
-            <ChartCard title={stackedBarTitle} onToggleFullscreen={() => openFullscreen('chart-stacked')} headerAction={drillUpButton}>
+            <ChartCard title={stackedBarTitle} onToggleFullscreen={() => openFullscreen('chart-stacked')} headerAction={drillToolbar}>
               <StackedBarChart
                 data={chartData.stackedBar.data?.items}
-                level={legacyLevel}
-                parentBrand={scope[0]}
+                drillOn={barDrillOn}
+                onToggleDrillOn={setBarDrillOn}
                 onDrillDown={handleDrillDown}
-                onDrillUp={handleDrillUp}
                 isLoading={chartData.stackedBar.isLoading}
                 isError={chartData.stackedBar.isError}
                 onRetry={chartData.stackedBar.refetch}

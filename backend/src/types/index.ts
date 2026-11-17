@@ -100,6 +100,7 @@ export interface ForecastLineResponse {
 }
 
 export interface StackedBarItem {
+  id?: string;
   category: string;
   hasDrillDown: boolean;
   segments: Record<string, number>;

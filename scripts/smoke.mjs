@@ -139,6 +139,27 @@ async function main() {
     else fail(`KPI (${kpiTotal}) vs waterfall (${wfTotal}) differ by ${(pct * 100).toFixed(1)}%`);
   }
 
+  // Cross-check: KPI total forecast = sum of bar chart = sum of line chart
+  const sbR = await request('GET', '/charts/stacked-bar');
+  const sbItems = sbR.json?.items ?? [];
+  const barTotal = sbItems.reduce((s, it) => s + (it.total ?? 0), 0);
+
+  const flR = await request('GET', '/charts/forecast-line');
+  const flPoints = flR.json?.points ?? [];
+  const lineTotal = flPoints.reduce((s, p) => s + (p.forecast ?? 0), 0);
+
+  if (kpiTotal !== null) {
+    const barDiff = Math.abs(kpiTotal - barTotal);
+    const barPct = kpiTotal > 0 ? barDiff / kpiTotal : 1;
+    if (barPct < 0.001) ok(`KPI vs bar chart match (diff=${barDiff}, <0.1%)`);
+    else fail(`KPI (${kpiTotal}) vs bar chart (${barTotal}) differ by ${(barPct * 100).toFixed(1)}%`);
+
+    const lineDiff = Math.abs(kpiTotal - lineTotal);
+    const linePct = kpiTotal > 0 ? lineDiff / kpiTotal : 1;
+    if (linePct < 0.001) ok(`KPI vs line chart match (diff=${lineDiff}, <0.1%)`);
+    else fail(`KPI (${kpiTotal}) vs line chart (${lineTotal}) differ by ${(linePct * 100).toFixed(1)}%`);
+  }
+
   // Summary
   console.log('\n── Results ──────────────────────────────────');
   if (failures === 0) {

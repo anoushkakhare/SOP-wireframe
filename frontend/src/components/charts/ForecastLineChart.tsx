@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -15,6 +15,7 @@ import { formatCompactNumber } from '../../utils/formatters';
 import { labels } from '../../constants/labels';
 import { ChartEmptyState } from './ChartEmptyState';
 import { useViewStore } from '../../store/viewStore';
+import { VerticalZoomSlider } from './VerticalZoomSlider';
 
 // ── Design-system colour constants (kept here for Recharts which needs hex values)
 const COLORS = {
@@ -43,8 +44,15 @@ export const ForecastLineChart: React.FC<ForecastLineChartProps> = ({
   onRetry,
 }) => {
   const { charts } = labels;
-  const { measure } = useViewStore();
+  const { productLevel, scope, apg, measure, timeGrain } = useViewStore();
   const measureLabel = measure === 'value' ? 'Value (₹)' : measure === 'cases' ? 'Cases' : 'Units';
+
+  const [zoomRange, setZoomRange] = useState<[number, number]>([0, 100]);
+
+  // Reset zoom on level/filter/measure change
+  useEffect(() => {
+    setZoomRange([0, 100]);
+  }, [productLevel, scope, apg, measure, timeGrain]);
 
   if (isLoading) {
     return (
@@ -70,80 +78,114 @@ export const ForecastLineChart: React.FC<ForecastLineChartProps> = ({
     bestCase:  d.bestCase,
   }));
 
+  const allVals = data.flatMap((d) => [d.forecast, d.worstCase, d.bestCase].filter((v): v is number => typeof v === 'number'));
+  const minVal = allVals.length ? Math.min(...allVals) : 0;
+  const maxVal = allVals.length ? Math.max(...allVals) : 100;
+  const naturalMin = Math.max(0, Math.floor(minVal * 0.9));
+  const naturalMax = Math.ceil(maxVal * 1.05);
+
+  const isZoomed = zoomRange[0] > 0 || zoomRange[1] < 100;
+  const yMin = Math.round(naturalMin + (naturalMax - naturalMin) * (zoomRange[0] / 100));
+  const yMax = Math.max(yMin + 1, Math.round(naturalMin + (naturalMax - naturalMin) * (zoomRange[1] / 100)));
+
   return (
-    <div className="w-full h-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 12, right: 18, left: 0, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} vertical={false} />
-          <XAxis
-            dataKey="time"
-            tick={{ fontSize: 12, fill: COLORS.axis }}
-            tickLine={false}
-            axisLine={{ stroke: COLORS.grid }}
-          />
-          <YAxis
-            tick={{ fontSize: 12, fill: COLORS.axis }}
-            tickLine={false}
-            axisLine={{ stroke: COLORS.grid }}
-            tickFormatter={(val) => formatCompactNumber(val, { isNeutral: true, measure })}
-            domain={['auto', 'auto']}
-            name={labels.charts.axisForecast(measureLabel)}
-          />
-          <Tooltip
-            content={({ active, payload, label }) => {
-              if (active && payload && payload.length) {
-                const item = payload[0].payload;
-                return (
-                  <div className="bg-surface border border-border p-2.5 text-xs shadow-md rounded-card space-y-1.5">
-                    <div className="font-semibold text-text-primary border-b border-border pb-1">{label}</div>
-                    <div className="flex justify-between gap-4">
-                      <span style={{ color: COLORS.positive }}>{charts.tooltip.bestCase}:</span>
-                      <span className="font-semibold tabular-nums">{formatCompactNumber(item.bestCase, { isNeutral: true, measure })}</span>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="font-semibold text-text-primary">{charts.tooltip.forecast}:</span>
-                      <span className="font-bold tabular-nums">{formatCompactNumber(item.forecast, { isNeutral: true, measure })}</span>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span style={{ color: COLORS.negative }}>{charts.tooltip.worstCase}:</span>
-                      <span className="font-semibold tabular-nums">{formatCompactNumber(item.worstCase, { isNeutral: true, measure })}</span>
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            }}
-          />
-          <Legend
-            verticalAlign="top"
-            align="right"
-            wrapperStyle={{ fontSize: '11px', paddingBottom: '8px' }}
-          />
+    <div className="w-full h-full flex flex-row relative min-h-0">
+      {/* Zoomed chip */}
+      {isZoomed && (
+        <div className="absolute top-1 right-8 z-20 flex items-center gap-1.5 px-2 py-0.5 bg-primary-50 border border-primary-200 rounded text-[11px] text-primary-800 shadow-sm">
+          <span>Y-axis zoomed</span>
+          <button
+            type="button"
+            onClick={() => setZoomRange([0, 100])}
+            className="text-primary-700 underline font-medium hover:text-primary-900 ml-1"
+          >
+            Reset zoom
+          </button>
+        </div>
+      )}
 
-          {/* Shaded band between worst and best case */}
-          <Area
-            name={charts.series.band}
-            dataKey="band"
-            stroke={COLORS.bandEdge}
-            strokeDasharray="4 3"
-            fill={COLORS.bandFill}
-            fillOpacity={0.6}
-            activeDot={false}
-            isAnimationActive={false}
-          />
+      {/* Main chart area */}
+      <div className="flex-1 h-full min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={chartData} margin={{ top: 12, right: 18, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} vertical={false} />
+            <XAxis
+              dataKey="time"
+              tick={{ fontSize: 12, fill: COLORS.axis }}
+              tickLine={false}
+              axisLine={{ stroke: COLORS.grid }}
+            />
+            <YAxis
+              tick={{ fontSize: 12, fill: COLORS.axis }}
+              tickLine={false}
+              axisLine={{ stroke: COLORS.grid }}
+              tickFormatter={(val) => formatCompactNumber(val, { isNeutral: true, measure })}
+              domain={isZoomed ? [yMin, yMax] : ['auto', 'auto']}
+              allowDataOverflow={true}
+              name={labels.charts.axisForecast(measureLabel)}
+            />
+            <Tooltip
+              content={({ active, payload, label }) => {
+                if (active && payload && payload.length) {
+                  const item = payload[0].payload;
+                  return (
+                    <div className="bg-surface border border-border p-2.5 text-xs shadow-md rounded-card space-y-1.5 z-50">
+                      <div className="font-semibold text-text-primary border-b border-border pb-1">{label}</div>
+                      <div className="flex justify-between gap-4">
+                        <span style={{ color: COLORS.positive }}>{charts.tooltip.bestCase}:</span>
+                        <span className="font-semibold tabular-nums">{formatCompactNumber(item.bestCase, { isNeutral: true, measure })}</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="font-semibold text-text-primary">{charts.tooltip.forecast}:</span>
+                        <span className="font-bold tabular-nums">{formatCompactNumber(item.forecast, { isNeutral: true, measure })}</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span style={{ color: COLORS.negative }}>{charts.tooltip.worstCase}:</span>
+                        <span className="font-semibold tabular-nums">{formatCompactNumber(item.worstCase, { isNeutral: true, measure })}</span>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+            <Legend
+              verticalAlign="top"
+              align="right"
+              wrapperStyle={{ fontSize: '11px', paddingBottom: '8px' }}
+              formatter={(value) => <span className="text-text-secondary text-xs">{value}</span>}
+            />
 
-          {/* Forecast main line */}
-          <Line
-            name={charts.series.forecastLine}
-            type="monotone"
-            dataKey="forecast"
-            stroke={COLORS.forecast}
-            strokeWidth={2.5}
-            dot={{ r: 3, fill: COLORS.forecast, strokeWidth: 1 }}
-            activeDot={{ r: 5, fill: COLORS.forecast }}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
+            {/* Shaded band between worst and best case */}
+            <Area
+              name={charts.series.band}
+              dataKey="band"
+              stroke={COLORS.bandEdge}
+              strokeDasharray="4 3"
+              fill={COLORS.bandFill}
+              fillOpacity={0.6}
+              activeDot={false}
+              isAnimationActive={false}
+            />
+
+            {/* Forecast main line */}
+            <Line
+              name={charts.series.forecastLine}
+              type="monotone"
+              dataKey="forecast"
+              stroke={COLORS.forecast}
+              strokeWidth={2.5}
+              dot={{ r: 3, fill: COLORS.forecast, strokeWidth: 1 }}
+              activeDot={{ r: 5, fill: COLORS.forecast }}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Vertical Y-axis zoom slider */}
+      <div className="w-5 shrink-0 h-full flex flex-col items-center justify-center py-2 select-none border-l border-border/40">
+        <VerticalZoomSlider zoomRange={zoomRange} onChange={setZoomRange} />
+      </div>
     </div>
   );
 };

@@ -76,39 +76,17 @@ export class ChartRepository {
       planningCycle: params.planningCycle,
       activity: params.activity,
     });
-    const availableCustomerGroups = ['Modern Trade', 'General Trade', 'E-commerce', 'Quick Commerce'];
+    const availableCustomerGroups = ['Modern trade', 'General trade', 'E-commerce', 'Quick commerce'];
 
     const hasChild = level < 5;
 
-    const items: StackedBarItem[] = groups.map(g => {
-      const segMap: Record<string, number> = {};
-      for (const item of g.items) {
-        // Aggregate across this item's contribution
-        const itemGroups = aggregate({
-          scope: item.fuId,
-          level: 5,
-          timeGrain: params.timeGrain as string,
-          measure: params.measure,
-          from: params.from,
-          to: params.to,
-          planningCycle: params.planningCycle,
-          activity: params.activity,
-        });
-        const itemTotal = itemGroups.reduce((s, ig) => s + ig.totalForecast, 0);
-        segMap[item.apg] = (segMap[item.apg] || 0) + itemTotal;
-      }
-
-      for (const k of Object.keys(segMap)) {
-        segMap[k] = Math.round(segMap[k]);
-      }
-
-      return {
-        category: g.name,
-        hasDrillDown: hasChild,
-        segments: segMap,
-        total: Math.round(g.totalForecast),
-      };
-    });
+    const items: StackedBarItem[] = groups.map(g => ({
+      id: g.id,
+      category: g.name,
+      hasDrillDown: hasChild,
+      segments: { ...g.apgForecast },
+      total: g.totalForecast,
+    }));
 
     const levelStr: ProductLevel = level <= 3 ? 'brand' : 'product';
 
