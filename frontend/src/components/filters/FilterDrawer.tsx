@@ -9,6 +9,7 @@ import { useViewStore } from '../../store/viewStore';
 import { useFilterStore } from '../../store/filterStore';
 import { APG_OPTIONS } from '../../constants/hierarchy';
 import { labels } from '../../constants/labels';
+import { ChevronDown } from 'lucide-react';
 
 interface FilterDrawerProps {
   isOpen: boolean;
@@ -26,23 +27,33 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
   hierarchyNodes,
 }) => {
   const { scope, apg, timeGrain, setScope, setApg } = useViewStore();
-  const { draftFilters, setDraftFilter, setTimeRangeDraft, applyFilters, resetDraft } = useFilterStore();
+  const { appliedFilters, draftFilters, setDraftFilter, setTimeRangeDraft, applyFilters, resetDraft } = useFilterStore();
 
-  // Draft state for scope/apg (committed on Apply)
+  // Draft state for scope/apg/cycle/activity (committed on Apply)
   const [draftScope, setDraftScope] = useState<string[]>([]);
-  const [draftApg,   setDraftApg]   = useState<string[]>([]);
+  const [draftApg, setDraftApg] = useState<string[]>([]);
+  const [draftPlanningCycle, setDraftPlanningCycle] = useState<string>(
+    appliedFilters.planningCycle || 'Current cycle'
+  );
+  const [draftActivity, setDraftActivity] = useState<string>(
+    appliedFilters.activity || 'Demand driver'
+  );
 
   // Sync draft from store when drawer opens
   useEffect(() => {
     if (isOpen) {
       setDraftScope(scope);
       setDraftApg(apg);
+      setDraftPlanningCycle(appliedFilters.planningCycle || 'Current cycle');
+      setDraftActivity(appliedFilters.activity || 'Demand driver');
     }
-  }, [isOpen, scope, apg, timeGrain]);
+  }, [isOpen, scope, apg, timeGrain, appliedFilters.planningCycle, appliedFilters.activity]);
 
   const handleApply = () => {
     setScope(draftScope);
     setApg(draftApg);
+    setDraftFilter('planningCycle', draftPlanningCycle);
+    setDraftFilter('activity', draftActivity);
     applyFilters();
     onApply();
     onClose();
@@ -51,6 +62,8 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
   const handleReset = () => {
     setDraftScope([]);
     setDraftApg([]);
+    setDraftPlanningCycle('Current cycle');
+    setDraftActivity('Demand driver');
     resetDraft();
     onReset();
   };
@@ -59,6 +72,8 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
     // Discard draft – reset to current store values
     setDraftScope(scope);
     setDraftApg(apg);
+    setDraftPlanningCycle(appliedFilters.planningCycle || 'Current cycle');
+    setDraftActivity(appliedFilters.activity || 'Demand driver');
     onClose();
   };
 
@@ -80,6 +95,43 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
               setDraftFilter('endDate', d);
             }}
           />
+
+          {/* Planning cycle single-select */}
+          <div className="relative">
+            <label className="block text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-1">
+              Planning cycle
+            </label>
+            <div className="relative">
+              <select
+                value={draftPlanningCycle}
+                onChange={(e) => setDraftPlanningCycle(e.target.value)}
+                className="w-full text-xs font-medium text-text-primary bg-surface border border-border rounded-input px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-primary-700 cursor-pointer shadow-sm hover:border-primary-300"
+              >
+                <option value="Current cycle">Current cycle</option>
+                <option value="MRF">MRF</option>
+                <option value="Prior cycle snapshot">Prior cycle snapshot</option>
+              </select>
+              <ChevronDown className="w-4 h-4 text-text-secondary absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Activity single-select */}
+          <div className="relative">
+            <label className="block text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-1">
+              Activity
+            </label>
+            <div className="relative">
+              <select
+                value={draftActivity}
+                onChange={(e) => setDraftActivity(e.target.value)}
+                className="w-full text-xs font-medium text-text-primary bg-surface border border-border rounded-input px-3 py-2 pr-8 appearance-none focus:outline-none focus:border-primary-700 cursor-pointer shadow-sm hover:border-primary-300"
+              >
+                <option value="Demand driver">Demand driver</option>
+                <option value="Business activity">Business activity</option>
+              </select>
+              <ChevronDown className="w-4 h-4 text-text-secondary absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </div>
 
           {/* Product hierarchy picker */}
           <div>

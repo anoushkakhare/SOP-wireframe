@@ -11,9 +11,9 @@ export function useChartData() {
 
   const totalEditsDelta = Object.values(savedEdits).reduce((sum, val) => sum + val, 0);
   const scopeStr = scope.join(',') || undefined;
-  const apgStr   = apg.join(',')   || undefined;
+  const apgStr = apg.join(',') || undefined;
   const from = appliedFilters.startDate;
-  const to   = appliedFilters.endDate;
+  const to = appliedFilters.endDate;
 
   const params = {
     productLevel,
@@ -23,9 +23,21 @@ export function useChartData() {
     measure,
     from,
     to,
+    planningCycle: appliedFilters.planningCycle,
+    activity: appliedFilters.activity,
   };
 
-  const keyPrefix = [productLevel, scopeStr, apgStr, timeGrain, measure, from, to];
+  const keyPrefix = [
+    productLevel,
+    scopeStr,
+    apgStr,
+    timeGrain,
+    measure,
+    from,
+    to,
+    appliedFilters.planningCycle,
+    appliedFilters.activity,
+  ];
 
   const forecastLineQuery = useQuery({
     queryKey: ['forecast-line', ...keyPrefix],
@@ -62,9 +74,9 @@ export function useChartData() {
 
   return {
     forecastLine: forecastLineQuery,
-    stackedBar:   stackedBarQuery,
-    waterfall:    { ...waterfallQuery, data: waterfallData },
-    treemap:      treemapQuery,
+    stackedBar: stackedBarQuery,
+    waterfall: { ...waterfallQuery, data: waterfallData },
+    treemap: treemapQuery,
     isLoading:
       forecastLineQuery.isLoading ||
       stackedBarQuery.isLoading ||

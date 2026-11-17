@@ -14,6 +14,7 @@ import { ForecastLinePoint } from '../../types';
 import { formatCompactNumber } from '../../utils/formatters';
 import { labels } from '../../constants/labels';
 import { ChartEmptyState } from './ChartEmptyState';
+import { useViewStore } from '../../store/viewStore';
 
 // ── Design-system colour constants (kept here for Recharts which needs hex values)
 const COLORS = {
@@ -42,6 +43,8 @@ export const ForecastLineChart: React.FC<ForecastLineChartProps> = ({
   onRetry,
 }) => {
   const { charts } = labels;
+  const { measure } = useViewStore();
+  const measureLabel = measure === 'value' ? 'Value (₹)' : measure === 'cases' ? 'Cases' : 'Units';
 
   if (isLoading) {
     return (
@@ -82,8 +85,9 @@ export const ForecastLineChart: React.FC<ForecastLineChartProps> = ({
             tick={{ fontSize: 12, fill: COLORS.axis }}
             tickLine={false}
             axisLine={{ stroke: COLORS.grid }}
-            tickFormatter={(val) => formatCompactNumber(val, { isNeutral: true })}
+            tickFormatter={(val) => formatCompactNumber(val, { isNeutral: true, measure })}
             domain={['auto', 'auto']}
+            name={labels.charts.axisForecast(measureLabel)}
           />
           <Tooltip
             content={({ active, payload, label }) => {
@@ -94,15 +98,15 @@ export const ForecastLineChart: React.FC<ForecastLineChartProps> = ({
                     <div className="font-semibold text-text-primary border-b border-border pb-1">{label}</div>
                     <div className="flex justify-between gap-4">
                       <span style={{ color: COLORS.positive }}>{charts.tooltip.bestCase}:</span>
-                      <span className="font-semibold tabular-nums">{formatCompactNumber(item.bestCase, { isNeutral: true })}</span>
+                      <span className="font-semibold tabular-nums">{formatCompactNumber(item.bestCase, { isNeutral: true, measure })}</span>
                     </div>
                     <div className="flex justify-between gap-4">
                       <span className="font-semibold text-text-primary">{charts.tooltip.forecast}:</span>
-                      <span className="font-bold tabular-nums">{formatCompactNumber(item.forecast, { isNeutral: true })}</span>
+                      <span className="font-bold tabular-nums">{formatCompactNumber(item.forecast, { isNeutral: true, measure })}</span>
                     </div>
                     <div className="flex justify-between gap-4">
                       <span style={{ color: COLORS.negative }}>{charts.tooltip.worstCase}:</span>
-                      <span className="font-semibold tabular-nums">{formatCompactNumber(item.worstCase, { isNeutral: true })}</span>
+                      <span className="font-semibold tabular-nums">{formatCompactNumber(item.worstCase, { isNeutral: true, measure })}</span>
                     </div>
                   </div>
                 );

@@ -197,6 +197,8 @@ export interface AggregateParams {
   measure?: string;
   from?: string;
   to?: string;
+  planningCycle?: string;
+  activity?: string;
 }
 
 export interface AggregatedGroup {
@@ -224,9 +226,11 @@ export interface AggregatedGroup {
 }
 
 export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
-  const { scope, level = 3, apg, timeGrain, measure, from, to } = params;
+  const { scope, level = 3, apg, timeGrain, measure, from, to, planningCycle, activity } = params;
   const normGrain = normalizeGrain(timeGrain);
   const normMeas = normalizeMeasure(measure);
+  const normCycle = (planningCycle || 'Current cycle').toLowerCase().trim();
+  const normActivity = (activity || 'Demand driver').toLowerCase().trim();
 
   let items = masterData.items as any[];
 
@@ -311,6 +315,25 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
     const unitsPerCase = it.unitsPerCase || 12;
     const price = it.price || 100;
 
+    let cycleFactor = 1.0;
+    if (normCycle.includes('prior')) {
+      const str = it.fuId || it.id || 'seed';
+      let h = 0;
+      for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+      const noise = (((Math.abs(h) % 1000) / 1000) - 0.5) * 0.04;
+      cycleFactor = 0.97 + noise;
+    } else if (normCycle.includes('mrf')) {
+      cycleFactor = 0.88;
+    }
+
+    let activityFactor = 1.0;
+    if (normActivity.includes('business')) {
+      activityFactor = 0.95;
+    } else if (normActivity.includes('demand')) {
+      activityFactor = 1.04;
+    }
+    const factor = cycleFactor * activityFactor;
+
     const convert = (baseUnits: number): number => {
       if (normMeas === 'cases') return baseUnits / unitsPerCase;
       if (normMeas === 'value') return baseUnits * price;
@@ -334,6 +357,12 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
           pOpp += it.weeklyOpportunity?.[w.wLabel] || 0;
           pRisk += it.weeklyRisk?.[w.wLabel] || 0;
         }
+      }
+
+      if (factor !== 1.0) {
+        pUnits = pUnits * factor;
+        pOpp = pOpp * factor;
+        pRisk = pRisk * factor;
       }
 
       const val = convert(pUnits);
@@ -367,6 +396,9 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
         let priorUnits = 0;
         for (const pw of priorWeeks) {
           priorUnits += (it.weeklyActuals?.[pw.wLabel] ?? (it.weeklyForecast?.[pw.wLabel] || 0));
+        }
+        if (factor !== 1.0) {
+          priorUnits = priorUnits * factor;
         }
         const priorVal = convert(priorUnits);
         g.priorTotalForecast += priorVal;

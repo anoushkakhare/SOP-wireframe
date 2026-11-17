@@ -10,9 +10,9 @@ export function useTableData() {
   const { isDesegregated, desegregatedParent } = useTableStore();
 
   const scopeStr = scope.join(',') || undefined;
-  const apgStr   = apg.join(',')   || undefined;
+  const apgStr = apg.join(',') || undefined;
   const from = appliedFilters.startDate;
-  const to   = appliedFilters.endDate;
+  const to = appliedFilters.endDate;
 
   const params = {
     productLevel,
@@ -22,10 +22,12 @@ export function useTableData() {
     measure,
     from,
     to,
+    planningCycle: appliedFilters.planningCycle,
+    activity: appliedFilters.activity,
   };
 
   const query = useQuery({
-    queryKey: ['table', productLevel, scopeStr, apgStr, timeGrain, measure, from, to, isDesegregated],
+    queryKey: ['table', productLevel, scopeStr, apgStr, timeGrain, measure, from, to, isDesegregated, appliedFilters.planningCycle, appliedFilters.activity],
     queryFn: () => {
       if (isDesegregated) {
         return tableService.desegregate(desegregatedParent || scopeStr, params);

@@ -37,7 +37,7 @@ while (true) {
   const yrStr = String(yr).slice(2);
   const wLabel = `W${String(weekNum).padStart(2, '0')} ${yrStr}`;
   const moIdx = thu.getUTCMonth();
-  const moNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const moNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const mLabel = `${moNames[moIdx]} ${yrStr}`;
   const qNum = Math.floor(moIdx / 3) + 1;
   const qLabel = `Q${qNum} ${yrStr}`;
@@ -72,59 +72,81 @@ const SKELETON = [
       {
         sopId: 'sop_hc', sop: 'Hair Care',
         brands: [
-          { brandId: 'br_dove',    brand: 'Dove',
+          {
+            brandId: 'br_dove', brand: 'Dove',
             fgs: [
-              { fgId: 'fg_dove_sh', fg: 'Dove Shampoo Range',
+              {
+                fgId: 'fg_dove_sh', fg: 'Dove Shampoo Range',
                 fus: [
                   { fuId: 'fu_dove_sh_200', fu: 'Dove Nourishing Shampoo 200ml' },
                   { fuId: 'fu_dove_sh_340', fu: 'Dove Nourishing Shampoo 340ml' },
                   { fuId: 'fu_dove_sh_650', fu: 'Dove Nourishing Shampoo 650ml' },
-                ]},
-              { fgId: 'fg_dove_co', fg: 'Dove Conditioner Range',
+                ]
+              },
+              {
+                fgId: 'fg_dove_co', fg: 'Dove Conditioner Range',
                 fus: [
                   { fuId: 'fu_dove_co_180', fu: 'Dove Intensive Repair Conditioner 180ml' },
                   { fuId: 'fu_dove_co_335', fu: 'Dove Intensive Repair Conditioner 335ml' },
-                ]},
-            ]},
-          { brandId: 'br_sunsilk', brand: 'Sunsilk',
+                ]
+              },
+            ]
+          },
+          {
+            brandId: 'br_sunsilk', brand: 'Sunsilk',
             fgs: [
-              { fgId: 'fg_sun_sh', fg: 'Sunsilk Shampoo Range',
+              {
+                fgId: 'fg_sun_sh', fg: 'Sunsilk Shampoo Range',
                 fus: [
                   { fuId: 'fu_sun_sh_180', fu: 'Sunsilk Black Shine Shampoo 180ml' },
                   { fuId: 'fu_sun_sh_340', fu: 'Sunsilk Black Shine Shampoo 340ml' },
-                ]},
-            ]},
+                ]
+              },
+            ]
+          },
         ],
       },
       {
         sopId: 'sop_sk', sop: 'Skin Care',
         brands: [
-          { brandId: 'br_ponds', brand: "Pond's",
+          {
+            brandId: 'br_ponds', brand: "Pond's",
             fgs: [
-              { fgId: 'fg_ponds_cr', fg: "Pond's Cream Range",
+              {
+                fgId: 'fg_ponds_cr', fg: "Pond's Cream Range",
                 fus: [
                   { fuId: 'fu_ponds_cr_50', fu: "Pond's Age Miracle Cream 50g" },
                   { fuId: 'fu_ponds_cr_100', fu: "Pond's Age Miracle Cream 100g" },
-                ]},
-              { fgId: 'fg_ponds_fw', fg: "Pond's Face Wash Range",
+                ]
+              },
+              {
+                fgId: 'fg_ponds_fw', fg: "Pond's Face Wash Range",
                 fus: [
                   { fuId: 'fu_ponds_fw_100', fu: "Pond's Bright Beauty Face Wash 100ml" },
                   { fuId: 'fu_ponds_fw_200', fu: "Pond's Bright Beauty Face Wash 200ml" },
-                ]},
-            ]},
-          { brandId: 'br_vas', brand: 'Vaseline',
+                ]
+              },
+            ]
+          },
+          {
+            brandId: 'br_vas', brand: 'Vaseline',
             fgs: [
-              { fgId: 'fg_vas_bl', fg: 'Vaseline Body Lotion Range',
+              {
+                fgId: 'fg_vas_bl', fg: 'Vaseline Body Lotion Range',
                 fus: [
                   { fuId: 'fu_vas_bl_200', fu: 'Vaseline Intensive Care Lotion 200ml' },
                   { fuId: 'fu_vas_bl_400', fu: 'Vaseline Intensive Care Lotion 400ml' },
-                ]},
-              { fgId: 'fg_vas_pj', fg: 'Vaseline Petroleum Jelly Range',
+                ]
+              },
+              {
+                fgId: 'fg_vas_pj', fg: 'Vaseline Petroleum Jelly Range',
                 fus: [
                   { fuId: 'fu_vas_pj_50', fu: 'Vaseline Petroleum Jelly 50ml' },
                   { fuId: 'fu_vas_pj_100', fu: 'Vaseline Petroleum Jelly 100ml' },
-                ]},
-            ]},
+                ]
+              },
+            ]
+          },
         ],
       },
     ],
@@ -135,58 +157,78 @@ const SKELETON = [
       {
         sopId: 'sop_sc', sop: 'Skin Cleansing',
         brands: [
-          { brandId: 'br_lux', brand: 'Lux',
+          {
+            brandId: 'br_lux', brand: 'Lux',
             fgs: [
-              { fgId: 'fg_lux_bar', fg: 'Lux Bar Range',
+              {
+                fgId: 'fg_lux_bar', fg: 'Lux Bar Range',
                 fus: [
                   { fuId: 'fu_lux_bar_75', fu: 'Lux Soft Touch Soap Bar 75g' },
                   { fuId: 'fu_lux_bar_150', fu: 'Lux Soft Touch Soap Bar 150g' },
-                ]},
-              { fgId: 'fg_lux_bw', fg: 'Lux Body Wash Range',
+                ]
+              },
+              {
+                fgId: 'fg_lux_bw', fg: 'Lux Body Wash Range',
                 fus: [
                   { fuId: 'fu_lux_bw_200', fu: 'Lux Velvet Touch Body Wash 200ml' },
                   { fuId: 'fu_lux_bw_500', fu: 'Lux Velvet Touch Body Wash 500ml' },
-                ]},
-            ]},
-          { brandId: 'br_life', brand: 'Lifebuoy',
+                ]
+              },
+            ]
+          },
+          {
+            brandId: 'br_life', brand: 'Lifebuoy',
             fgs: [
-              { fgId: 'fg_life_bar', fg: 'Lifebuoy Soap Bar Range',
+              {
+                fgId: 'fg_life_bar', fg: 'Lifebuoy Soap Bar Range',
                 fus: [
                   { fuId: 'fu_life_bar_90', fu: 'Lifebuoy Total 10 Soap 90g' },
                   { fuId: 'fu_life_bar_120', fu: 'Lifebuoy Total 10 Soap 120g' },
                   { fuId: 'fu_life_bar_4p', fu: 'Lifebuoy Total 10 Soap 4-Pack' },
-                ]},
-            ]},
+                ]
+              },
+            ]
+          },
         ],
       },
       {
         sopId: 'sop_deo', sop: 'Deodorants',
         brands: [
-          { brandId: 'br_rex', brand: 'Rexona',
+          {
+            brandId: 'br_rex', brand: 'Rexona',
             fgs: [
-              { fgId: 'fg_rex_spray', fg: 'Rexona Spray Range',
+              {
+                fgId: 'fg_rex_spray', fg: 'Rexona Spray Range',
                 fus: [
                   { fuId: 'fu_rex_spray_150', fu: 'Rexona Active Dry Spray 150ml' },
                   { fuId: 'fu_rex_spray_200', fu: 'Rexona Active Dry Spray 200ml' },
-                ]},
-              { fgId: 'fg_rex_roll', fg: 'Rexona Roll-On Range',
+                ]
+              },
+              {
+                fgId: 'fg_rex_roll', fg: 'Rexona Roll-On Range',
                 fus: [
                   { fuId: 'fu_rex_roll_50', fu: 'Rexona Active Dry Roll-On 50ml' },
-                ]},
-            ]},
+                ]
+              },
+            ]
+          },
         ],
       },
       {
         sopId: 'sop_oc', sop: 'Oral Care',
         brands: [
-          { brandId: 'br_close', brand: 'Closeup',
+          {
+            brandId: 'br_close', brand: 'Closeup',
             fgs: [
-              { fgId: 'fg_close_tp', fg: 'Closeup Toothpaste Range',
+              {
+                fgId: 'fg_close_tp', fg: 'Closeup Toothpaste Range',
                 fus: [
                   { fuId: 'fu_close_tp_80', fu: 'Closeup Red Hot Toothpaste 80g' },
                   { fuId: 'fu_close_tp_150', fu: 'Closeup Red Hot Toothpaste 150g' },
-                ]},
-            ]},
+                ]
+              },
+            ]
+          },
         ],
       },
     ],
@@ -197,52 +239,72 @@ const SKELETON = [
       {
         sopId: 'sop_fab', sop: 'Fabric Care',
         brands: [
-          { brandId: 'br_surf', brand: 'Surf Excel',
+          {
+            brandId: 'br_surf', brand: 'Surf Excel',
             fgs: [
-              { fgId: 'fg_surf_pow', fg: 'Surf Excel Powder Range',
+              {
+                fgId: 'fg_surf_pow', fg: 'Surf Excel Powder Range',
                 fus: [
                   { fuId: 'fu_surf_pow_500', fu: 'Surf Excel Matic Liquid 500ml' },
                   { fuId: 'fu_surf_pow_1kg', fu: 'Surf Excel Matic Liquid 1L' },
                   { fuId: 'fu_surf_pow_2kg', fu: 'Surf Excel Matic Liquid 2L' },
-                ]},
-              { fgId: 'fg_surf_bar', fg: 'Surf Excel Bar Range',
+                ]
+              },
+              {
+                fgId: 'fg_surf_bar', fg: 'Surf Excel Bar Range',
                 fus: [
                   { fuId: 'fu_surf_bar_250', fu: 'Surf Excel Stain Removal Bar 250g' },
-                ]},
-            ]},
-          { brandId: 'br_comf', brand: 'Comfort',
+                ]
+              },
+            ]
+          },
+          {
+            brandId: 'br_comf', brand: 'Comfort',
             fgs: [
-              { fgId: 'fg_comf_soft', fg: 'Comfort Fabric Softener Range',
+              {
+                fgId: 'fg_comf_soft', fg: 'Comfort Fabric Softener Range',
                 fus: [
                   { fuId: 'fu_comf_soft_500', fu: 'Comfort Fabric Softener 500ml' },
                   { fuId: 'fu_comf_soft_1L', fu: 'Comfort Fabric Softener 1L' },
-                ]},
-            ]},
+                ]
+              },
+            ]
+          },
         ],
       },
       {
         sopId: 'sop_hcl', sop: 'Home Cleaning',
         brands: [
-          { brandId: 'br_dom', brand: 'Domestos',
+          {
+            brandId: 'br_dom', brand: 'Domestos',
             fgs: [
-              { fgId: 'fg_dom_bl', fg: 'Domestos Bleach Range',
+              {
+                fgId: 'fg_dom_bl', fg: 'Domestos Bleach Range',
                 fus: [
                   { fuId: 'fu_dom_bl_500', fu: 'Domestos Extended Power Bleach 500ml' },
                   { fuId: 'fu_dom_bl_1L', fu: 'Domestos Extended Power Bleach 1L' },
-                ]},
-            ]},
-          { brandId: 'br_vim', brand: 'Vim',
+                ]
+              },
+            ]
+          },
+          {
+            brandId: 'br_vim', brand: 'Vim',
             fgs: [
-              { fgId: 'fg_vim_liq', fg: 'Vim Dishwash Liquid Range',
+              {
+                fgId: 'fg_vim_liq', fg: 'Vim Dishwash Liquid Range',
                 fus: [
                   { fuId: 'fu_vim_liq_250', fu: 'Vim Dishwash Liquid 250ml' },
                   { fuId: 'fu_vim_liq_500', fu: 'Vim Dishwash Liquid 500ml' },
-                ]},
-              { fgId: 'fg_vim_bar', fg: 'Vim Dishwash Bar Range',
+                ]
+              },
+              {
+                fgId: 'fg_vim_bar', fg: 'Vim Dishwash Bar Range',
                 fus: [
                   { fuId: 'fu_vim_bar_200', fu: 'Vim Dishwash Bar 200g' },
-                ]},
-            ]},
+                ]
+              },
+            ]
+          },
         ],
       },
     ],
@@ -253,53 +315,73 @@ const SKELETON = [
       {
         sopId: 'sop_sav', sop: 'Savoury',
         brands: [
-          { brandId: 'br_knorr', brand: 'Knorr',
+          {
+            brandId: 'br_knorr', brand: 'Knorr',
             fgs: [
-              { fgId: 'fg_knorr_stock', fg: 'Knorr Stock Range',
+              {
+                fgId: 'fg_knorr_stock', fg: 'Knorr Stock Range',
                 fus: [
                   { fuId: 'fu_knorr_chk_80', fu: 'Knorr Chicken Stock Cubes 80g' },
                   { fuId: 'fu_knorr_veg_80', fu: 'Knorr Vegetable Stock Cubes 80g' },
-                ]},
-              { fgId: 'fg_knorr_soup', fg: 'Knorr Soup Range',
+                ]
+              },
+              {
+                fgId: 'fg_knorr_soup', fg: 'Knorr Soup Range',
                 fus: [
                   { fuId: 'fu_knorr_soup_tom', fu: 'Knorr Tomato Soup 54g' },
                   { fuId: 'fu_knorr_soup_chk', fu: 'Knorr Chicken Noodle Soup 50g' },
-                ]},
-            ]},
-          { brandId: 'br_hell', brand: "Hellmann's",
+                ]
+              },
+            ]
+          },
+          {
+            brandId: 'br_hell', brand: "Hellmann's",
             fgs: [
-              { fgId: 'fg_hell_mayo', fg: "Hellmann's Mayonnaise Range",
+              {
+                fgId: 'fg_hell_mayo', fg: "Hellmann's Mayonnaise Range",
                 fus: [
                   { fuId: 'fu_hell_mayo_200', fu: "Hellmann's Real Mayonnaise 200ml" },
                   { fuId: 'fu_hell_mayo_430', fu: "Hellmann's Real Mayonnaise 430ml" },
-                ]},
-            ]},
+                ]
+              },
+            ]
+          },
         ],
       },
       {
         sopId: 'sop_tea', sop: 'Tea',
         brands: [
-          { brandId: 'br_bb', brand: 'Brooke Bond',
+          {
+            brandId: 'br_bb', brand: 'Brooke Bond',
             fgs: [
-              { fgId: 'fg_bb_black', fg: 'Brooke Bond Black Tea Range',
+              {
+                fgId: 'fg_bb_black', fg: 'Brooke Bond Black Tea Range',
                 fus: [
                   { fuId: 'fu_bb_loose_250', fu: 'Brooke Bond Red Label Loose 250g' },
                   { fuId: 'fu_bb_loose_500', fu: 'Brooke Bond Red Label Loose 500g' },
                   { fuId: 'fu_bb_bags_100', fu: 'Brooke Bond Red Label Bags 100pc' },
-                ]},
-            ]},
-          { brandId: 'br_lip', brand: 'Lipton',
+                ]
+              },
+            ]
+          },
+          {
+            brandId: 'br_lip', brand: 'Lipton',
             fgs: [
-              { fgId: 'fg_lip_grn', fg: 'Lipton Green Tea Range',
+              {
+                fgId: 'fg_lip_grn', fg: 'Lipton Green Tea Range',
                 fus: [
                   { fuId: 'fu_lip_grn_25', fu: 'Lipton Green Tea 25 bags' },
                   { fuId: 'fu_lip_grn_50', fu: 'Lipton Green Tea 50 bags' },
-                ]},
-              { fgId: 'fg_lip_yel', fg: 'Lipton Yellow Label Range',
+                ]
+              },
+              {
+                fgId: 'fg_lip_yel', fg: 'Lipton Yellow Label Range',
                 fus: [
                   { fuId: 'fu_lip_yel_100', fu: 'Lipton Yellow Label 100 bags' },
-                ]},
-            ]},
+                ]
+              },
+            ]
+          },
         ],
       },
     ],

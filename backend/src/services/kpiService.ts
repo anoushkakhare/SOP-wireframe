@@ -12,6 +12,8 @@ export class KpiService {
     from?: string;
     to?: string;
     scenarioId?: string;
+    planningCycle?: string;
+    activity?: string;
   }): Promise<KpiItem[]> {
     return kpiRepository.getKpis(params);
   }

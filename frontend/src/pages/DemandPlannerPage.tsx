@@ -79,12 +79,12 @@ export const DemandPlannerPage: React.FC = () => {
   // Data fetching
   const metaQuery = useQuery({
     queryKey: ['meta-options'],
-    queryFn:  () => metaService.getOptions(),
+    queryFn: () => metaService.getOptions(),
   });
 
   const hierarchyQuery = useQuery({
     queryKey: ['hierarchy'],
-    queryFn:  () => metaService.getHierarchy(),
+    queryFn: () => metaService.getHierarchy(),
   });
 
   const hierarchyNodes = hierarchyQuery.data || [];
@@ -160,8 +160,14 @@ export const DemandPlannerPage: React.FC = () => {
 
   const handleConfirmDiscard = () => { discardEdits(); setDiscardConfirmModalOpen(false); };
 
-  // Filter badge = scope nodes count + apg filters
-  const activeFilterCount = scope.length + (apg.length > 0 ? 1 : 0);
+  // Filter badge = scope nodes count + apg filters + non-default planning cycle / activity
+  const isPlanningCycleActive = appliedFilters.planningCycle && appliedFilters.planningCycle !== 'Current cycle';
+  const isActivityActive = appliedFilters.activity && appliedFilters.activity !== 'Demand driver';
+  const activeFilterCount =
+    scope.length +
+    (apg.length > 0 ? 1 : 0) +
+    (isPlanningCycleActive ? 1 : 0) +
+    (isActivityActive ? 1 : 0);
 
   const { charts: cl } = labels;
   const levelLabel = LEVEL_MAP[productLevel]?.label || 'Brand';

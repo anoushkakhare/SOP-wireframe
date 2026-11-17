@@ -38,6 +38,8 @@ export class ChartRepository {
       measure: params.measure,
       from: params.from,
       to: params.to,
+      planningCycle: params.planningCycle,
+      activity: params.activity,
     });
 
     const points = activePeriods.map((p, pIdx) => {
@@ -47,15 +49,15 @@ export class ChartRepository {
           forecast += g.periodActuals[p.label] || 0;
         } else {
           forecast += g.periodForecast[p.label] || 0;
-          opp      += g.periodOpportunity[p.label] || 0;
-          risk     += g.periodRisk[p.label] || 0;
+          opp += g.periodOpportunity[p.label] || 0;
+          risk += g.periodRisk[p.label] || 0;
         }
       }
       return {
         time: p.label,
         forecast: Math.round(forecast),
         worstCase: Math.round(forecast + (pIdx < currentPeriodIndex ? 0 : risk)),
-        bestCase:  Math.round(forecast + (pIdx < currentPeriodIndex ? 0 : opp)),
+        bestCase: Math.round(forecast + (pIdx < currentPeriodIndex ? 0 : opp)),
       };
     });
     return { points };
@@ -71,6 +73,8 @@ export class ChartRepository {
       measure: params.measure,
       from: params.from,
       to: params.to,
+      planningCycle: params.planningCycle,
+      activity: params.activity,
     });
     const availableCustomerGroups = ['Modern Trade', 'General Trade', 'E-commerce', 'Quick Commerce'];
 
@@ -87,6 +91,8 @@ export class ChartRepository {
           measure: params.measure,
           from: params.from,
           to: params.to,
+          planningCycle: params.planningCycle,
+          activity: params.activity,
         });
         const itemTotal = itemGroups.reduce((s, ig) => s + ig.totalForecast, 0);
         segMap[item.apg] = (segMap[item.apg] || 0) + itemTotal;
@@ -122,6 +128,8 @@ export class ChartRepository {
       measure: params.measure,
       from: params.from,
       to: params.to,
+      planningCycle: params.planningCycle,
+      activity: params.activity,
     });
     const allGroups = aggregate({
       level: 5,
@@ -129,22 +137,24 @@ export class ChartRepository {
       measure: params.measure,
       from: params.from,
       to: params.to,
+      planningCycle: params.planningCycle,
+      activity: params.activity,
     });
 
     const totalAll = allGroups.reduce((s, g) => s + g.totalForecast, 0);
     const totalScope = groups.reduce((s, g) => s + g.totalForecast, 0);
     const share = totalAll > 0 ? totalScope / totalAll : 1;
 
-    const baseline         = Math.round(totalScope * 0.88);
-    const demandDrivers    = Math.round(totalScope * 0.098);
+    const baseline = Math.round(totalScope * 0.88);
+    const demandDrivers = Math.round(totalScope * 0.098);
     const manualAdjustment = totalScope - baseline - demandDrivers;
-    const finalForecast    = totalScope;
+    const finalForecast = totalScope;
 
     const steps: WaterfallStep[] = [
-      { name: 'Baseline',           value: baseline,         type: 'total'    },
-      { name: 'Demand drivers',     value: demandDrivers,    type: 'increase' },
-      { name: 'Manual adjustment',  value: manualAdjustment, type: 'increase' },
-      { name: 'Final forecast',     value: finalForecast,    type: 'total'    },
+      { name: 'Baseline', value: baseline, type: 'total' },
+      { name: 'Demand drivers', value: demandDrivers, type: 'increase' },
+      { name: 'Manual adjustment', value: manualAdjustment, type: 'increase' },
+      { name: 'Final forecast', value: finalForecast, type: 'total' },
     ];
     return { steps };
   }
@@ -159,6 +169,8 @@ export class ChartRepository {
       measure: params.measure,
       from: params.from,
       to: params.to,
+      planningCycle: params.planningCycle,
+      activity: params.activity,
     });
 
     const color = LEVEL_COLORS[level] || '#0F0E9A';
@@ -166,7 +178,7 @@ export class ChartRepository {
 
     if (level >= 4) {
       const nodes: TreemapNode[] = groups.map(g => ({
-        name:  g.name,
+        name: g.name,
         value: Math.round(g.totalForecast),
         brand: g.name,
         color,
@@ -182,13 +194,15 @@ export class ChartRepository {
       measure: params.measure,
       from: params.from,
       to: params.to,
+      planningCycle: params.planningCycle,
+      activity: params.activity,
     });
     const parentMap: Record<string, TreemapNode[]> = {};
     for (const cg of childGroups) {
       const pid = cg.parentId as string | null;
       if (!pid) continue;
       (parentMap[pid] ||= []).push({
-        name:  cg.name,
+        name: cg.name,
         value: Math.round(cg.totalForecast),
         brand: cg.name,
         color: LEVEL_COLORS[level + 1] || color,
@@ -196,8 +210,8 @@ export class ChartRepository {
     }
 
     const data: TreemapNode[] = groups.map(g => ({
-      name:     g.name,
-      brand:    g.name,
+      name: g.name,
+      brand: g.name,
       color,
       children: parentMap[g.id] || [],
     }));

@@ -5,6 +5,7 @@ import { TableFloatingButtons } from './TableFloatingButtons';
 import { TableResponse, ProductLevel, ProductLevelNum } from '../../types';
 import { useTableStore } from '../../store/tableStore';
 import { useUiStore } from '../../store/uiStore';
+import { useViewStore } from '../../store/viewStore';
 import { labels } from '../../constants/labels';
 
 interface BottomDockProps {
@@ -36,11 +37,21 @@ export const BottomDock: React.FC<BottomDockProps> = ({
     hasUnsavedEdits,
   } = useTableStore();
 
+  const { timeGrain } = useViewStore();
+  const canEdit = timeGrain === 'month' || timeGrain === 'week';
+
   const { setDiscardConfirmModalOpen, addToast } = useUiStore();
+
+  React.useEffect(() => {
+    if (mode === 'edit' && !canEdit) {
+      setMode('view');
+    }
+  }, [mode, canEdit, setMode]);
 
   if (!isDockOpen) return null;
 
   const handleToggleEdit = () => {
+    if (!canEdit) return;
     if (mode === 'edit') {
       if (hasUnsavedEdits()) {
         setDiscardConfirmModalOpen(true);
@@ -78,6 +89,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
             onToggleEdit={handleToggleEdit}
             onToggleDelta={handleToggleDelta}
             onCloseOrSave={handleCloseOrSave}
+            canEdit={canEdit}
           />
         </div>
       </div>

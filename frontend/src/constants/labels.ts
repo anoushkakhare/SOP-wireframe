@@ -38,9 +38,9 @@ export const labels = {
         customer:       'Customer',
       },
       measureOptions: {
-        units:   'Units',
-        volume:  'Volume',
-        revenue: 'Value',
+        cases: 'Cases',
+        units: 'Units',
+        value: 'Value',
       },
     },
 
@@ -90,7 +90,7 @@ export const labels = {
     forecastBridge:       'Forecast bridge',
     productMix:           'Product mix',
 
-    axisForecast:         'Forecast (units)',
+    axisForecast:         (measure: string = 'units') => `Forecast (${measure})`,
 
     fullscreenExpand:     'Expand',
     fullscreenExit:       'Exit fullscreen',

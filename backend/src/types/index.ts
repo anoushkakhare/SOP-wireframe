@@ -55,6 +55,8 @@ export interface MetaOptions {
   uoms: Array<{ value: Uom; label: string }>;
   timeGrains?: Array<{ value: string; label: string }>;
   measures?: Array<{ value: string; label: string }>;
+  planningCycles?: Array<{ value: string; label: string }>;
+  activities?: Array<{ value: string; label: string }>;
   filters: {
     categories: string[];
     brands: string[];
@@ -164,6 +166,8 @@ export interface PlanningTableRow {
   customerGroup: string;
   customer: string;
   apg?: string;
+  unitsPerCase?: number;
+  price?: number;
   definitions: {
     opportunity: Record<string, number>;
     actualFcst: Record<string, number>;
@@ -199,4 +203,6 @@ export interface DataQueryParams {
   uom?: Uom | string;
   from?: string;
   to?: string;
+  planningCycle?: string;
+  activity?: string;
 }

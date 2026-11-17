@@ -4,6 +4,7 @@ import { formatCompactNumber } from '../../utils/formatters';
 import { getSignColor } from '../../utils/signColor';
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 import { labels } from '../../constants/labels';
+import { useViewStore } from '../../store/viewStore';
 
 interface KpiCardProps {
   kpi: KpiItem;
@@ -33,14 +34,20 @@ const TOOLTIP_MAP: Record<string, string> = {
  * - "vs last year" caption where data exists
  */
 export const KpiCard: React.FC<KpiCardProps> = ({ kpi }) => {
+  const { measure } = useViewStore();
+  const isValue = measure === 'value';
   const isNeutral = kpi.isNeutral || kpi.key === 'total_forecast';
   const formattedValue = formatCompactNumber(kpi.value, {
-    format: kpi.format,
+    format: kpi.format === 'percent' ? 'percent' : (isValue ? 'currency' : 'number'),
     isNeutral,
+    measure,
   });
 
   const signStyle = getSignColor(kpi.value, isNeutral);
-  const tooltipText = TOOLTIP_MAP[kpi.key] || kpi.label;
+  const baseTooltip = TOOLTIP_MAP[kpi.key] || kpi.label;
+  const tooltipText = baseTooltip
+    .replace(/\bunits\b/gi, measure === 'cases' ? 'cases' : measure === 'value' ? 'value' : 'units')
+    .replace(/\bvolume\b/gi, measure === 'value' ? 'value' : measure === 'cases' ? 'cases' : 'volume');
 
   const TrendIcon =
     isNeutral || kpi.value === 0
@@ -51,6 +58,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({ kpi }) => {
 
   const showIcon = !isNeutral && kpi.value !== 0;
   const hasVsLastYear = kpi.format === 'percent' || kpi.key.startsWith('growth_');
+  const measureCaption = measure === 'value' ? '₹ (Value)' : measure === 'cases' ? 'Cases' : 'Units';
 
   return (
     <div
@@ -84,7 +92,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({ kpi }) => {
       </div>
 
       <div className="text-[10px] text-text-secondary text-center truncate">
-        {hasVsLastYear ? labels.kpi.vsLastYear : '\u00A0'}
+        {hasVsLastYear ? labels.kpi.vsLastYear : measureCaption}
       </div>
     </div>
   );

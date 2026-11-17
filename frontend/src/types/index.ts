@@ -54,6 +54,8 @@ export interface MetaOptions {
   uoms: Array<{ value: Uom; label: string }>;
   timeGrains?: Array<{ value: string; label: string }>;
   measures?: Array<{ value: string; label: string }>;
+  planningCycles?: Array<{ value: string; label: string }>;
+  activities?: Array<{ value: string; label: string }>;
   filters: {
     categories: string[];
     brands: string[];
@@ -74,6 +76,8 @@ export interface FilterState {
   customerGroups: string[];
   customers: string[];
   businessUnits: string[];
+  planningCycle?: string;
+  activity?: string;
 }
 
 export interface KpiItem {
@@ -162,6 +166,8 @@ export interface PlanningTableRow {
   customerGroup: string;
   customer: string;
   apg?: string;
+  unitsPerCase?: number;
+  price?: number;
   definitions: {
     opportunity: Record<string, number>;
     actualFcst: Record<string, number>;

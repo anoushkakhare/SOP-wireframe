@@ -10,12 +10,14 @@ export class TableService {
     measure?: string;
     from?: string;
     to?: string;
+    planningCycle?: string;
+    activity?: string;
     filters?: any;
   }): Promise<TableResponse> {
     return tableRepository.getTable(params);
   }
 
-  async desegregate(scope?: string, params: { timeGrain?: string; measure?: string; from?: string; to?: string } = {}): Promise<TableResponse> {
+  async desegregate(scope?: string, params: { timeGrain?: string; measure?: string; from?: string; to?: string; planningCycle?: string; activity?: string } = {}): Promise<TableResponse> {
     return tableRepository.desegregate(scope, params);
   }
 }

@@ -13,6 +13,8 @@ export class KpiRepository {
     from?: string;
     to?: string;
     scenarioId?: string;
+    planningCycle?: string;
+    activity?: string;
   }): Promise<KpiItem[]> {
     const meas = params.measure || params.uom || 'units';
 
@@ -24,16 +26,18 @@ export class KpiRepository {
       measure: meas,
       from: params.from,
       to: params.to,
+      planningCycle: params.planningCycle,
+      activity: params.activity,
     });
 
-    let totalForecast      = groups.reduce((s, g) => s + g.totalForecast, 0);
-    let totalOpportunity   = groups.reduce((s, g) => s + g.totalOpportunity, 0);
-    let totalRisk          = groups.reduce((s, g) => s + g.totalRisk, 0);
+    let totalForecast = groups.reduce((s, g) => s + g.totalForecast, 0);
+    let totalOpportunity = groups.reduce((s, g) => s + g.totalOpportunity, 0);
+    let totalRisk = groups.reduce((s, g) => s + g.totalRisk, 0);
     let priorTotalForecast = groups.reduce((s, g) => s + g.priorTotalForecast, 0);
-    let ytdForecast        = groups.reduce((s, g) => s + g.ytdForecast, 0);
-    let priorYtdForecast   = groups.reduce((s, g) => s + g.priorYtdForecast, 0);
-    let ytgForecast        = groups.reduce((s, g) => s + g.ytgForecast, 0);
-    let priorYtgForecast   = groups.reduce((s, g) => s + g.priorYtgForecast, 0);
+    let ytdForecast = groups.reduce((s, g) => s + g.ytdForecast, 0);
+    let priorYtdForecast = groups.reduce((s, g) => s + g.priorYtdForecast, 0);
+    let ytgForecast = groups.reduce((s, g) => s + g.ytgForecast, 0);
+    let priorYtgForecast = groups.reduce((s, g) => s + g.priorYtgForecast, 0);
 
     let forecastAdjustment = Math.round(totalForecast * 0.023);
 
@@ -71,16 +75,18 @@ export class KpiRepository {
       masterData.targets.growthYtgRo
     );
 
+    const numFormat = meas === 'value' ? 'currency' : 'number';
+
     return [
-      { key: 'total_forecast', label: 'Total forecast',      value: totalForecast,      format: 'number',  isNeutral: true },
-      { key: 'forecast_adj',   label: 'Forecast adjustment', value: forecastAdjustment, format: 'number',  growthType: 'positive' },
-      { key: 'risk',           label: 'Risk',                value: totalRisk,          format: 'number',  growthType: 'negative' },
-      { key: 'opportunity',    label: 'Opportunity',         value: totalOpportunity,   format: 'number',  growthType: 'positive' },
-      { key: 'fy_growth',      label: 'FY growth',           value: growthFy,           format: 'percent', growthType: growthFy >= 0 ? 'positive' : 'negative' },
-      { key: 'ytd_growth',     label: 'YTD growth',          value: growthYtd,          format: 'percent', growthType: growthYtd >= 0 ? 'positive' : 'negative' },
-      { key: 'ytg_growth',     label: 'YTG growth',          value: growthYtg,          format: 'percent', growthType: growthYtg >= 0 ? 'positive' : 'negative' },
-      { key: 'fy_growth_ro',   label: 'FY growth (R&O)',     value: growthFyRo,         format: 'percent', growthType: growthFyRo >= 0 ? 'positive' : 'negative' },
-      { key: 'ytg_growth_ro',  label: 'YTG growth (R&O)',    value: growthYtgRo,        format: 'percent', growthType: growthYtgRo >= 0 ? 'positive' : 'negative' },
+      { key: 'total_forecast', label: 'Total forecast', value: totalForecast, format: numFormat, isNeutral: true },
+      { key: 'forecast_adj', label: 'Forecast adjustment', value: forecastAdjustment, format: numFormat, growthType: 'positive' },
+      { key: 'risk', label: 'Risk', value: totalRisk, format: numFormat, growthType: 'negative' },
+      { key: 'opportunity', label: 'Opportunity', value: totalOpportunity, format: numFormat, growthType: 'positive' },
+      { key: 'fy_growth', label: 'FY growth', value: growthFy, format: 'percent', growthType: growthFy >= 0 ? 'positive' : 'negative' },
+      { key: 'ytd_growth', label: 'YTD growth', value: growthYtd, format: 'percent', growthType: growthYtd >= 0 ? 'positive' : 'negative' },
+      { key: 'ytg_growth', label: 'YTG growth', value: growthYtg, format: 'percent', growthType: growthYtg >= 0 ? 'positive' : 'negative' },
+      { key: 'fy_growth_ro', label: 'FY growth (R&O)', value: growthFyRo, format: 'percent', growthType: growthFyRo >= 0 ? 'positive' : 'negative' },
+      { key: 'ytg_growth_ro', label: 'YTG growth (R&O)', value: growthYtgRo, format: 'percent', growthType: growthYtgRo >= 0 ? 'positive' : 'negative' },
     ];
   }
 }

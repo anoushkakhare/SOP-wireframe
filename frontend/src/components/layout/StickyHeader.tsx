@@ -15,6 +15,7 @@ interface StickyHeaderProps {
   allowedLevels: ProductLevelNum[];
   customerView: CustomerViewOption;
   measure: Uom;
+  measureOptions?: Array<{ value: string; label: string }>;
   timeGrain?: TimeGrain;
   timeGrainOptions?: Array<{ value: string; label: string }>;
   onProductLevelChange: (val: ProductLevelNum) => void;
@@ -38,6 +39,7 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
   allowedLevels,
   customerView,
   measure,
+  measureOptions,
   timeGrain = 'month',
   timeGrainOptions,
   onProductLevelChange,
@@ -67,22 +69,26 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
   ];
 
   const defaultTimeGrains = [
-    { value: 'year',    label: 'Year' },
-    { value: 'half',    label: 'Half-year' },
+    { value: 'year', label: 'Year' },
+    { value: 'half', label: 'Half-year' },
     { value: 'quarter', label: 'Quarter' },
-    { value: 'month',   label: 'Month' },
-    { value: 'week',    label: 'Week' },
+    { value: 'month', label: 'Month' },
+    { value: 'week', label: 'Week' },
   ];
 
   const resolvedTimeGrains = timeGrainOptions && timeGrainOptions.length > 0
     ? timeGrainOptions
     : defaultTimeGrains;
 
-  const uomOptions = [
-    { value: 'units',   label: selects.measureOptions.units   },
-    { value: 'volume',  label: selects.measureOptions.volume  },
-    { value: 'revenue', label: selects.measureOptions.revenue },
+  const defaultMeasures = [
+    { value: 'cases', label: selects.measureOptions.cases || 'Cases' },
+    { value: 'units', label: selects.measureOptions.units || 'Units' },
+    { value: 'value', label: selects.measureOptions.value || 'Value' },
   ];
+
+  const resolvedMeasures = measureOptions && measureOptions.length > 0
+    ? measureOptions
+    : defaultMeasures;
 
   const LevelDot = ({ color }: { color?: string }) =>
     color ? <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: color }} /> : null;
@@ -120,7 +126,7 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
       <LabeledSelect
         label={selects.measure}
         value={measure}
-        options={uomOptions}
+        options={resolvedMeasures}
         onChange={(v) => onMeasureChange(v as Uom)}
       />
       {/* Reset header */}
@@ -193,7 +199,7 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
             <LabeledSelect
               label={selects.measure}
               value={measure}
-              options={uomOptions}
+              options={resolvedMeasures}
               onChange={(v) => onMeasureChange(v as Uom)}
             />
           </div>

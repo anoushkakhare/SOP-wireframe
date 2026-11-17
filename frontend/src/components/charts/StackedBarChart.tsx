@@ -14,6 +14,7 @@ import { formatCompactNumber } from '../../utils/formatters';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { labels } from '../../constants/labels';
 import { ChartEmptyState } from './ChartEmptyState';
+import { useViewStore } from '../../store/viewStore';
 
 // ── Design-system colour constants for Recharts (needs hex)
 // Customer-group series colours – indigo tints only, in order
@@ -54,6 +55,8 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
   onRetry,
 }) => {
   const { charts } = labels;
+  const { measure } = useViewStore();
+  const measureLabel = measure === 'value' ? 'Value (₹)' : measure === 'cases' ? 'Cases' : 'Units';
 
   if (isLoading) {
     return (
@@ -142,7 +145,8 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
               tick={{ fontSize: 12, fill: AXIS_COLOR }}
               tickLine={false}
               axisLine={{ stroke: GRID_COLOR }}
-              tickFormatter={(val) => formatCompactNumber(val, { isNeutral: true })}
+              tickFormatter={(val) => formatCompactNumber(val, { isNeutral: true, measure })}
+              name={measureLabel}
             />
             <Tooltip
               content={({ active, payload, label }) => {
@@ -154,12 +158,12 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
                       {payload.map((p: any) => (
                         <div key={p.name} className="flex justify-between gap-4">
                           <span style={{ color: p.color }} className="font-medium">{p.name}:</span>
-                          <span className="font-semibold tabular-nums">{formatCompactNumber(p.value, { isNeutral: true })}</span>
+                          <span className="font-semibold tabular-nums">{formatCompactNumber(p.value, { isNeutral: true, measure })}</span>
                         </div>
                       ))}
                       <div className="pt-1 border-t border-border flex justify-between gap-4 font-bold text-text-primary">
                         <span>{charts.tooltip.total}:</span>
-                        <span className="tabular-nums">{formatCompactNumber(total, { isNeutral: true })}</span>
+                        <span className="tabular-nums">{formatCompactNumber(total, { isNeutral: true, measure })}</span>
                       </div>
                     </div>
                   );

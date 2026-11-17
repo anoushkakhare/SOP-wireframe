@@ -6,6 +6,7 @@ import { DeltaCell } from './DeltaCell';
 import { formatCompactNumber } from '../../utils/formatters';
 import { labels } from '../../constants/labels';
 import { LEVELS, LEVEL_MAP } from '../../constants/hierarchy';
+import { useViewStore } from '../../store/viewStore';
 
 interface PlanningTableProps {
   rows: PlanningTableRow[];
@@ -43,9 +44,22 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
   onCellEdit,
   isLoading = false,
 }) => {
+  const { measure } = useViewStore();
   const activeLevel = productLevelNum || (level === 'product' ? 5 : 3);
   const activeLevels = LEVELS.filter((l) => l.id <= activeLevel);
   const { rows: rowLabels } = labels.table;
+
+  const toMeasure = (baseUnits: number, upc: number, prc: number) => {
+    if (measure === 'cases') return Math.round(baseUnits / upc);
+    if (measure === 'value') return Math.round(baseUnits * prc);
+    return Math.round(baseUnits);
+  };
+
+  const toBase = (valInMeasure: number, upc: number, prc: number) => {
+    if (measure === 'cases') return Math.round(valInMeasure * upc);
+    if (measure === 'value') return Math.round(valInMeasure / prc);
+    return Math.round(valInMeasure);
+  };
 
   function getLevelValue(row: PlanningTableRow, levelId: number): string {
     switch (levelId) {
@@ -80,18 +94,25 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
         {/* ── Header ── primary-700 bg, white text */}
         <thead>
           <tr className="bg-primary-700 text-white text-[10px] font-semibold border-b border-primary-900">
-            {activeLevels.map((lvl) => (
+            {activeLevels.map((lvl, idx) => (
               <th
                 key={lvl.id}
-                className="py-2.5 px-3 min-w-[90px] border-r border-primary-900 whitespace-nowrap"
+                style={{ left: `${idx * 110}px` }}
+                className="sticky z-20 bg-primary-700 py-2.5 px-3 w-[110px] min-w-[110px] max-w-[110px] border-r border-primary-900 whitespace-nowrap truncate"
               >
                 {lvl.label}
               </th>
             ))}
-            <th className="py-2.5 px-3 min-w-[110px] border-r border-primary-900 whitespace-nowrap">
+            <th
+              style={{ left: `${activeLevels.length * 110}px` }}
+              className="sticky z-20 bg-primary-700 py-2.5 px-3 w-[100px] min-w-[100px] max-w-[100px] border-r border-primary-900 whitespace-nowrap truncate"
+            >
               APG
             </th>
-            <th className="py-2.5 px-3 min-w-[100px] border-r border-primary-900 text-center whitespace-nowrap">
+            <th
+              style={{ left: `${activeLevels.length * 110 + 100}px` }}
+              className="sticky z-20 bg-primary-700 py-2.5 px-3 w-[90px] min-w-[90px] max-w-[90px] border-r border-primary-900 text-center whitespace-nowrap shadow-[2px_0_4px_rgba(0,0,0,0.15)]"
+            >
               Definition
             </th>
 
@@ -116,144 +137,163 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
 
         {/* ── Body ── */}
         <tbody>
-          {rows.map((row) => (
-            <React.Fragment key={row.id}>
-              {/* Sub-row 1 – Opportunity */}
-              <tr className="border-t border-border hover:bg-primary-50 transition-colors">
-                {/* Product level columns 1..productLevel */}
-                {activeLevels.map((lvl) => (
+          {rows.map((row) => {
+            const upc = row.unitsPerCase || 12;
+            const prc = row.price || 100;
+            return (
+              <React.Fragment key={row.id}>
+                {/* Sub-row 1 – Opportunity */}
+                <tr className="border-t border-border hover:bg-primary-50 transition-colors">
+                  {/* Product level columns 1..productLevel */}
+                  {activeLevels.map((lvl, lvlIdx) => (
+                    <td
+                      key={lvl.id}
+                      rowSpan={3}
+                      style={{ left: `${lvlIdx * 110}px` }}
+                      className="sticky z-10 py-2 px-3 align-top font-medium text-text-primary border-r border-border bg-surface w-[110px] min-w-[110px] max-w-[110px] whitespace-nowrap truncate"
+                    >
+                      {getLevelValue(row, lvl.id)}
+                    </td>
+                  ))}
+                  {/* APG column */}
                   <td
-                    key={lvl.id}
                     rowSpan={3}
-                    className="py-2 px-3 align-top font-medium text-text-primary border-r border-border bg-surface whitespace-nowrap"
+                    style={{ left: `${activeLevels.length * 110}px` }}
+                    className="sticky z-10 py-2 px-3 align-top text-text-secondary border-r border-border bg-surface w-[100px] min-w-[100px] max-w-[100px] whitespace-nowrap truncate"
                   >
-                    {getLevelValue(row, lvl.id)}
+                    {row.apg || row.customerGroup || 'All'}
                   </td>
-                ))}
-                {/* APG column */}
-                <td rowSpan={3} className="py-2 px-3 align-top text-text-secondary border-r border-border whitespace-nowrap">
-                  {row.apg || row.customerGroup || 'All'}
-                </td>
 
-                {/* Definition label */}
-                <td className="py-1.5 px-2.5 font-semibold italic text-positive border-r border-border text-center bg-positive-bg/20">
-                  {rowLabels.opportunity}
-                </td>
+                  {/* Definition label */}
+                  <td
+                    style={{ left: `${activeLevels.length * 110 + 100}px` }}
+                    className="sticky z-10 py-1.5 px-2.5 font-semibold italic text-positive border-r border-border text-center bg-positive-bg/20 w-[90px] min-w-[90px] max-w-[90px] whitespace-nowrap shadow-[2px_0_4px_rgba(0,0,0,0.06)]"
+                  >
+                    {rowLabels.opportunity}
+                  </td>
 
-                {/* Opportunity month cells */}
-                {period.map((m, mIdx) => {
-                  const isPast = mIdx < currentMonthIndex;
+                  {/* Opportunity month cells */}
+                  {period.map((m, mIdx) => {
+                    const isPast = mIdx < currentMonthIndex;
 
-                  if (isPast) {
-                    // Past actual – merged, light grey bg
-                    const pastVal = row.pastActuals?.[m] ?? 0;
+                    if (isPast) {
+                      // Past actual – merged, light grey bg
+                      const pastVal = row.pastActuals?.[m] ?? 0;
+                      return (
+                        <td
+                          key={m}
+                          rowSpan={3}
+                          className="py-2 px-2.5 text-center font-semibold text-text-primary tabular-nums border-r border-border align-middle"
+                          style={{ backgroundColor: '#F1F2F7' }}
+                        >
+                          {formatCompactNumber(pastVal, { isNeutral: true, measure })}
+                        </td>
+                      );
+                    }
+
+                    const baseOpp = row.definitions.opportunity[m] ?? 0;
+                    const diffVal = row.diffs?.opportunity?.[m];
+
+                    if (mode === 'delta') {
+                      return (
+                        <td key={m} className="py-1 px-1.5 text-center border-r border-border">
+                          <DeltaCell delta={diffVal !== undefined ? diffVal : 0} measure={measure} />
+                        </td>
+                      );
+                    }
+
+                    return (
+                      <td key={m} className="py-1.5 px-2 text-center text-positive font-semibold tabular-nums border-r border-border">
+                        {formatCompactNumber(baseOpp, { withSign: true, measure })}
+                      </td>
+                    );
+                  })}
+                </tr>
+
+                {/* Sub-row 2 – Forecast / Actual */}
+                <tr className="hover:bg-primary-50 transition-colors">
+                  <td
+                    style={{ left: `${activeLevels.length * 110 + 100}px` }}
+                    className="sticky z-10 py-1.5 px-2.5 font-bold text-text-primary border-r border-border text-center bg-surface w-[90px] min-w-[90px] max-w-[90px] whitespace-nowrap shadow-[2px_0_4px_rgba(0,0,0,0.06)]"
+                  >
+                    {rowLabels.forecast}
+                  </td>
+
+                  {period.map((m, mIdx) => {
+                    const isPast = mIdx < currentMonthIndex;
+                    if (isPast) return null; // covered by rowSpan={3}
+
+                    const editKey = `${row.id}_actualFcst_${m}`;
+                    const baseFcst = row.definitions.actualFcst[m] ?? 0;
+                    const currentFcst = draftEdits[editKey] !== undefined ? toMeasure(draftEdits[editKey], upc, prc) : baseFcst;
+                    const hasEdit = draftEdits[editKey] !== undefined;
+                    const diffVal = row.diffs?.actualFcst?.[m] || (currentFcst - baseFcst);
+
+                    if (mode === 'delta') {
+                      return (
+                        <td key={m} className="py-1 px-1.5 text-center border-r border-border">
+                          <DeltaCell delta={diffVal} measure={measure} />
+                        </td>
+                      );
+                    }
+
                     return (
                       <td
                         key={m}
-                        rowSpan={3}
-                        className="py-2 px-2.5 text-center font-semibold text-text-primary tabular-nums border-r border-border align-middle"
-                        style={{ backgroundColor: '#F1F2F7' }}
+                        className={`py-1.5 px-2 text-center border-r border-border ${hasEdit
+                            ? diffVal > 0
+                              ? 'bg-positive-bg/40'
+                              : 'bg-negative-bg/40'
+                            : mode === 'edit'
+                              ? 'bg-surface border-primary-300'
+                              : ''
+                          }`}
                       >
-                        {formatCompactNumber(pastVal, { isNeutral: true })}
+                        <EditableCell
+                          value={currentFcst}
+                          isEditable={mode === 'edit'}
+                          measure={measure}
+                          onChange={(newVal) => onCellEdit(row.id, 'actualFcst', m, toBase(newVal, upc, prc))}
+                        />
                       </td>
                     );
-                  }
+                  })}
+                </tr>
 
-                  const baseOpp = row.definitions.opportunity[m] ?? 0;
-                  const diffVal = row.diffs?.opportunity?.[m];
+                {/* Sub-row 3 – Risk */}
+                <tr className="hover:bg-primary-50 transition-colors">
+                  <td
+                    style={{ left: `${activeLevels.length * 110 + 100}px` }}
+                    className="sticky z-10 py-1.5 px-2.5 font-semibold italic text-negative border-r border-border text-center bg-negative-bg/20 w-[90px] min-w-[90px] max-w-[90px] whitespace-nowrap shadow-[2px_0_4px_rgba(0,0,0,0.06)]"
+                  >
+                    {rowLabels.risk}
+                  </td>
 
-                  if (mode === 'delta') {
+                  {period.map((m, mIdx) => {
+                    const isPast = mIdx < currentMonthIndex;
+                    if (isPast) return null; // covered by rowSpan={3}
+
+                    const baseRisk = row.definitions.risk[m] ?? 0;
+                    const diffVal = row.diffs?.risk?.[m];
+
+                    if (mode === 'delta') {
+                      return (
+                        <td key={m} className="py-1 px-1.5 text-center border-r border-border">
+                          <DeltaCell delta={diffVal !== undefined ? diffVal : 0} measure={measure} />
+                        </td>
+                      );
+                    }
+
                     return (
-                      <td key={m} className="py-1 px-1.5 text-center border-r border-border">
-                        <DeltaCell delta={diffVal !== undefined ? diffVal : 0} />
+                      <td key={m} className="py-1.5 px-2 text-center text-negative font-semibold tabular-nums border-r border-border">
+                        {formatCompactNumber(baseRisk, { withSign: true, measure })}
                       </td>
                     );
-                  }
-
-                  return (
-                    <td key={m} className="py-1.5 px-2 text-center text-positive font-semibold tabular-nums border-r border-border">
-                      {formatCompactNumber(baseOpp, { withSign: true })}
-                    </td>
-                  );
-                })}
-              </tr>
-
-              {/* Sub-row 2 – Forecast / Actual */}
-              <tr className="hover:bg-primary-50 transition-colors">
-                <td className="py-1.5 px-2.5 font-bold text-text-primary border-r border-border text-center">
-                  {rowLabels.forecast}
-                </td>
-
-                {period.map((m, mIdx) => {
-                  const isPast = mIdx < currentMonthIndex;
-                  if (isPast) return null; // covered by rowSpan={3}
-
-                  const editKey = `${row.id}_actualFcst_${m}`;
-                  const baseFcst = row.definitions.actualFcst[m] ?? 0;
-                  const currentFcst = draftEdits[editKey] !== undefined ? draftEdits[editKey] : baseFcst;
-                  const hasEdit = draftEdits[editKey] !== undefined;
-                  const diffVal = row.diffs?.actualFcst?.[m] || (currentFcst - baseFcst);
-
-                  if (mode === 'delta') {
-                    return (
-                      <td key={m} className="py-1 px-1.5 text-center border-r border-border">
-                        <DeltaCell delta={diffVal} />
-                      </td>
-                    );
-                  }
-
-                  return (
-                    <td
-                      key={m}
-                      className={`py-1.5 px-2 text-center border-r border-border ${hasEdit
-                          ? diffVal > 0
-                            ? 'bg-positive-bg/40'
-                            : 'bg-negative-bg/40'
-                          : mode === 'edit'
-                            ? 'bg-surface border-primary-300'
-                            : ''
-                        }`}
-                    >
-                      <EditableCell
-                        value={currentFcst}
-                        isEditable={mode === 'edit'}
-                        onChange={(newVal) => onCellEdit(row.id, 'actualFcst', m, newVal)}
-                      />
-                    </td>
-                  );
-                })}
-              </tr>
-
-              {/* Sub-row 3 – Risk */}
-              <tr className="hover:bg-primary-50 transition-colors">
-                <td className="py-1.5 px-2.5 font-semibold italic text-negative border-r border-border text-center bg-negative-bg/20">
-                  {rowLabels.risk}
-                </td>
-
-                {period.map((m, mIdx) => {
-                  const isPast = mIdx < currentMonthIndex;
-                  if (isPast) return null; // covered by rowSpan={3}
-
-                  const baseRisk = row.definitions.risk[m] ?? 0;
-                  const diffVal = row.diffs?.risk?.[m];
-
-                  if (mode === 'delta') {
-                    return (
-                      <td key={m} className="py-1 px-1.5 text-center border-r border-border">
-                        <DeltaCell delta={diffVal !== undefined ? diffVal : 0} />
-                      </td>
-                    );
-                  }
-
-                  return (
-                    <td key={m} className="py-1.5 px-2 text-center text-negative font-semibold tabular-nums border-r border-border">
-                      {formatCompactNumber(baseRisk, { withSign: true })}
-                    </td>
-                  );
-                })}
-              </tr>
-            </React.Fragment>
-          ))}
+                  })}
+                </tr>
+              </React.Fragment>
+            );
+          })}
         </tbody>
       </table>
     </div>

@@ -114,6 +114,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         allowedLevels={allowedLevels}
         customerView={customerView}
         measure={measure}
+        measureOptions={metaOptions?.measures || metaOptions?.uoms}
         timeGrain={timeGrain}
         timeGrainOptions={metaOptions?.timeGrains}
         onProductLevelChange={onProductLevelChange}

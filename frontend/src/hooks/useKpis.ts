@@ -13,7 +13,7 @@ export function useKpis() {
   const { savedEdits } = useTableStore();
 
   const scopeStr = scope.join(',') || undefined;
-  const apgStr   = apg.join(',')   || undefined;
+  const apgStr = apg.join(',') || undefined;
 
   const queryParams = {
     productLevel,
@@ -25,6 +25,8 @@ export function useKpis() {
     from: appliedFilters.startDate,
     to: appliedFilters.endDate,
     scenarioId: activeScenario?.id,
+    planningCycle: appliedFilters.planningCycle,
+    activity: appliedFilters.activity,
   };
 
   const query = useQuery({
@@ -38,7 +40,7 @@ export function useKpis() {
   const kpis: KpiItem[] = (query.data || []).map((item) => {
     if (totalEditsDelta !== 0) {
       if (item.key === 'total_forecast') return { ...item, value: item.value + totalEditsDelta };
-      if (item.key === 'forecast_adj')   return { ...item, value: item.value + totalEditsDelta };
+      if (item.key === 'forecast_adj') return { ...item, value: item.value + totalEditsDelta };
     }
     return item;
   });

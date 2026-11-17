@@ -19,6 +19,8 @@ const initialFilters: FilterState = {
   customerGroups: [],
   customers: [],
   businessUnits: [],
+  planningCycle: 'Current cycle',
+  activity: 'Demand driver',
 };
 
 interface FilterStoreState {

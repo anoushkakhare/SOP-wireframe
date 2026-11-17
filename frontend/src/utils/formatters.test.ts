@@ -12,6 +12,12 @@ describe('formatCompactNumber', () => {
   it('formats positive currency values with + and K', () => {
     expect(formatCompactNumber(42000)).toBe('+42K');
     expect(formatCompactNumber(128000)).toBe('+128K');
+    expect(formatCompactNumber(12400, { isNeutral: true })).toBe('12.4K');
+  });
+
+  it('formats value measure with rupee symbol', () => {
+    expect(formatCompactNumber(4200000, { isNeutral: true, measure: 'value' })).toBe('₹4.2M');
+    expect(formatCompactNumber(12400, { isNeutral: true, measure: 'value' })).toBe('₹12.4K');
   });
 
   it('formats negative currency values with - and K', () => {
