@@ -7,6 +7,7 @@ interface EditableCellProps {
   onChange: (newVal: number) => void;
   className?: string;
   isNegative?: boolean;
+  measure?: string;
 }
 
 /**
@@ -21,6 +22,7 @@ export const EditableCell: React.FC<EditableCellProps> = ({
   onChange,
   className = '',
   isNegative = false,
+  measure,
 }) => {
   const [localVal, setLocalVal] = useState(value.toString());
 
@@ -29,7 +31,7 @@ export const EditableCell: React.FC<EditableCellProps> = ({
   }, [value]);
 
   if (!isEditable) {
-    const formatted = formatCompactNumber(value, { isNeutral: !isNegative, withSign: isNegative });
+    const formatted = formatCompactNumber(value, { isNeutral: !isNegative, withSign: isNegative, measure });
     return <span className={`select-none tabular-nums ${className}`}>{formatted}</span>;
   }
 

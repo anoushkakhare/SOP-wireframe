@@ -7,7 +7,14 @@ import { SaveScenarioModal } from '../scenarios/SaveScenarioModal';
 import { CommitConfirmModal } from '../scenarios/CommitConfirmModal';
 import { ConfirmDialog } from './ConfirmDialog';
 import { ToastContainer } from './ToastContainer';
-import { MetaOptions, ProductLevel, CustomerLevel, Uom } from '../../types';
+import {
+  MetaOptions,
+  HierarchyNode,
+  Uom,
+  TimeGrain,
+} from '../../types';
+import { ProductLevelNum } from '../../types';
+import { CustomerViewOption } from '../../store/viewStore';
 import { labels } from '../../constants/labels';
 
 interface AppShellProps {
@@ -15,25 +22,29 @@ interface AppShellProps {
   roleTitle: string;
   userName?: string;
   metaOptions: MetaOptions | null;
-  productLevel: ProductLevel;
-  customerLevel: CustomerLevel;
-  uom: Uom;
-  onProductLevelChange: (val: ProductLevel) => void;
-  onCustomerLevelChange: (val: CustomerLevel) => void;
-  onUomChange: (val: Uom) => void;
+  hierarchyNodes: HierarchyNode[];
+  productLevel: ProductLevelNum;
+  allowedLevels: ProductLevelNum[];
+  customerView: CustomerViewOption;
+  measure: Uom;
+  timeGrain?: TimeGrain;
+  apg: string[];
+  onProductLevelChange: (val: ProductLevelNum) => void;
+  onCustomerViewChange: (val: CustomerViewOption) => void;
+  onMeasureChange: (val: Uom) => void;
+  onTimeGrainChange?: (val: TimeGrain) => void;
+  onApgChange: (val: string[]) => void;
+  onResetHeaderOnly: () => void;
 
-  // Header Actions
   isTableActive: boolean;
   onToggleTable: () => void;
-  hasActiveFilters?: boolean;
+  activeFilterCount?: number;
 
-  // Filter Drawer
   isFilterOpen: boolean;
   onCloseFilter: () => void;
   onApplyFilter: () => void;
   onResetFilter: () => void;
 
-  // Scenario Drawer & Modals
   isScenarioOpen: boolean;
   onCloseScenario: () => void;
   isSaveModalOpen: boolean;
@@ -43,12 +54,10 @@ interface AppShellProps {
   onCloseCommitModal: () => void;
   onConfirmCommit: () => Promise<void>;
 
-  // Delete Scenario Confirmation
   deleteTarget: { id: string; name: string } | null;
   onCloseDeleteModal: () => void;
   onConfirmDelete: () => Promise<void>;
 
-  // Discard Unsaved Edits Modal
   isDiscardModalOpen: boolean;
   onCloseDiscardModal: () => void;
   onConfirmDiscard: () => void;
@@ -59,15 +68,22 @@ export const AppShell: React.FC<AppShellProps> = ({
   roleTitle,
   userName,
   metaOptions,
+  hierarchyNodes,
   productLevel,
-  customerLevel,
-  uom,
+  allowedLevels,
+  customerView,
+  measure,
+  timeGrain = 'month',
+  apg,
   onProductLevelChange,
-  onCustomerLevelChange,
-  onUomChange,
+  onCustomerViewChange,
+  onMeasureChange,
+  onTimeGrainChange,
+  onApgChange,
+  onResetHeaderOnly,
   isTableActive,
   onToggleTable,
-  hasActiveFilters,
+  activeFilterCount,
   isFilterOpen,
   onCloseFilter,
   onApplyFilter,
@@ -91,61 +107,48 @@ export const AppShell: React.FC<AppShellProps> = ({
 
   return (
     <div className="min-h-screen bg-bg-page flex flex-col font-sans text-text-primary">
-      {/* Sticky Header */}
       <StickyHeader
         roleTitle={roleTitle}
         userName={userName}
-        metaOptions={metaOptions}
         productLevel={productLevel}
-        customerLevel={customerLevel}
-        uom={uom}
+        allowedLevels={allowedLevels}
+        customerView={customerView}
+        measure={measure}
+        measureOptions={metaOptions?.measures || metaOptions?.uoms}
+        timeGrain={timeGrain}
+        timeGrainOptions={metaOptions?.timeGrains}
         onProductLevelChange={onProductLevelChange}
-        onCustomerLevelChange={onCustomerLevelChange}
-        onUomChange={onUomChange}
+        onCustomerViewChange={onCustomerViewChange}
+        onMeasureChange={onMeasureChange}
+        onTimeGrainChange={onTimeGrainChange}
+        onResetHeaderOnly={onResetHeaderOnly}
         onSaveScenario={() => onCloseSaveModal()}
         onCommitScenario={() => onCloseCommitModal()}
         onToggleTable={onToggleTable}
         onOpenFilter={() => onCloseFilter()}
         onOpenScenarios={() => onCloseScenario()}
         isTableActive={isTableActive}
-        hasActiveFilters={hasActiveFilters}
+        activeFilterCount={activeFilterCount}
       />
 
-      {/* Main Scrollable Canvas */}
       <ScrollRegion hasBottomDock={isTableActive}>
         {children}
       </ScrollRegion>
 
-      {/* Filter Drawer */}
       <FilterDrawer
         isOpen={isFilterOpen}
         onClose={onCloseFilter}
         onApply={onApplyFilter}
         onReset={onResetFilter}
-        metaOptions={metaOptions}
+        hierarchyNodes={hierarchyNodes}
       />
 
-      {/* Scenario Selector Drawer */}
-      <ScenarioSelectorDrawer
-        isOpen={isScenarioOpen}
-        onClose={onCloseScenario}
-      />
+      <ScenarioSelectorDrawer isOpen={isScenarioOpen} onClose={onCloseScenario} />
 
-      {/* Save Scenario Modal */}
-      <SaveScenarioModal
-        isOpen={isSaveModalOpen}
-        onClose={onCloseSaveModal}
-        onSave={onSaveScenario}
-      />
+      <SaveScenarioModal isOpen={isSaveModalOpen} onClose={onCloseSaveModal} onSave={onSaveScenario} />
 
-      {/* Commit Confirm Modal */}
-      <CommitConfirmModal
-        isOpen={isCommitModalOpen}
-        onClose={onCloseCommitModal}
-        onConfirm={onConfirmCommit}
-      />
+      <CommitConfirmModal isOpen={isCommitModalOpen} onClose={onCloseCommitModal} onConfirm={onConfirmCommit} />
 
-      {/* Delete Scenario Confirmation */}
       <ConfirmDialog
         isOpen={!!deleteTarget}
         onClose={onCloseDeleteModal}
@@ -157,7 +160,6 @@ export const AppShell: React.FC<AppShellProps> = ({
         isDestructive
       />
 
-      {/* Discard Unsaved Edits Modal */}
       <ConfirmDialog
         isOpen={isDiscardModalOpen}
         onClose={onCloseDiscardModal}
@@ -169,7 +171,6 @@ export const AppShell: React.FC<AppShellProps> = ({
         isDestructive
       />
 
-      {/* Toast notifications */}
       <ToastContainer />
     </div>
   );

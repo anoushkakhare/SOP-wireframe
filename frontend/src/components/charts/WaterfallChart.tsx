@@ -13,6 +13,7 @@ import { WaterfallStep } from '../../types';
 import { formatCompactNumber } from '../../utils/formatters';
 import { labels } from '../../constants/labels';
 import { ChartEmptyState } from './ChartEmptyState';
+import { useViewStore } from '../../store/viewStore';
 
 // ── Design-system colour constants for Recharts
 const COLORS = {
@@ -52,6 +53,8 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({
   onRetry,
 }) => {
   const { charts } = labels;
+  const { measure } = useViewStore();
+  const measureLabel = measure === 'value' ? 'Value (₹)' : measure === 'cases' ? 'Cases' : 'Units';
 
   if (isLoading) {
     return (
@@ -135,20 +138,21 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({
             tick={{ fontSize: 12, fill: COLORS.axis }}
             tickLine={false}
             axisLine={{ stroke: COLORS.grid }}
-            tickFormatter={(val) => formatCompactNumber(val, { isNeutral: true })}
+            tickFormatter={(val) => formatCompactNumber(val, { isNeutral: true, measure })}
+            name={measureLabel}
           />
           <Tooltip
             content={({ active, payload }) => {
               if (active && payload && payload.length) {
                 const item = payload[0].payload;
                 const formattedDelta = item.isTotal
-                  ? formatCompactNumber(item.height, { isNeutral: true })
-                  : formatCompactNumber(item.rawDelta, { withSign: true });
+                  ? formatCompactNumber(item.height, { isNeutral: true, measure })
+                  : formatCompactNumber(item.rawDelta, { withSign: true, measure });
                 return (
                   <div className="bg-surface border border-border p-2.5 text-xs shadow-md rounded-card space-y-1">
                     <div className="font-semibold text-text-primary border-b border-border pb-1">{item.name}</div>
                     <div className="flex justify-between gap-4">
-                      <span className="text-text-secondary">{charts.tooltip.value}:</span>
+                      <span className="text-text-secondary">{measureLabel}:</span>
                       <span className="font-bold tabular-nums">{formattedDelta}</span>
                     </div>
                   </div>

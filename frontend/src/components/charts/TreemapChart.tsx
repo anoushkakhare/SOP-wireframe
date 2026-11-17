@@ -4,6 +4,7 @@ import { TreemapNode, ProductLevel } from '../../types';
 import { formatCompactNumber } from '../../utils/formatters';
 import { labels } from '../../constants/labels';
 import { ChartEmptyState } from './ChartEmptyState';
+import { useViewStore } from '../../store/viewStore';
 
 // ── Treemap brand colours – one indigo tint per parent brand (darkest → lightest)
 const TREEMAP_BRAND_COLORS = [
@@ -39,6 +40,7 @@ function textColorForBg(hex: string): string {
 // Custom treemap node renderer
 const CustomizedContent: React.FC<any> = (props) => {
   const { depth, x, y, width, height, name, value, brand, color } = props;
+  const { measure } = useViewStore();
 
   // Brand group border – no fill
   if (depth === 1 && props.children && props.children.length > 0) {
@@ -99,7 +101,7 @@ const CustomizedContent: React.FC<any> = (props) => {
           fontSize={9}
           className="select-none pointer-events-none"
         >
-          {formatCompactNumber(value || 0, { isNeutral: true })}
+          {formatCompactNumber(value || 0, { isNeutral: true, measure })}
         </text>
       )}
     </g>
@@ -124,6 +126,7 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
   onRetry,
 }) => {
   const { charts } = labels;
+  const { measure } = useViewStore();
 
   if (isLoading) {
     return (
@@ -165,7 +168,7 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
                     )}
                     <div className="flex justify-between gap-4 font-semibold text-text-primary">
                       <span>{charts.tooltip.value}:</span>
-                      <span className="tabular-nums">{formatCompactNumber(node.value || 0, { isNeutral: true })}</span>
+                      <span className="tabular-nums">{formatCompactNumber(node.value || 0, { isNeutral: true, measure })}</span>
                     </div>
                   </div>
                 );
