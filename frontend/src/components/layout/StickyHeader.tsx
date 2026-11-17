@@ -69,13 +69,11 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
       <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-4">
         {/* 1. Left: Unilever logo + Role badge */}
         <div className="flex items-center gap-4 shrink-0">
-          <div className="bg-white rounded-md px-2.5 py-1.5 flex items-center justify-center">
-            <img
-              src="/unilever-logo.webp"
-              alt="Unilever"
-              style={{ height: 40, width: 'auto', objectFit: 'contain', display: 'block' }}
-            />
-          </div>
+          <img
+            src="/unilever-logo.png"
+            alt="Unilever"
+            style={{ height: 40, width: 'auto', objectFit: 'contain', display: 'block' }}
+          />
           <RoleBadge roleTitle={roleTitle} userName={userName} />
         </div>
 
