@@ -68,7 +68,7 @@ export const LeftIconRail: React.FC = () => {
         <div className="flex flex-col items-center gap-3 w-full">
           {pages.map(page => {
             const isActive =
-              location.pathname === page.path ||
+              location.pathname.startsWith(page.path) ||
               (page.path === '/dashboard' && location.pathname === '/');
 
             return (

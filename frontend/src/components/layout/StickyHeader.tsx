@@ -60,7 +60,7 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const isDataReview = location.pathname === '/data-review';
+  const isDataReview = location.pathname.startsWith('/data-review');
   const { selects } = labels.header;
 
   // Build product level options showing only allowed levels with colour dots
