@@ -101,9 +101,8 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
               return (
                 <th
                   key={m}
-                  className={`py-2.5 px-3 text-center min-w-[85px] border-r border-primary-900 ${
-                    isPast ? 'bg-primary-900 text-primary-300' : 'bg-primary-700'
-                  }`}
+                  className={`py-2.5 px-3 text-center min-w-[85px] border-r border-primary-900 ${isPast ? 'bg-primary-900 text-primary-300' : 'bg-primary-700'
+                    }`}
                 >
                   <div className="font-semibold">{m}</div>
                   <div className="text-[8px] font-normal opacity-70">
@@ -189,11 +188,11 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                   const isPast = mIdx < currentMonthIndex;
                   if (isPast) return null; // covered by rowSpan={3}
 
-                  const editKey   = `${row.id}_actualFcst_${m}`;
-                  const baseFcst  = row.definitions.actualFcst[m] ?? 0;
+                  const editKey = `${row.id}_actualFcst_${m}`;
+                  const baseFcst = row.definitions.actualFcst[m] ?? 0;
                   const currentFcst = draftEdits[editKey] !== undefined ? draftEdits[editKey] : baseFcst;
-                  const hasEdit   = draftEdits[editKey] !== undefined;
-                  const diffVal   = row.diffs?.actualFcst?.[m] || (currentFcst - baseFcst);
+                  const hasEdit = draftEdits[editKey] !== undefined;
+                  const diffVal = row.diffs?.actualFcst?.[m] || (currentFcst - baseFcst);
 
                   if (mode === 'delta') {
                     return (
@@ -206,15 +205,14 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                   return (
                     <td
                       key={m}
-                      className={`py-1.5 px-2 text-center border-r border-border ${
-                        hasEdit
+                      className={`py-1.5 px-2 text-center border-r border-border ${hasEdit
                           ? diffVal > 0
                             ? 'bg-positive-bg/40'
                             : 'bg-negative-bg/40'
                           : mode === 'edit'
-                          ? 'bg-surface border-primary-300'
-                          : ''
-                      }`}
+                            ? 'bg-surface border-primary-300'
+                            : ''
+                        }`}
                     >
                       <EditableCell
                         value={currentFcst}
@@ -237,7 +235,7 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                   if (isPast) return null; // covered by rowSpan={3}
 
                   const baseRisk = row.definitions.risk[m] ?? 0;
-                  const diffVal  = row.diffs?.risk?.[m];
+                  const diffVal = row.diffs?.risk?.[m];
 
                   if (mode === 'delta') {
                     return (

@@ -130,3 +130,4 @@ describe('HierarchyTreePicker checkbox logic', () => {
     expect(getNodeCheckState('l2_2', selection, nodeById, childMap)).toBe('unchecked');
   });
 });
+
