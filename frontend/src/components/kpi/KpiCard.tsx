@@ -24,7 +24,7 @@ const TOOLTIP_MAP: Record<string, string> = {
 };
 
 export const KpiCard: React.FC<KpiCardProps> = ({ kpi }) => {
-  const { measure } = useViewStore();
+  const { measure, compare } = useViewStore();
   const isValue = measure === 'value';
   const isNeutral = Boolean(
     kpi.isNeutral ||
@@ -74,6 +74,18 @@ export const KpiCard: React.FC<KpiCardProps> = ({ kpi }) => {
     bottomCaption = labels.kpi.vsLastYear;
   }
 
+  const isCompareMode = compare.on && Boolean(compare.b) && kpi.delta !== undefined && kpi.delta !== null;
+  const formattedDelta = isCompareMode
+    ? formatCompactNumber(kpi.delta!, {
+        format: kpi.format === 'percent' ? 'percent' : (isValue ? 'currency' : 'number'),
+        isNeutral: false,
+        measure,
+      })
+    : '';
+  const deltaSign = (kpi.delta ?? 0) >= 0 ? '+' : '';
+  const pctSign = (kpi.pctChange ?? 0) >= 0 ? '+' : '';
+  const formattedDeltaText = `vs ${compare.b}: ${deltaSign}${formattedDelta} (${pctSign}${(kpi.pctChange ?? 0).toFixed(1)}%)`;
+
   return (
     <div
       className="flex-1 min-w-[130px] sm:min-w-[145px] max-w-[200px] h-[86px] bg-surface border border-border rounded-card p-2.5 flex flex-col justify-between shadow-card select-none hover:shadow-md transition-shadow shrink-0"
@@ -105,9 +117,20 @@ export const KpiCard: React.FC<KpiCardProps> = ({ kpi }) => {
         {formattedValue}
       </div>
 
-      <div className="text-[10px] text-text-secondary text-center truncate">
-        {bottomCaption}
-      </div>
+      {isCompareMode ? (
+        <div
+          className={`text-[10px] font-semibold text-center truncate tabular-nums ${
+            kpi.delta! >= 0 ? 'text-positive' : 'text-negative'
+          }`}
+          title={formattedDeltaText}
+        >
+          {formattedDeltaText}
+        </div>
+      ) : (
+        <div className="text-[10px] text-text-secondary text-center truncate">
+          {bottomCaption}
+        </div>
+      )}
     </div>
   );
 };

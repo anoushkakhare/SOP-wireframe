@@ -53,7 +53,7 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({
   onRetry,
 }) => {
   const { charts } = labels;
-  const { measure } = useViewStore();
+  const { measure, compare } = useViewStore();
   const measureLabel = measure === 'value' ? 'Value (₹)' : measure === 'cases' ? 'Cases' : 'Units';
 
   if (isLoading) {
@@ -71,6 +71,8 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({
   if (!data || data.length === 0) {
     return <ChartEmptyState />;
   }
+
+  const isComparing = compare.on && Boolean(compare.b);
 
   // Build floating bar data
   let runningTotal = 0;
@@ -97,25 +99,27 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({
     } else if (step.type === 'decrease') {
       color = COLORS.decrease;
     }
-    // Override for the final 'total' bar (Forecast)
+
     const displayName = STEP_LABELS[step.name] || step.name;
-    if (
-      step.type === 'total' &&
-      step.name !== 'Baseline' &&
-      step.name !== 'baseline'
-    ) {
-      color = COLORS.final;
+
+    if (step.type === 'total') {
+      if (isComparing && step.name.includes(compare.b)) {
+        color = '#D97706'; // Amber for Forecast B
+      } else {
+        color = COLORS.final; // Indigo for Forecast A / Final forecast
+      }
     }
 
     return {
-      name:     displayName,
-      origName: step.name,
+      name:       displayName,
+      origName:   step.name,
       base,
       height,
-      rawDelta: step.value,
-      type:     step.type,
+      rawDelta:   step.value,
+      type:       step.type,
       color,
-      isTotal:  step.type === 'total',
+      isTotal:    step.type === 'total',
+      topDrivers: step.topDrivers,
     };
   });
 
@@ -130,7 +134,7 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({
           <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} vertical={false} />
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 12, fill: COLORS.axis, fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: COLORS.axis, fontWeight: 500 }}
             tickLine={false}
             axisLine={{ stroke: COLORS.grid }}
           />
@@ -148,13 +152,34 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({
                 const formattedDelta = item.isTotal
                   ? formatCompactNumber(item.height, { isNeutral: true, measure })
                   : formatCompactNumber(item.rawDelta, { withSign: true, measure });
+                const drivers = item.topDrivers || [];
+
                 return (
-                  <div className="bg-surface border border-border p-2.5 text-xs shadow-md rounded-card space-y-1">
-                    <div className="font-semibold text-text-primary border-b border-border pb-1">{item.name}</div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-text-secondary">{measureLabel}:</span>
-                      <span className="font-bold tabular-nums">{formattedDelta}</span>
+                  <div className="bg-surface border border-border p-2.5 text-xs shadow-md rounded-card space-y-1.5 z-50 min-w-[210px]">
+                    <div className="font-semibold text-text-primary border-b border-border pb-1 flex items-center justify-between gap-3">
+                      <span>{item.name}</span>
+                      <span className="font-bold tabular-nums text-text-primary">{formattedDelta}</span>
                     </div>
+                    {drivers.length > 0 && (
+                      <div className="space-y-1 pt-0.5">
+                        <div className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider">
+                          Top 3 Drivers
+                        </div>
+                        {drivers.map((drv: any, idx: number) => {
+                          const isPos = drv.value >= 0;
+                          return (
+                            <div key={idx} className="flex justify-between items-center text-[11px] gap-2">
+                              <span className="text-text-secondary truncate">{drv.name}</span>
+                              <span className={`font-semibold tabular-nums shrink-0 ${
+                                item.isTotal ? 'text-text-primary' : (isPos ? 'text-positive' : 'text-negative')
+                              }`}>
+                                {item.isTotal ? '' : (isPos ? '+' : '')}{formatCompactNumber(drv.value, { withSign: !item.isTotal, measure })}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               }

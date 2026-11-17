@@ -39,8 +39,11 @@ export const BottomDock: React.FC<BottomDockProps> = ({
     hasUnsavedEdits,
   } = useTableStore();
 
-  const { timeGrain } = useViewStore();
-  const canEdit = timeGrain === 'month' || timeGrain === 'week';
+  const { timeGrain, compare } = useViewStore();
+  const canEdit = !compare.on && (timeGrain === 'month' || timeGrain === 'week');
+  const disabledReason = compare.on
+    ? 'Table editing disabled in compare mode'
+    : 'Switch to Month or Week to edit';
 
   const { setDiscardConfirmModalOpen, addToast } = useUiStore();
 
@@ -102,6 +105,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
             onToggleDelta={handleToggleDelta}
             onCloseOrSave={handleCloseOrSave}
             canEdit={canEdit}
+            disabledTooltip={disabledReason}
           />
         </div>
       </div>

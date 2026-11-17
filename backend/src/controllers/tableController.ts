@@ -13,8 +13,9 @@ export class TableController {
       const from = req.query.from as string | undefined;
       const to = req.query.to as string | undefined;
       const planningCycle = req.query.planningCycle as string | undefined;
+      const compareTo = req.query.compareTo as string | undefined;
       const activity = req.query.activity as string | undefined;
-      const data = await tableService.getTable({ productLevel, scope, apg, timeGrain, measure, from, to, planningCycle, activity, filters: req.query });
+      const data = await tableService.getTable({ productLevel, scope, apg, timeGrain, measure, from, to, planningCycle, compareTo, activity, filters: req.query });
       res.json(data);
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'Error fetching table data' });

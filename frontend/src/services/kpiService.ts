@@ -22,6 +22,7 @@ export const kpiService = {
     if (params.to) p.set('to', params.to);
     if (params.scenarioId) p.set('scenarioId', params.scenarioId);
     if (params.planningCycle) p.set('planningCycle', params.planningCycle);
+    if (params.compareTo) p.set('compareTo', params.compareTo);
     if (params.activity) p.set('activity', params.activity);
     const qs = p.toString() ? `?${p.toString()}` : '';
     return request<KpiItem[]>(`/kpis${qs}`);

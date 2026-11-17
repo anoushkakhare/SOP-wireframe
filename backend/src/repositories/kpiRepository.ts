@@ -14,8 +14,46 @@ export class KpiRepository {
     to?: string;
     scenarioId?: string;
     planningCycle?: string;
+    compareTo?: string;
     activity?: string;
+    pastPeriodsOnly?: boolean;
   }): Promise<KpiItem[]> {
+    if (params.compareTo) {
+      const cycleA = params.planningCycle || 'Current cycle';
+      const cycleB = params.compareTo;
+      const isActuals = cycleB.toLowerCase().includes('actual');
+      const [kpisA, kpisB] = await Promise.all([
+        this.getKpis({ ...params, compareTo: undefined, planningCycle: cycleA, pastPeriodsOnly: isActuals }),
+        this.getKpis({ ...params, compareTo: undefined, planningCycle: cycleB, pastPeriodsOnly: isActuals }),
+      ]);
+
+      const bMap = new Map(kpisB.map(b => [b.key, b]));
+
+      return kpisA.map(itemA => {
+        const itemB = bMap.get(itemA.key);
+        const valA = itemA.value;
+        const valB = itemB?.value ?? null;
+        let delta: number | null = null;
+        let pctChange: number | null = null;
+
+        if (valA !== null && valB !== null) {
+          delta = itemA.format === 'percent'
+            ? +((valB - valA).toFixed(1))
+            : Math.round(valB - valA);
+          pctChange = valA !== 0
+            ? +(((valB - valA) / Math.abs(valA)) * 100).toFixed(1)
+            : 0;
+        }
+
+        return {
+          ...itemA,
+          compareValue: valB,
+          delta,
+          pctChange,
+          compareTo: cycleB,
+        };
+      });
+    }
     const meas = params.measure || params.uom || 'units';
     const normGrain = normalizeGrain(params.timeGrain);
 
@@ -29,6 +67,7 @@ export class KpiRepository {
       to: params.to,
       planningCycle: params.planningCycle,
       activity: params.activity,
+      pastPeriodsOnly: params.pastPeriodsOnly,
     });
 
     let totalForecast = groups.reduce((s, g) => s + g.totalForecast, 0);

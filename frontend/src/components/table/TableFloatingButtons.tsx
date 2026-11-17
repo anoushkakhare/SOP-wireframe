@@ -9,6 +9,7 @@ interface TableFloatingButtonsProps {
     onToggleDelta: () => void;
     onCloseOrSave: () => void;
     canEdit?: boolean;
+    disabledTooltip?: string;
 }
 
 /**
@@ -26,13 +27,14 @@ export const TableFloatingButtons: React.FC<TableFloatingButtonsProps> = ({
     onToggleDelta,
     onCloseOrSave,
     canEdit = true,
+    disabledTooltip,
 }) => {
     const isEditing = mode === 'edit';
     const isDelta = mode === 'delta';
     const { floatingButtons: l } = labels.table;
 
     const editTooltip = !canEdit
-        ? 'Switch to Month or Week to edit'
+        ? (disabledTooltip || 'Switch to Month or Week to edit')
         : isEditing
         ? l.switchToView
         : l.editForecast;

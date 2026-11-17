@@ -68,7 +68,7 @@ export const ForecastLineChart: React.FC<ForecastLineChartProps> = ({
   onRetry,
 }) => {
   const { charts } = labels;
-  const { productLevel, scope, apg, measure, timeGrain } = useViewStore();
+  const { productLevel, scope, apg, measure, timeGrain, compare } = useViewStore();
   const measureLabel = measure === 'value' ? 'Value (₹)' : measure === 'cases' ? 'Cases' : 'Units';
 
   const [zoomRange, setZoomRange] = useState<[number, number]>([0, 100]);
@@ -94,15 +94,28 @@ export const ForecastLineChart: React.FC<ForecastLineChartProps> = ({
     return <ChartEmptyState />;
   }
 
+  const isComparing = compare.on && Boolean(compare.b);
+  const nameA = data[0]?.aName || 'Current cycle';
+  const nameB = data[0]?.bName || compare.b;
+
   const chartData = data.map((d) => ({
     time:      d.time,
     forecast:  d.forecast,
     band:      [d.worstCase, d.bestCase],
     worstCase: d.worstCase,
     bestCase:  d.bestCase,
+    seriesA:   d.seriesA !== undefined ? d.seriesA : d.forecast,
+    seriesB:   d.seriesB,
+    delta:     d.delta,
   }));
 
-  const allVals = data.flatMap((d) => [d.forecast, d.worstCase, d.bestCase].filter((v): v is number => typeof v === 'number'));
+  const allVals = data.flatMap((d) => [
+    d.forecast,
+    d.worstCase,
+    d.bestCase,
+    d.seriesA,
+    d.seriesB,
+  ].filter((v): v is number => typeof v === 'number'));
   const minVal = allVals.length ? Math.min(...allVals) : 0;
   const maxVal = allVals.length ? Math.max(...allVals) : 100;
   const naturalMin = Math.max(0, Math.floor(minVal * 0.9));
@@ -153,6 +166,54 @@ export const ForecastLineChart: React.FC<ForecastLineChartProps> = ({
                 if (active && payload && payload.length) {
                   const item = payload[0].payload;
                   const straddlingTooltip = getStraddlingTooltip(label);
+
+                  if (isComparing) {
+                    const valA = item.seriesA ?? item.forecast;
+                    const valB = item.seriesB;
+                    const delta = item.delta;
+                    const pct = valA && delta !== null ? ((delta / Math.abs(valA)) * 100).toFixed(1) : null;
+                    const isDeltaPos = delta !== null && delta >= 0;
+
+                    return (
+                      <div className="bg-surface border border-border p-2.5 text-xs shadow-md rounded-card space-y-1.5 z-50">
+                        <div className="font-semibold text-text-primary border-b border-border pb-1 flex items-center justify-between gap-2">
+                          <span>{label}</span>
+                          <span className="text-[10px] px-1 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-semibold">
+                            Compare
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <span className="font-medium text-primary-700 flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-primary-700 inline-block" />
+                            {nameA}:
+                          </span>
+                          <span className="font-bold tabular-nums">
+                            {formatCompactNumber(valA, { isNeutral: true, measure })}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <span className="font-medium text-[#D97706] flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-[#D97706] inline-block" />
+                            {nameB}:
+                          </span>
+                          <span className="font-bold tabular-nums">
+                            {valB !== null && valB !== undefined ? formatCompactNumber(valB, { isNeutral: true, measure }) : '–'}
+                          </span>
+                        </div>
+                        {delta !== null && delta !== undefined && (
+                          <div className={`pt-1 border-t border-border flex justify-between gap-4 font-bold ${
+                            isDeltaPos ? 'text-positive' : 'text-negative'
+                          }`}>
+                            <span>Delta (B - A):</span>
+                            <span className="tabular-nums">
+                              {isDeltaPos ? '+' : ''}{formatCompactNumber(delta, { measure })} {pct ? `(${isDeltaPos ? '+' : ''}${pct}%)` : ''}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
                   return (
                     <div className="bg-surface border border-border p-2.5 text-xs shadow-md rounded-card space-y-1.5 z-50">
                       <div className="font-semibold text-text-primary border-b border-border pb-1 flex items-center justify-between gap-2">
@@ -193,28 +254,56 @@ export const ForecastLineChart: React.FC<ForecastLineChartProps> = ({
               formatter={(value) => <span className="text-text-secondary text-xs">{value}</span>}
             />
 
-            {/* Shaded band between worst and best case */}
-            <Area
-              name={charts.series.band}
-              dataKey="band"
-              stroke={COLORS.bandEdge}
-              strokeDasharray="4 3"
-              fill={COLORS.bandFill}
-              fillOpacity={0.6}
-              activeDot={false}
-              isAnimationActive={false}
-            />
+            {/* In compare mode: A solid indigo, B dashed amber (#D97706) */}
+            {isComparing ? (
+              <>
+                <Line
+                  name={nameA}
+                  type="monotone"
+                  dataKey="seriesA"
+                  stroke={COLORS.forecast}
+                  strokeWidth={2.5}
+                  dot={{ r: 3, fill: COLORS.forecast, strokeWidth: 1 }}
+                  activeDot={{ r: 5, fill: COLORS.forecast }}
+                />
+                <Line
+                  name={nameB}
+                  type="monotone"
+                  dataKey="seriesB"
+                  stroke="#D97706"
+                  strokeWidth={2.5}
+                  strokeDasharray="5 5"
+                  connectNulls={false}
+                  dot={{ r: 3, fill: '#D97706', strokeWidth: 1 }}
+                  activeDot={{ r: 5, fill: '#D97706' }}
+                />
+              </>
+            ) : (
+              <>
+                {/* Shaded band between worst and best case */}
+                <Area
+                  name={charts.series.band}
+                  dataKey="band"
+                  stroke={COLORS.bandEdge}
+                  strokeDasharray="4 3"
+                  fill={COLORS.bandFill}
+                  fillOpacity={0.6}
+                  activeDot={false}
+                  isAnimationActive={false}
+                />
 
-            {/* Forecast main line */}
-            <Line
-              name={charts.series.forecastLine}
-              type="monotone"
-              dataKey="forecast"
-              stroke={COLORS.forecast}
-              strokeWidth={2.5}
-              dot={{ r: 3, fill: COLORS.forecast, strokeWidth: 1 }}
-              activeDot={{ r: 5, fill: COLORS.forecast }}
-            />
+                {/* Forecast main line */}
+                <Line
+                  name={charts.series.forecastLine}
+                  type="monotone"
+                  dataKey="forecast"
+                  stroke={COLORS.forecast}
+                  strokeWidth={2.5}
+                  dot={{ r: 3, fill: COLORS.forecast, strokeWidth: 1 }}
+                  activeDot={{ r: 5, fill: COLORS.forecast }}
+                />
+              </>
+            )}
           </ComposedChart>
         </ResponsiveContainer>
       </div>

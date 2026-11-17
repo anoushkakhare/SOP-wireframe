@@ -5,6 +5,7 @@ import { LabeledSelect } from '../header/LabeledSelect';
 import { HeaderActions } from '../header/HeaderActions';
 import { ReadinessChip } from '../header/ReadinessChip';
 import { CalendarPopover } from '../header/CalendarPopover';
+import { ComparePopover } from '../header/ComparePopover';
 import { Uom, ProductLevelNum, TimeGrain } from '../../types';
 import { CustomerViewOption } from '../../store/viewStore';
 import { SlidersHorizontal, X, RotateCcw } from 'lucide-react';
@@ -166,10 +167,11 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
 
         {selects_desktop}
 
-        {/* Right side: Readiness chip, calendar icon, and dashboard-only actions */}
+        {/* Right side: Readiness chip, calendar icon, compare popover, and dashboard-only actions */}
         <div className="flex items-center gap-2.5 shrink-0">
           <ReadinessChip />
           <CalendarPopover />
+          {!isDataReview && <ComparePopover />}
 
           {!isDataReview && onSaveScenario && onCommitScenario && onToggleTable && onOpenFilter && onOpenScenarios && (
             <div className="hidden sm:flex items-center gap-2 pl-1 border-l border-white/20">

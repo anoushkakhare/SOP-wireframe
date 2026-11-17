@@ -13,6 +13,7 @@ export class KpiService {
     to?: string;
     scenarioId?: string;
     planningCycle?: string;
+    compareTo?: string;
     activity?: string;
   }): Promise<KpiItem[]> {
     return kpiRepository.getKpis(params);
