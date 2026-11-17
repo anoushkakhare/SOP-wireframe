@@ -13,6 +13,7 @@ import { StackedBarItem, ProductLevel } from '../../types';
 import { formatCompactNumber } from '../../utils/formatters';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { labels } from '../../constants/labels';
+import { ChartEmptyState } from './ChartEmptyState';
 
 // ── Design-system colour constants for Recharts (needs hex)
 // Customer-group series colours – indigo tints only, in order
@@ -36,6 +37,9 @@ interface StackedBarChartProps {
   onDrillDown?: (category: string) => void;
   onDrillUp?: () => void;
   isLoading?: boolean;
+  isError?: boolean;
+  statusCode?: number;
+  onRetry?: () => void;
 }
 
 export const StackedBarChart: React.FC<StackedBarChartProps> = ({
@@ -45,6 +49,9 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
   onDrillDown,
   onDrillUp,
   isLoading = false,
+  isError = false,
+  statusCode,
+  onRetry,
 }) => {
   const { charts } = labels;
 
@@ -56,9 +63,13 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
     );
   }
 
+  if (isError) {
+    return <ChartEmptyState isError statusCode={statusCode} onRetry={onRetry} />;
+  }
+
   if (!data || data.length === 0) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center text-xs text-text-secondary gap-2">
+      <ChartEmptyState>
         <span>{charts.noData}</span>
         {level === 'product' && onDrillUp && (
           <button
@@ -71,7 +82,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
             {charts.drillUp}
           </button>
         )}
-      </div>
+      </ChartEmptyState>
     );
   }
 

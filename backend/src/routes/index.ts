@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import authRoutes from './authRoutes';
 import layoutRoutes from './layoutRoutes';
 import metaRoutes from './metaRoutes';
@@ -16,6 +16,11 @@ router.use('/kpis', kpiRoutes);
 router.use('/charts', chartRoutes);
 router.use('/scenarios', scenarioRoutes);
 router.use('/table', tableRoutes);
+
+// Convenience health route at /api/health (also served from app-level)
+router.get('/health', (_req: Request, res: Response) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 export default router;
 

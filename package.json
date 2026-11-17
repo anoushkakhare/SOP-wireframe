@@ -11,6 +11,7 @@
     "test:frontend": "cd frontend && npm test",
     "test": "npm run test:frontend"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "concurrently": "^10.0.7"
+  }
 }
-

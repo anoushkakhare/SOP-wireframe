@@ -13,6 +13,7 @@ import {
 import { ForecastLinePoint } from '../../types';
 import { formatCompactNumber } from '../../utils/formatters';
 import { labels } from '../../constants/labels';
+import { ChartEmptyState } from './ChartEmptyState';
 
 // ── Design-system colour constants (kept here for Recharts which needs hex values)
 const COLORS = {
@@ -28,11 +29,17 @@ const COLORS = {
 interface ForecastLineChartProps {
   data?: ForecastLinePoint[];
   isLoading?: boolean;
+  isError?: boolean;
+  statusCode?: number;
+  onRetry?: () => void;
 }
 
 export const ForecastLineChart: React.FC<ForecastLineChartProps> = ({
   data = [],
   isLoading = false,
+  isError = false,
+  statusCode,
+  onRetry,
 }) => {
   const { charts } = labels;
 
@@ -46,9 +53,7 @@ export const ForecastLineChart: React.FC<ForecastLineChartProps> = ({
 
   if (!data || data.length === 0) {
     return (
-      <div className="w-full h-full flex items-center justify-center text-xs text-text-secondary">
-        {charts.noData}
-      </div>
+      <ChartEmptyState isError={isError} statusCode={statusCode} onRetry={onRetry} />
     );
   }
 

@@ -6,9 +6,18 @@ import { labels } from '../../constants/labels';
 interface KpiCardRowProps {
   kpis?: KpiItem[];
   isLoading?: boolean;
+  isError?: boolean;
+  error?: Error | null;
+  onRetry?: () => void;
 }
 
-export const KpiCardRow: React.FC<KpiCardRowProps> = ({ kpis = [], isLoading = false }) => {
+export const KpiCardRow: React.FC<KpiCardRowProps> = ({
+  kpis = [],
+  isLoading = false,
+  isError = false,
+  error,
+  onRetry,
+}) => {
   if (isLoading) {
     return (
       <div className="w-full flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
@@ -22,6 +31,30 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({ kpis = [], isLoading = f
             <div className="h-2.5 bg-primary-50 rounded w-1/2 mx-auto" />
           </div>
         ))}
+      </div>
+    );
+  }
+
+  if (isError) {
+    const statusCode = (error as any)?.statusCode;
+    return (
+      <div className="w-full h-16 bg-surface border border-negative/30 rounded-card flex items-center gap-3 px-4 text-xs text-negative">
+        <span>{labels.generic.error}</span>
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="ml-1 px-2 py-0.5 rounded border border-negative text-negative hover:bg-negative/10 transition-colors text-xs font-medium"
+          >
+            Retry
+          </button>
+        )}
+        {statusCode && (
+          <details className="ml-auto text-text-disabled">
+            <summary className="cursor-pointer">Details</summary>
+            <span>HTTP {statusCode}</span>
+          </details>
+        )}
       </div>
     );
   }

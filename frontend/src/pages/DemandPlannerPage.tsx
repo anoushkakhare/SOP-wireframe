@@ -73,7 +73,7 @@ export const DemandPlannerPage: React.FC = () => {
     queryFn:  () => metaService.getOptions(),
   });
 
-  const { data: kpis, isLoading: isKpisLoading } = useKpis();
+  const { data: kpis, isLoading: isKpisLoading, isError: isKpisError, error: kpisError, refetch: refetchKpis } = useKpis();
   const chartData = useChartData();
   const { data: tableData, isLoading: isTableLoading } = useTableData();
   const { createScenario, commitScenario, deleteScenario } = useScenarios();
@@ -186,7 +186,7 @@ export const DemandPlannerPage: React.FC = () => {
     >
       {/* 1. KPI row */}
       <section aria-label="Key performance indicators">
-        <KpiCardRow kpis={kpis} isLoading={isKpisLoading} />
+        <KpiCardRow kpis={kpis} isLoading={isKpisLoading} isError={isKpisError} error={kpisError as Error} onRetry={refetchKpis} />
       </section>
 
       {/* 2. Charts */}
