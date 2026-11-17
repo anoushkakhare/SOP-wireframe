@@ -153,14 +153,14 @@ export const DevGalleryPage: React.FC = () => {
           <HeaderIconButton
             icon={<Save className="w-4 h-4" />}
             tooltip={labels.header.actions.saveScenario}
-            onClick={() => {}}
+            onClick={() => { }}
           />
           <HeaderActions
-            onSaveScenario={() => {}}
-            onCommitScenario={() => {}}
-            onToggleTable={() => {}}
-            onOpenFilter={() => {}}
-            onOpenScenarios={() => {}}
+            onSaveScenario={() => { }}
+            onCommitScenario={() => { }}
+            onToggleTable={() => { }}
+            onOpenFilter={() => { }}
+            onOpenScenarios={() => { }}
             isTableActive={false}
           />
         </div>
@@ -195,7 +195,7 @@ export const DevGalleryPage: React.FC = () => {
             <StackedBarChart
               data={sampleStackedItems}
               level="brand"
-              onDrillDown={() => {}}
+              onDrillDown={() => { }}
             />
           </ChartCard>
 
@@ -231,9 +231,9 @@ export const DevGalleryPage: React.FC = () => {
               onChange={setSelectedBrands}
             />
             <FilterActions
-              onApply={() => {}}
+              onApply={() => { }}
               onReset={() => setSelectedBrands([])}
-              onClose={() => {}}
+              onClose={() => { }}
             />
           </div>
         </div>
@@ -250,8 +250,8 @@ export const DevGalleryPage: React.FC = () => {
           <div className="w-80">
             <ScenarioCard
               scenario={sampleScenario}
-              onSelect={() => {}}
-              onDelete={() => {}}
+              onSelect={() => { }}
+              onDelete={() => { }}
             />
           </div>
         </div>
@@ -293,7 +293,7 @@ export const DevGalleryPage: React.FC = () => {
             level="brand"
             mode={tableMode}
             draftEdits={{}}
-            onCellEdit={() => {}}
+            onCellEdit={() => { }}
           />
         </div>
       </section>

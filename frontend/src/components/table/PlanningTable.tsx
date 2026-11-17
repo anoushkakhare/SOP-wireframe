@@ -7,6 +7,7 @@ import { formatCompactNumber } from '../../utils/formatters';
 import { labels } from '../../constants/labels';
 import { LEVELS, LEVEL_MAP } from '../../constants/hierarchy';
 import { useViewStore } from '../../store/viewStore';
+import { getStraddlingTooltip } from '../../utils/weekSplit';
 
 interface PlanningTableProps {
   rows: PlanningTableRow[];
@@ -118,16 +119,25 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
               Definition
             </th>
 
-            {/* Month columns */}
+            {/* Month / Week columns */}
             {period.map((m, idx) => {
               const isPast = idx < currentMonthIndex;
+              const straddlingTooltip = getStraddlingTooltip(m);
               return (
                 <th
                   key={m}
+                  title={straddlingTooltip}
                   className={`py-2.5 px-3 text-center min-w-[85px] border-r border-primary-900 ${isPast ? 'bg-primary-900 text-primary-300' : 'bg-primary-700'
                     }`}
                 >
-                  <div className="font-semibold">{m}</div>
+                  <div className="font-semibold flex items-center justify-center gap-1">
+                    <span>{m}</span>
+                    {straddlingTooltip && (
+                      <span className="text-[8px] px-1 py-0.2 rounded bg-amber-400/20 text-amber-200 border border-amber-300/30 uppercase tracking-wider font-bold">
+                        split
+                      </span>
+                    )}
+                  </div>
                   <div className="text-[8px] font-normal opacity-70">
                     {isPast ? rowLabels.actual : rowLabels.forecast}
                   </div>

@@ -37,3 +37,4 @@ describe('countDescendants helper', () => {
     expect(res.summary).toBe('Dove, Surf Excel · 3 forecast groups · 6 units');
   });
 });
+

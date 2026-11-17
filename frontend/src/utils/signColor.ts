@@ -12,35 +12,35 @@
  */
 
 export interface SignStyle {
-  text:   string;   // Tailwind text-colour class
-  bg:     string;   // Tailwind bg-colour class
+  text: string;   // Tailwind text-colour class
+  bg: string;   // Tailwind bg-colour class
   border: string;   // Tailwind border-colour class
-  hex:    string;   // Literal hex for Recharts / SVG use
+  hex: string;   // Literal hex for Recharts / SVG use
 }
 
 export function getSignColor(value: number | null | undefined, isNeutral = false): SignStyle {
   if (value === null || value === undefined || isNeutral || value === 0 || isNaN(value)) {
     return {
-      text:   'text-text-primary',
-      bg:     'bg-surface',
+      text: 'text-text-primary',
+      bg: 'bg-surface',
       border: 'border-border',
-      hex:    '#1A1C2E',  // --color-text-primary
+      hex: '#1A1C2E',  // --color-text-primary
     };
   }
 
   if (value > 0) {
     return {
-      text:   'text-positive',
-      bg:     'bg-positive-bg',
+      text: 'text-positive',
+      bg: 'bg-positive-bg',
       border: 'border-positive',
-      hex:    '#1B7F55',  // --color-positive
+      hex: '#1B7F55',  // --color-positive
     };
   }
 
   return {
-    text:   'text-negative',
-    bg:     'bg-negative-bg',
+    text: 'text-negative',
+    bg: 'bg-negative-bg',
     border: 'border-negative',
-    hex:    '#C0392B',  // --color-negative
+    hex: '#C0392B',  // --color-negative
   };
 }

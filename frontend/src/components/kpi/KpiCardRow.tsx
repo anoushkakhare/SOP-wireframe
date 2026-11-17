@@ -11,6 +11,7 @@ import { useFilterStore } from '../../store/filterStore';
 import { countDescendants } from '../../utils/countDescendants';
 import { metaService } from '../../services/metaService';
 import { getGrainPeriods } from '../../utils/dateRange';
+import { HierarchyNetwork } from '../hierarchy/HierarchyNetwork';
 
 interface KpiCardRowProps {
   kpis?: KpiItem[];
@@ -85,123 +86,37 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({
   // Helper 4: Cycle selection info
   const cycleText = `${appliedFilters.planningCycle || 'Current cycle'} · ${appliedFilters.activity || 'Demand driver'}`;
 
-  // Modal content builders
+  // Modal content builders: plugged with HierarchyNetwork
   const renderModalBody = () => {
     if (modalType === 'product') {
-      const displayNodes = productDesc.selectedNodes.length > 0
-        ? [
-            ...productDesc.selectedNodes,
-            ...productDesc.descendantNodes,
-          ]
-        : nodes;
-
-      const baseLevel = productDesc.selectedNodes.length > 0 ? productDesc.level : 1;
-
       return (
-        <div className="space-y-1.5 font-mono text-xs">
-          <div className="text-xs font-sans text-text-secondary mb-3">
-            Showing descendants for: <span className="font-semibold text-text-primary">{productDesc.summary}</span>
-          </div>
-          <div className="border border-border rounded-card divide-y divide-border bg-surface-header/30">
-            {displayNodes.map((n) => {
-              const levelInfo = LEVEL_MAP[n.level];
-              const indentLevel = Math.max(0, n.level - baseLevel);
-              return (
-                <div
-                  key={n.id}
-                  className="flex items-center gap-2 py-2 px-3 hover:bg-hover transition-colors font-sans"
-                  style={{ paddingLeft: `${indentLevel * 20 + 12}px` }}
-                >
-                  <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ backgroundColor: levelInfo?.color || '#666' }}
-                  />
-                  <span className="text-[11px] font-semibold text-text-secondary uppercase w-28 shrink-0">
-                    {levelInfo?.label || `Level ${n.level}`}
-                  </span>
-                  <span className="text-xs text-text-primary font-medium">{n.name}</span>
-                  <span className="ml-auto text-[10px] text-text-disabled">{n.id}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <HierarchyNetwork
+          mode="product"
+          nodes={nodes}
+          selectedIds={scope}
+        />
       );
     }
 
     if (modalType === 'time') {
-      const periods = getGrainPeriods(timeGrain);
-      let fromIdx = periods.indexOf(start);
-      let toIdx = periods.indexOf(end);
-      if (fromIdx < 0) fromIdx = 0;
-      if (toIdx < 0) toIdx = periods.length - 1;
-      if (fromIdx > toIdx) [fromIdx, toIdx] = [toIdx, fromIdx];
-
-      const activePeriods = periods.slice(fromIdx, toIdx + 1);
-
       return (
-        <div className="space-y-3 font-sans text-xs">
-          <div className="text-xs text-text-secondary">
-            Periods in active range (<span className="font-semibold text-text-primary">{timeText}</span>):
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {activePeriods.map((p, idx) => {
-              const is25 = p.endsWith('25');
-              return (
-                <div
-                  key={idx}
-                  className="p-2.5 rounded-card border border-border bg-surface flex items-center justify-between"
-                >
-                  <span className="font-medium text-text-primary">{p}</span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
-                      is25 ? 'bg-positive/10 text-positive' : 'bg-primary-50 text-primary-600'
-                    }`}
-                  >
-                    {is25 ? 'Actual' : 'Forecast'}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <HierarchyNetwork
+          mode="time"
+          visibleRange={{
+            from: start,
+            to: end,
+            grain: timeGrain,
+          }}
+        />
       );
     }
 
     if (modalType === 'customer') {
-      const allApgs = ['Modern Trade', 'General Trade', 'E-commerce', 'Quick Commerce'];
       return (
-        <div className="space-y-2 font-sans text-xs">
-          <div className="text-xs text-text-secondary mb-3">
-            Account Planning Groups (APG):
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {allApgs.map((name) => {
-              const isSelected = !apg || apg.length === 0 || apg.includes(name);
-              return (
-                <div
-                  key={name}
-                  className={`p-3 rounded-card border flex items-center justify-between ${
-                    isSelected
-                      ? 'border-primary-500/40 bg-primary-50/30 text-text-primary'
-                      : 'border-border bg-surface text-text-disabled'
-                  }`}
-                >
-                  <span className="font-medium">{name}</span>
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded font-medium ${
-                      isSelected
-                        ? 'bg-primary-500 text-white'
-                        : 'bg-surface-header text-text-disabled'
-                    }`}
-                  >
-                    {isSelected ? 'Active' : 'Filtered out'}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <HierarchyNetwork
+          mode="customer"
+          selectedApgs={apg}
+        />
       );
     }
 
@@ -350,19 +265,19 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({
           modalType === 'product'
             ? 'Product hierarchy'
             : modalType === 'customer'
-            ? 'Customer hierarchy'
-            : modalType === 'time'
-            ? 'Time periods'
-            : ''
+              ? 'Customer hierarchy'
+              : modalType === 'time'
+                ? 'Time periods'
+                : ''
         }
         subtitle={
           modalType === 'product'
             ? productDesc.summary
             : modalType === 'customer'
-            ? customerText
-            : modalType === 'time'
-            ? timeText
-            : undefined
+              ? customerText
+              : modalType === 'time'
+                ? timeText
+                : undefined
         }
       >
         {renderModalBody()}

@@ -38,7 +38,7 @@ export const SelectionDetailsModal: React.FC<SelectionDetailsModalProps> = ({
       aria-labelledby="selection-modal-title"
     >
       <div
-        className="w-full max-w-2xl max-h-[85vh] bg-surface rounded-card border border-border shadow-2xl flex flex-col overflow-hidden"
+        className="w-full max-w-5xl lg:max-w-6xl h-[88vh] bg-surface rounded-card border border-border shadow-2xl flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
@@ -62,10 +62,11 @@ export const SelectionDetailsModal: React.FC<SelectionDetailsModalProps> = ({
         </div>
 
         {/* Modal Body: Swappable Slot */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-hidden p-0 flex flex-col min-h-0">
           {children}
         </div>
       </div>
     </div>
   );
 };
+

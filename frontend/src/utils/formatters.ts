@@ -37,8 +37,8 @@ export function formatCompactNumber(
     const formatted = decimals !== undefined
       ? num.toFixed(decimals)
       : num % 1 === 0
-      ? num.toFixed(0)
-      : num.toFixed(2).replace(/0$/, '').replace(/\.0$/, '');
+        ? num.toFixed(0)
+        : num.toFixed(2).replace(/0$/, '').replace(/\.0$/, '');
     return `${sign}${sym}${formatted}M`;
   }
 
@@ -47,8 +47,8 @@ export function formatCompactNumber(
     const formatted = decimals !== undefined
       ? num.toFixed(decimals)
       : num % 1 === 0
-      ? Math.round(num).toString()
-      : num.toFixed(1).replace(/\.0$/, '');
+        ? Math.round(num).toString()
+        : num.toFixed(1).replace(/\.0$/, '');
     return `${sign}${sym}${formatted}K`;
   }
 

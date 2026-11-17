@@ -16,6 +16,7 @@ import { labels } from '../../constants/labels';
 import { ChartEmptyState } from './ChartEmptyState';
 import { useViewStore } from '../../store/viewStore';
 import { VerticalZoomSlider } from './VerticalZoomSlider';
+import { getStraddlingTooltip } from '../../utils/weekSplit';
 
 // ── Design-system colour constants (kept here for Recharts which needs hex values)
 const COLORS = {
@@ -35,6 +36,29 @@ interface ForecastLineChartProps {
   statusCode?: number;
   onRetry?: () => void;
 }
+
+const CustomLineXAxisTick = (props: any) => {
+  const { x, y, payload } = props;
+  const val = String(payload?.value || '');
+  const splitTooltip = getStraddlingTooltip(val);
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {splitTooltip && <title>{splitTooltip}</title>}
+      <text
+        x={0}
+        y={0}
+        dy={12}
+        textAnchor="middle"
+        fill={splitTooltip ? '#B7791F' : COLORS.axis}
+        fontSize={11}
+        fontWeight={splitTooltip ? 600 : 400}
+      >
+        {val}
+      </text>
+    </g>
+  );
+};
 
 export const ForecastLineChart: React.FC<ForecastLineChartProps> = ({
   data = [],
@@ -111,7 +135,7 @@ export const ForecastLineChart: React.FC<ForecastLineChartProps> = ({
             <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} vertical={false} />
             <XAxis
               dataKey="time"
-              tick={{ fontSize: 12, fill: COLORS.axis }}
+              tick={<CustomLineXAxisTick />}
               tickLine={false}
               axisLine={{ stroke: COLORS.grid }}
             />
@@ -128,9 +152,22 @@ export const ForecastLineChart: React.FC<ForecastLineChartProps> = ({
               content={({ active, payload, label }) => {
                 if (active && payload && payload.length) {
                   const item = payload[0].payload;
+                  const straddlingTooltip = getStraddlingTooltip(label);
                   return (
                     <div className="bg-surface border border-border p-2.5 text-xs shadow-md rounded-card space-y-1.5 z-50">
-                      <div className="font-semibold text-text-primary border-b border-border pb-1">{label}</div>
+                      <div className="font-semibold text-text-primary border-b border-border pb-1 flex items-center justify-between gap-2">
+                        <span>{label}</span>
+                        {straddlingTooltip && (
+                          <span className="text-[10px] px-1 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-medium">
+                            Split week
+                          </span>
+                        )}
+                      </div>
+                      {straddlingTooltip && (
+                        <div className="text-[11px] text-amber-800 bg-amber-50/50 p-1.5 rounded font-mono border border-amber-200/50">
+                          {straddlingTooltip}
+                        </div>
+                      )}
                       <div className="flex justify-between gap-4">
                         <span style={{ color: COLORS.positive }}>{charts.tooltip.bestCase}:</span>
                         <span className="font-semibold tabular-nums">{formatCompactNumber(item.bestCase, { isNeutral: true, measure })}</span>

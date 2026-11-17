@@ -12,15 +12,15 @@ interface KpiCardProps {
 
 const TOOLTIP_MAP: Record<string, string> = {
   total_forecast: labels.kpi.tooltips.totalForecast,
-  baseline:       'MRF baseline sum for the selected range.',
-  actuals:        'Actual closed periods in the selected range.',
-  forecast_adj:   labels.kpi.tooltips.forecastAdj,
-  risk:           labels.kpi.tooltips.risk,
-  opportunity:    labels.kpi.tooltips.opportunity,
-  growth_prev:    'Growth compared to the previous period.',
-  fy_growth:      labels.kpi.tooltips.fyGrowth,
-  ytd_growth:     labels.kpi.tooltips.ytdGrowth,
-  ytg_growth:     labels.kpi.tooltips.ytgGrowth,
+  baseline: 'MRF baseline sum for the selected range.',
+  actuals: 'Actual closed periods in the selected range.',
+  forecast_adj: labels.kpi.tooltips.forecastAdj,
+  risk: labels.kpi.tooltips.risk,
+  opportunity: labels.kpi.tooltips.opportunity,
+  growth_prev: 'Growth compared to the previous period.',
+  fy_growth: labels.kpi.tooltips.fyGrowth,
+  ytd_growth: labels.kpi.tooltips.ytdGrowth,
+  ytg_growth: labels.kpi.tooltips.ytgGrowth,
 };
 
 export const KpiCard: React.FC<KpiCardProps> = ({ kpi }) => {
@@ -37,10 +37,10 @@ export const KpiCard: React.FC<KpiCardProps> = ({ kpi }) => {
   const formattedValue = kpi.value === null
     ? '–'
     : formatCompactNumber(kpi.value, {
-        format: kpi.format === 'percent' ? 'percent' : (isValue ? 'currency' : 'number'),
-        isNeutral,
-        measure,
-      });
+      format: kpi.format === 'percent' ? 'percent' : (isValue ? 'currency' : 'number'),
+      isNeutral,
+      measure,
+    });
 
   const signStyle = getSignColor(kpi.value, isNeutral);
   const baseTooltip = TOOLTIP_MAP[kpi.key] || kpi.label;
@@ -58,8 +58,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({ kpi }) => {
     isNeutral || kpi.value === null || kpi.value === 0
       ? Minus
       : kpi.value > 0
-      ? TrendingUp
-      : TrendingDown;
+        ? TrendingUp
+        : TrendingDown;
 
   const measureCaption = measure === 'value' ? '₹ (Value)' : measure === 'cases' ? 'Cases' : 'Units';
 
