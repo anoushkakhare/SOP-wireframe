@@ -78,7 +78,7 @@ export const dataReviewService = {
     });
   },
 
-  replaceNullValue(id: string, method: 'zero' | 'mean' | 'mode'): Promise<DataValidationData> {
+  replaceNullValue(id: string, method: 'zero' | 'mean' | 'median' | 'mode'): Promise<DataValidationData> {
     return request<DataValidationData>(`/data-review/validation/null-values/${id}/replace`, {
       method: 'POST',
       body: JSON.stringify({ method }),

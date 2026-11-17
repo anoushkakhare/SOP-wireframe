@@ -104,7 +104,7 @@ export function useDataReviewMutations() {
   });
 
   const replaceNullValueMutation = useMutation({
-    mutationFn: ({ id, method }: { id: string; method: 'zero' | 'mean' | 'mode' }) =>
+    mutationFn: ({ id, method }: { id: string; method: 'zero' | 'mean' | 'median' | 'mode' }) =>
       dataReviewService.replaceNullValue(id, method),
     onSuccess: () => invalidateAll(),
   });

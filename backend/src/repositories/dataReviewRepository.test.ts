@@ -80,6 +80,14 @@ if (valAfterOne.mappingGaps.count !== 20) {
   throw new Error(`Expected 20 after fixing one mapping gap, got ${valAfterOne.mappingGaps.count}`);
 }
 dataReviewRepository.fixAllMappingGaps();
+
+// Test median null value replacement
+dataReviewRepository.replaceNullValue('nv-1', 'median');
+const valAfterNull = dataReviewRepository.getValidationData();
+const nv1 = valAfterNull.nullValues.rows.find(r => r.id === 'nv-1');
+if (!nv1?.fixed || nv1.replacedWith !== 'median') {
+  throw new Error(`Expected nv-1 fixed with median, got ${JSON.stringify(nv1)}`);
+}
 dataReviewRepository.fixAllNullValues('zero');
 
 const readyState = dataReviewRepository.getReadiness();

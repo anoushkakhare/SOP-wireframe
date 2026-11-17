@@ -34,7 +34,7 @@ export const DataValidationCard: React.FC<DataValidationCardProps> = ({
 
   // Replace null value modal state
   const [replacingNullRow, setReplacingNullRow] = useState<NullValueRow | null>(null);
-  const [replaceMethod, setReplaceMethod] = useState<'zero' | 'mean' | 'mode'>('mean');
+  const [replaceMethod, setReplaceMethod] = useState<'zero' | 'mean' | 'median'>('mean');
   const [nullMenuOpenId, setNullMenuOpenId] = useState<string | null>(null);
 
   const { data: validation, isLoading } = useDataReviewValidation();
@@ -439,12 +439,12 @@ export const DataValidationCard: React.FC<DataValidationCardProps> = ({
                                     type="button"
                                     onClick={() => {
                                       setReplacingNullRow(row);
-                                      setReplaceMethod('mode');
+                                      setReplaceMethod('median');
                                       setNullMenuOpenId(null);
                                     }}
                                     className="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 hover:text-gray-900 cursor-pointer border-t border-gray-100"
                                   >
-                                    Mode (Frequent)
+                                    Median (Middle)
                                   </button>
                                 </div>
                               )}

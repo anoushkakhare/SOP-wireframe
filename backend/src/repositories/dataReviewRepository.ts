@@ -519,7 +519,7 @@ export class DataReviewRepository {
     return this.getValidationData();
   }
 
-  replaceNullValue(id: string, method: 'zero' | 'mean' | 'mode'): DataValidationData {
+  replaceNullValue(id: string, method: 'zero' | 'mean' | 'median' | 'mode'): DataValidationData {
     const row = this.validationData.nullValues.rows.find(r => r.id === id);
     if (row && !row.fixed) {
       row.fixed = true;
@@ -529,7 +529,7 @@ export class DataReviewRepository {
     return this.getValidationData();
   }
 
-  fixAllNullValues(method: 'zero' | 'mean' | 'mode' = 'mean'): DataValidationData {
+  fixAllNullValues(method: 'zero' | 'mean' | 'median' | 'mode' = 'mean'): DataValidationData {
     this.validationData.nullValues.rows.forEach(r => {
       r.fixed = true;
       r.replacedWith = method;

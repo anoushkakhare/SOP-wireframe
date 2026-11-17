@@ -97,6 +97,10 @@ export interface KpiItem {
   growthType?: 'positive' | 'negative' | 'neutral';
   isNeutral?: boolean;
   roValue?: number;
+  compareValue?: number | null;
+  delta?: number | null;
+  pctChange?: number | null;
+  compareTo?: string;
 }
 
 export interface ForecastLinePoint {
@@ -104,10 +108,17 @@ export interface ForecastLinePoint {
   forecast: number;
   worstCase: number;
   bestCase: number;
+  seriesA?: number;
+  seriesB?: number | null;
+  delta?: number | null;
+  aName?: string;
+  bName?: string;
 }
 
 export interface ForecastLineResponse {
   points: ForecastLinePoint[];
+  compareTo?: string;
+  cycleA?: string;
 }
 
 export interface StackedBarItem {
@@ -116,6 +127,11 @@ export interface StackedBarItem {
   hasDrillDown: boolean;
   segments: Record<string, number>;
   total: number;
+  seriesA?: number;
+  seriesB?: number;
+  delta?: number;
+  segmentsA?: Record<string, number>;
+  segmentsB?: Record<string, number>;
 }
 
 export interface StackedBarResponse {
@@ -123,6 +139,13 @@ export interface StackedBarResponse {
   parent?: string;
   items: StackedBarItem[];
   availableCustomerGroups: string[];
+  compareTo?: string;
+  cycleA?: string;
+}
+
+export interface WaterfallDriver {
+  name: string;
+  value: number;
 }
 
 export interface WaterfallStep {
@@ -131,16 +154,23 @@ export interface WaterfallStep {
   type: 'total' | 'increase' | 'decrease';
   start?: number;
   end?: number;
+  topDrivers?: WaterfallDriver[];
 }
 
 export interface WaterfallResponse {
   steps: WaterfallStep[];
+  compareTo?: string;
+  cycleA?: string;
 }
 
 export interface TreemapNode {
   id?: string;
   name: string;
   value?: number;
+  valueA?: number;
+  valueB?: number;
+  delta?: number;
+  pctChange?: number;
   brand?: string;
   parentId?: string | null;
   parentName?: string;
@@ -151,6 +181,8 @@ export interface TreemapNode {
 export interface TreemapResponse {
   level: ProductLevel;
   data: TreemapNode[];
+  compareTo?: string;
+  cycleA?: string;
 }
 
 export type ScenarioStatus = 'saved' | 'committed';
@@ -189,6 +221,12 @@ export interface PlanningTableRow {
   };
   pastActuals: Record<string, number>;
   diffs?: Record<string, Record<string, number>>;
+  definitionsB?: {
+    opportunity: Record<string, number>;
+    actualFcst: Record<string, number>;
+    risk: Record<string, number>;
+  };
+  pastActualsB?: Record<string, number>;
 }
 
 export interface TableResponse {
@@ -197,6 +235,8 @@ export interface TableResponse {
   level: ProductLevel;
   productLevelNum?: number;
   rows: PlanningTableRow[];
+  compareTo?: string;
+  cycleA?: string;
 }
 
 export interface TableEdit {
@@ -216,6 +256,9 @@ export interface DataQueryParams {
   uom?: Uom | string;
   from?: string;
   to?: string;
+  planningCycle?: string;
+  compareTo?: string;
+  activity?: string;
 }
 
 export type FeedType = 'master' | 'transactional';
@@ -321,7 +364,7 @@ export interface NullValueRow {
   row: string;
   expected: string;
   fixed: boolean;
-  replacedWith?: 'zero' | 'mean' | 'mode' | null;
+  replacedWith?: 'zero' | 'mean' | 'median' | 'mode' | null;
 }
 
 export interface MissingItemRow {

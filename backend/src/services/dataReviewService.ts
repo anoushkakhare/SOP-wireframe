@@ -69,11 +69,11 @@ export class DataReviewService {
     return dataReviewRepository.fixAllMappingGaps();
   }
 
-  async replaceNullValue(id: string, method: 'zero' | 'mean' | 'mode'): Promise<DataValidationData> {
+  async replaceNullValue(id: string, method: 'zero' | 'mean' | 'median' | 'mode'): Promise<DataValidationData> {
     return dataReviewRepository.replaceNullValue(id, method);
   }
 
-  async fixAllNullValues(method?: 'zero' | 'mean' | 'mode'): Promise<DataValidationData> {
+  async fixAllNullValues(method?: 'zero' | 'mean' | 'median' | 'mode'): Promise<DataValidationData> {
     return dataReviewRepository.fixAllNullValues(method);
   }
 
