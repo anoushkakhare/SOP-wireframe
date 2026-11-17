@@ -11,7 +11,7 @@ import { TreemapChart } from '../components/charts/TreemapChart';
 import { BottomDock } from '../components/table/BottomDock';
 
 import { useAuthStore } from '../store/authStore';
-import { useHeaderStore } from '../store/headerStore';
+import { useViewStore } from '../store/viewStore';
 import { useFilterStore } from '../store/filterStore';
 import { useScenarioStore } from '../store/scenarioStore';
 import { useTableStore } from '../store/tableStore';
@@ -24,23 +24,32 @@ import { useScenarios } from '../hooks/useScenarios';
 import { useFullscreen } from '../hooks/useFullscreen';
 import { metaService } from '../services/metaService';
 import { labels } from '../constants/labels';
+import { allowedLevels } from '../utils/allowedLevels';
+import { LEVELS, LEVEL_MAP } from '../constants/hierarchy';
+import { ProductLevelNum } from '../types';
 
 export const DemandPlannerPage: React.FC = () => {
   const { user } = useAuthStore();
   const {
     productLevel,
-    parentBrand,
-    customerLevel,
-    uom,
+    scope,
+    customerView,
+    measure,
+    timeGrain,
+    apg,
     setProductLevel,
-    setCustomerLevel,
-    setUom,
+    setCustomerView,
+    setMeasure,
+    setTimeGrain,
+    setApg,
+    setScope,
     drillDown,
     drillUp,
-  } = useHeaderStore();
+    resetHeaderOnly,
+  } = useViewStore();
 
-  const { appliedFilters, applyFilters, resetAll } = useFilterStore();
-  const { activeScenario, setActiveScenario } = useScenarioStore();
+  const { appliedFilters, applyFilters, resetAll, syncWithGrain } = useFilterStore();
+  const { activeScenario } = useScenarioStore();
   const {
     isDockOpen,
     toggleDock,
@@ -65,7 +74,7 @@ export const DemandPlannerPage: React.FC = () => {
     addToast,
   } = useUiStore();
 
-  const { fullscreenChartId, openFullscreen, closeFullscreen, isFullscreen } = useFullscreen();
+  const { fullscreenChartId, openFullscreen, closeFullscreen } = useFullscreen();
 
   // Data fetching
   const metaQuery = useQuery({
@@ -73,74 +82,95 @@ export const DemandPlannerPage: React.FC = () => {
     queryFn:  () => metaService.getOptions(),
   });
 
+  const hierarchyQuery = useQuery({
+    queryKey: ['hierarchy'],
+    queryFn:  () => metaService.getHierarchy(),
+  });
+
+  const hierarchyNodes = hierarchyQuery.data || [];
+
   const { data: kpis, isLoading: isKpisLoading, isError: isKpisError, error: kpisError, refetch: refetchKpis } = useKpis();
   const chartData = useChartData();
   const { data: tableData, isLoading: isTableLoading } = useTableData();
   const { createScenario, commitScenario, deleteScenario } = useScenarios();
 
-  // Drill handlers
-  const handleDrillDown = (brand: string) => {
-    drillDown(brand);
-    setDesegregated(true, brand);
-    openDock();
+  // Allowed product levels given current scope
+  const allowed = allowedLevels(scope, hierarchyNodes);
+  // If current level is below min allowed, auto-snap
+  React.useEffect(() => {
+    if (allowed.length > 0 && !allowed.includes(productLevel)) {
+      setProductLevel(allowed[0]);
+    }
+  }, [allowed, productLevel, setProductLevel]);
+
+  // Drill down: go to clicked bar's nodeId at level+1
+  const handleDrillDown = (barLabel: string) => {
+    // Find node matching barLabel at current productLevel
+    const matchNode = hierarchyNodes.find(
+      n => n.name === barLabel && n.level === productLevel
+    );
+    const childLevel = Math.min(productLevel + 1, 5) as ProductLevelNum;
+    if (matchNode) {
+      drillDown(matchNode.id, childLevel);
+      setDesegregated(true, matchNode.id);
+      openDock();
+    }
   };
 
   const handleDrillUp = () => {
-    drillUp();
+    // Go up: productLevel-1, scope = parents of current scope nodes
+    const parentLevel = Math.max(productLevel - 1, 1) as ProductLevelNum;
+    const parentIds = scope
+      .map(id => hierarchyNodes.find(n => n.id === id)?.parentId)
+      .filter((id): id is string => !!id);
+    drillUp(parentIds.length ? parentIds : [], parentLevel);
     setDesegregated(false, undefined);
+  };
+
+  const handleTimeGrainChange = (grain: any) => {
+    setTimeGrain(grain);
+    syncWithGrain(grain);
+  };
+
+  const handleResetHeader = () => {
+    resetHeaderOnly();
+    syncWithGrain('month');
   };
 
   // Scenario operations
   const handleSaveScenario = async (name: string) => {
-    try {
-      await createScenario(name);
-      addToast(labels.toasts.saveSuccess, 'success');
-    } catch {
-      addToast(labels.toasts.saveError, 'error');
-    }
+    try { await createScenario(name); addToast(labels.toasts.saveSuccess, 'success'); }
+    catch { addToast(labels.toasts.saveError, 'error'); }
   };
 
   const handleCommitScenario = async () => {
     if (activeScenario) {
-      try {
-        await commitScenario(activeScenario.id);
-        addToast(labels.toasts.commitSuccess, 'success');
-      } catch {
-        addToast(labels.toasts.commitError, 'error');
-      }
+      try { await commitScenario(activeScenario.id); addToast(labels.toasts.commitSuccess, 'success'); }
+      catch { addToast(labels.toasts.commitError, 'error'); }
     }
   };
 
   const handleDeleteScenario = async () => {
     if (deleteScenarioTarget) {
-      try {
-        await deleteScenario(deleteScenarioTarget.id);
-        addToast(labels.toasts.deleteSuccess, 'success');
-      } catch {
-        addToast(labels.toasts.deleteError, 'error');
-      } finally {
-        setDeleteScenarioTarget(null);
-      }
+      try { await deleteScenario(deleteScenarioTarget.id); addToast(labels.toasts.deleteSuccess, 'success'); }
+      catch { addToast(labels.toasts.deleteError, 'error'); }
+      finally { setDeleteScenarioTarget(null); }
     }
   };
-  const handleConfirmDiscard = () => {
-    discardEdits();
-    setDiscardConfirmModalOpen(false);
-  };
 
-  const hasActiveFilters =
-    appliedFilters.categories.length > 0 ||
-    appliedFilters.brands.length > 0 ||
-    appliedFilters.products.length > 0 ||
-    appliedFilters.customerGroups.length > 0;
+  const handleConfirmDiscard = () => { discardEdits(); setDiscardConfirmModalOpen(false); };
 
-  // Dynamic chart titles (all from labels.ts)
+  // Filter badge = scope nodes count + apg filters
+  const activeFilterCount = scope.length + (apg.length > 0 ? 1 : 0);
+
   const { charts: cl } = labels;
-  const stackedBarTitle = cl.forecastBy(
-    productLevel === 'brand' ? 'brand' : 'product'
-  );
+  const levelLabel = LEVEL_MAP[productLevel]?.label || 'Brand';
+  const stackedBarTitle = cl.forecastBy(levelLabel.toLowerCase());
 
-  const drillUpButton = (
+  // Map numeric level to legacy 'brand'|'product' for chart components
+  const legacyLevel = productLevel >= 4 ? 'product' : 'brand';
+
+  const drillUpButton = productLevel > 1 ? (
     <button
       type="button"
       onClick={handleDrillUp}
@@ -149,22 +179,29 @@ export const DemandPlannerPage: React.FC = () => {
     >
       ▲ {cl.drillUp}
     </button>
-  );
+  ) : undefined;
 
   return (
     <AppShell
       roleTitle={user?.roleTitle || labels.header.avatarRole}
       userName={user?.name}
       metaOptions={metaQuery.data || null}
+      hierarchyNodes={hierarchyNodes}
       productLevel={productLevel}
-      customerLevel={customerLevel}
-      uom={uom}
+      allowedLevels={allowed}
+      customerView={customerView}
+      measure={measure}
+      timeGrain={timeGrain}
+      apg={apg}
       onProductLevelChange={setProductLevel}
-      onCustomerLevelChange={setCustomerLevel}
-      onUomChange={setUom}
+      onCustomerViewChange={setCustomerView}
+      onMeasureChange={setMeasure}
+      onTimeGrainChange={handleTimeGrainChange}
+      onApgChange={setApg}
+      onResetHeaderOnly={handleResetHeader}
       isTableActive={isDockOpen}
       onToggleTable={toggleDock}
-      hasActiveFilters={hasActiveFilters}
+      activeFilterCount={activeFilterCount}
       isFilterOpen={isFilterDrawerOpen}
       onCloseFilter={() => setFilterDrawerOpen(!isFilterDrawerOpen)}
       onApplyFilter={() => { applyFilters(); }}
@@ -204,15 +241,11 @@ export const DemandPlannerPage: React.FC = () => {
               </FullscreenChartFrame>
             )}
             {fullscreenChartId === 'chart-stacked' && (
-              <FullscreenChartFrame
-                title={stackedBarTitle}
-                onClose={closeFullscreen}
-                headerAction={productLevel === 'product' ? drillUpButton : undefined}
-              >
+              <FullscreenChartFrame title={stackedBarTitle} onClose={closeFullscreen} headerAction={drillUpButton}>
                 <StackedBarChart
                   data={chartData.stackedBar.data?.items}
-                  level={productLevel}
-                  parentBrand={parentBrand}
+                  level={legacyLevel}
+                  parentBrand={scope[0]}
                   onDrillDown={handleDrillDown}
                   onDrillUp={handleDrillUp}
                   isLoading={chartData.stackedBar.isLoading}
@@ -235,7 +268,7 @@ export const DemandPlannerPage: React.FC = () => {
               <FullscreenChartFrame title={cl.productMix} onClose={closeFullscreen}>
                 <TreemapChart
                   data={chartData.treemap.data?.data}
-                  level={productLevel}
+                  level={legacyLevel}
                   isLoading={chartData.treemap.isLoading}
                   isError={chartData.treemap.isError}
                   onRetry={chartData.treemap.refetch}
@@ -244,9 +277,7 @@ export const DemandPlannerPage: React.FC = () => {
             )}
           </div>
         ) : (
-          /* Standard 2×2 grid */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Forecast trend */}
             <ChartCard title={cl.forecastTrend} onToggleFullscreen={() => openFullscreen('chart-line')}>
               <ForecastLineChart
                 data={chartData.forecastLine.data?.points}
@@ -256,16 +287,11 @@ export const DemandPlannerPage: React.FC = () => {
               />
             </ChartCard>
 
-            {/* Forecast by brand/product × CG */}
-            <ChartCard
-              title={stackedBarTitle}
-              onToggleFullscreen={() => openFullscreen('chart-stacked')}
-              headerAction={productLevel === 'product' ? drillUpButton : undefined}
-            >
+            <ChartCard title={stackedBarTitle} onToggleFullscreen={() => openFullscreen('chart-stacked')} headerAction={drillUpButton}>
               <StackedBarChart
                 data={chartData.stackedBar.data?.items}
-                level={productLevel}
-                parentBrand={parentBrand}
+                level={legacyLevel}
+                parentBrand={scope[0]}
                 onDrillDown={handleDrillDown}
                 onDrillUp={handleDrillUp}
                 isLoading={chartData.stackedBar.isLoading}
@@ -274,7 +300,6 @@ export const DemandPlannerPage: React.FC = () => {
               />
             </ChartCard>
 
-            {/* Forecast bridge (waterfall) */}
             <ChartCard title={cl.forecastBridge} onToggleFullscreen={() => openFullscreen('chart-waterfall')}>
               <WaterfallChart
                 data={chartData.waterfall.data?.steps}
@@ -284,11 +309,10 @@ export const DemandPlannerPage: React.FC = () => {
               />
             </ChartCard>
 
-            {/* Product mix (treemap) */}
             <ChartCard title={cl.productMix} onToggleFullscreen={() => openFullscreen('chart-treemap')}>
               <TreemapChart
                 data={chartData.treemap.data?.data}
-                level={productLevel}
+                level={legacyLevel}
                 isLoading={chartData.treemap.isLoading}
                 isError={chartData.treemap.isError}
                 onRetry={chartData.treemap.refetch}
@@ -299,7 +323,7 @@ export const DemandPlannerPage: React.FC = () => {
       </section>
 
       {/* 3. Bottom table dock */}
-      <BottomDock tableData={tableData} level={productLevel} isLoading={isTableLoading} />
+      <BottomDock tableData={tableData} level={legacyLevel} productLevelNum={productLevel} isLoading={isTableLoading} />
     </AppShell>
   );
 };

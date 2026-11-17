@@ -5,12 +5,14 @@ import { EditableCell } from './EditableCell';
 import { DeltaCell } from './DeltaCell';
 import { formatCompactNumber } from '../../utils/formatters';
 import { labels } from '../../constants/labels';
+import { LEVELS, LEVEL_MAP } from '../../constants/hierarchy';
 
 interface PlanningTableProps {
   rows: PlanningTableRow[];
   period: string[];
   currentMonthIndex: number;
   level: ProductLevel;
+  productLevelNum?: number;
   mode: TableMode;
   draftEdits: Record<string, number>;
   onCellEdit: (rowId: string, defType: 'opportunity' | 'actualFcst' | 'risk', month: string, val: number) => void;
@@ -35,13 +37,26 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
   period,
   currentMonthIndex,
   level,
+  productLevelNum,
   mode,
   draftEdits,
   onCellEdit,
   isLoading = false,
 }) => {
-  const isProductLevel = level === 'product';
-  const { columns, rows: rowLabels } = labels.table;
+  const activeLevel = productLevelNum || (level === 'product' ? 5 : 3);
+  const activeLevels = LEVELS.filter((l) => l.id <= activeLevel);
+  const { rows: rowLabels } = labels.table;
+
+  function getLevelValue(row: PlanningTableRow, levelId: number): string {
+    switch (levelId) {
+      case 1: return row.category || '—';
+      case 2: return row.sop || '—';
+      case 3: return row.brand || '—';
+      case 4: return row.forecastGroup || '—';
+      case 5: return row.forecastUnit || row.product || '—';
+      default: return '—';
+    }
+  }
 
   if (isLoading) {
     return (
@@ -65,25 +80,19 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
         {/* ── Header ── primary-700 bg, white text */}
         <thead>
           <tr className="bg-primary-700 text-white text-[10px] font-semibold border-b border-primary-900">
-            <th className="py-2.5 px-3 sticky left-0 z-20 bg-primary-700 min-w-[100px] border-r border-primary-900">
-              {columns.category}
-            </th>
-            <th className="py-2.5 px-3 sticky left-[100px] z-20 bg-primary-700 min-w-[90px] border-r border-primary-900">
-              {columns.brand}
-            </th>
-            {isProductLevel && (
-              <th className="py-2.5 px-3 sticky left-[190px] z-20 bg-primary-700 min-w-[100px] border-r border-primary-900">
-                {columns.product}
+            {activeLevels.map((lvl) => (
+              <th
+                key={lvl.id}
+                className="py-2.5 px-3 min-w-[90px] border-r border-primary-900 whitespace-nowrap"
+              >
+                {lvl.label}
               </th>
-            )}
-            <th className="py-2.5 px-3 min-w-[120px] border-r border-primary-900">
-              {columns.customerGroup}
+            ))}
+            <th className="py-2.5 px-3 min-w-[110px] border-r border-primary-900 whitespace-nowrap">
+              APG
             </th>
-            <th className="py-2.5 px-3 min-w-[110px] border-r border-primary-900">
-              {columns.customer}
-            </th>
-            <th className="py-2.5 px-3 min-w-[110px] border-r border-primary-900 text-center">
-              {columns.measure}
+            <th className="py-2.5 px-3 min-w-[100px] border-r border-primary-900 text-center whitespace-nowrap">
+              Definition
             </th>
 
             {/* Month columns */}
@@ -92,9 +101,8 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
               return (
                 <th
                   key={m}
-                  className={`py-2.5 px-3 text-center min-w-[85px] border-r border-primary-900 ${
-                    isPast ? 'bg-primary-900 text-primary-300' : 'bg-primary-700'
-                  }`}
+                  className={`py-2.5 px-3 text-center min-w-[85px] border-r border-primary-900 ${isPast ? 'bg-primary-900 text-primary-300' : 'bg-primary-700'
+                    }`}
                 >
                   <div className="font-semibold">{m}</div>
                   <div className="text-[8px] font-normal opacity-70">
@@ -112,35 +120,22 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
             <React.Fragment key={row.id}>
               {/* Sub-row 1 – Opportunity */}
               <tr className="border-t border-border hover:bg-primary-50 transition-colors">
-                {/* Dimension cells – span 3 sub-rows */}
-                <td
-                  rowSpan={3}
-                  className="py-2 px-3 align-top font-semibold text-text-primary border-r border-border-strong sticky left-0 z-10 bg-surface shadow-[1px_0_0_0_#E0E3EC]"
-                >
-                  {row.category}
-                </td>
-                <td
-                  rowSpan={3}
-                  className="py-2 px-3 align-top font-medium text-text-primary border-r border-border sticky left-[100px] z-10 bg-surface shadow-[1px_0_0_0_#E0E3EC]"
-                >
-                  {row.brand}
-                </td>
-                {isProductLevel && (
+                {/* Product level columns 1..productLevel */}
+                {activeLevels.map((lvl) => (
                   <td
+                    key={lvl.id}
                     rowSpan={3}
-                    className="py-2 px-3 align-top text-text-primary border-r border-border sticky left-[190px] z-10 bg-surface shadow-[1px_0_0_0_#E0E3EC]"
+                    className="py-2 px-3 align-top font-medium text-text-primary border-r border-border bg-surface whitespace-nowrap"
                   >
-                    {row.product || '—'}
+                    {getLevelValue(row, lvl.id)}
                   </td>
-                )}
-                <td rowSpan={3} className="py-2 px-3 align-top text-text-secondary border-r border-border">
-                  {row.customerGroup}
-                </td>
-                <td rowSpan={3} className="py-2 px-3 align-top text-text-secondary border-r border-border">
-                  {row.customer}
+                ))}
+                {/* APG column */}
+                <td rowSpan={3} className="py-2 px-3 align-top text-text-secondary border-r border-border whitespace-nowrap">
+                  {row.apg || row.customerGroup || 'All'}
                 </td>
 
-                {/* Opportunity measure label */}
+                {/* Definition label */}
                 <td className="py-1.5 px-2.5 font-semibold italic text-positive border-r border-border text-center bg-positive-bg/20">
                   {rowLabels.opportunity}
                 </td>
@@ -193,11 +188,11 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                   const isPast = mIdx < currentMonthIndex;
                   if (isPast) return null; // covered by rowSpan={3}
 
-                  const editKey   = `${row.id}_actualFcst_${m}`;
-                  const baseFcst  = row.definitions.actualFcst[m] ?? 0;
+                  const editKey = `${row.id}_actualFcst_${m}`;
+                  const baseFcst = row.definitions.actualFcst[m] ?? 0;
                   const currentFcst = draftEdits[editKey] !== undefined ? draftEdits[editKey] : baseFcst;
-                  const hasEdit   = draftEdits[editKey] !== undefined;
-                  const diffVal   = row.diffs?.actualFcst?.[m] || (currentFcst - baseFcst);
+                  const hasEdit = draftEdits[editKey] !== undefined;
+                  const diffVal = row.diffs?.actualFcst?.[m] || (currentFcst - baseFcst);
 
                   if (mode === 'delta') {
                     return (
@@ -210,15 +205,14 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                   return (
                     <td
                       key={m}
-                      className={`py-1.5 px-2 text-center border-r border-border ${
-                        hasEdit
+                      className={`py-1.5 px-2 text-center border-r border-border ${hasEdit
                           ? diffVal > 0
                             ? 'bg-positive-bg/40'
                             : 'bg-negative-bg/40'
                           : mode === 'edit'
-                          ? 'bg-surface border-primary-300'
-                          : ''
-                      }`}
+                            ? 'bg-surface border-primary-300'
+                            : ''
+                        }`}
                     >
                       <EditableCell
                         value={currentFcst}
@@ -241,7 +235,7 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                   if (isPast) return null; // covered by rowSpan={3}
 
                   const baseRisk = row.definitions.risk[m] ?? 0;
-                  const diffVal  = row.diffs?.risk?.[m];
+                  const diffVal = row.diffs?.risk?.[m];
 
                   if (mode === 'delta') {
                     return (

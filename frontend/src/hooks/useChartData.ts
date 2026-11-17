@@ -1,51 +1,59 @@
 import { useQuery } from '@tanstack/react-query';
 import { chartService } from '../services/chartService';
-import { useHeaderStore } from '../store/headerStore';
+import { useViewStore } from '../store/viewStore';
 import { useFilterStore } from '../store/filterStore';
 import { useTableStore } from '../store/tableStore';
 
 export function useChartData() {
-  const { productLevel, parentBrand } = useHeaderStore();
+  const { productLevel, scope, apg, measure, timeGrain } = useViewStore();
   const { appliedFilters } = useFilterStore();
   const { savedEdits } = useTableStore();
 
   const totalEditsDelta = Object.values(savedEdits).reduce((sum, val) => sum + val, 0);
+  const scopeStr = scope.join(',') || undefined;
+  const apgStr   = apg.join(',')   || undefined;
+  const from = appliedFilters.startDate;
+  const to   = appliedFilters.endDate;
 
-  // 1. Forecast Line Query
+  const params = {
+    productLevel,
+    scope: scopeStr,
+    apg: apgStr,
+    timeGrain,
+    measure,
+    from,
+    to,
+  };
+
+  const keyPrefix = [productLevel, scopeStr, apgStr, timeGrain, measure, from, to];
+
   const forecastLineQuery = useQuery({
-    queryKey: ['forecast-line', parentBrand, appliedFilters.startDate, appliedFilters.endDate],
-    queryFn: () => chartService.getForecastLine(parentBrand),
+    queryKey: ['forecast-line', ...keyPrefix],
+    queryFn: () => chartService.getForecastLine(params),
     staleTime: 1000 * 60 * 5,
   });
 
-  // 2. Stacked Bar Query
   const stackedBarQuery = useQuery({
-    queryKey: ['stacked-bar', productLevel, parentBrand, appliedFilters.brands],
-    queryFn: () => chartService.getStackedBar(productLevel, parentBrand),
+    queryKey: ['stacked-bar', ...keyPrefix],
+    queryFn: () => chartService.getStackedBar(params),
     staleTime: 1000 * 60 * 5,
   });
 
-  // 3. Waterfall Query
   const waterfallQuery = useQuery({
-    queryKey: ['waterfall', parentBrand],
-    queryFn: () => chartService.getWaterfall(parentBrand),
+    queryKey: ['waterfall', ...keyPrefix],
+    queryFn: () => chartService.getWaterfall(params),
     staleTime: 1000 * 60 * 5,
   });
 
-  // 4. Treemap Query
   const treemapQuery = useQuery({
-    queryKey: ['treemap', productLevel],
-    queryFn: () => chartService.getTreemap(productLevel),
+    queryKey: ['treemap', ...keyPrefix],
+    queryFn: () => chartService.getTreemap(params),
     staleTime: 1000 * 60 * 5,
   });
 
-  // Adjust waterfall if manual client edits exist
   const waterfallData = waterfallQuery.data ? {
     steps: waterfallQuery.data.steps.map((s) => {
-      if (s.name === 'Adjust') {
-        return { ...s, value: s.value + totalEditsDelta };
-      }
-      if (s.name === 'Forecast') {
+      if (s.name === 'Final forecast' && totalEditsDelta !== 0) {
         return { ...s, value: s.value + totalEditsDelta };
       }
       return s;
@@ -54,9 +62,9 @@ export function useChartData() {
 
   return {
     forecastLine: forecastLineQuery,
-    stackedBar: stackedBarQuery,
-    waterfall: { ...waterfallQuery, data: waterfallData },
-    treemap: treemapQuery,
+    stackedBar:   stackedBarQuery,
+    waterfall:    { ...waterfallQuery, data: waterfallData },
+    treemap:      treemapQuery,
     isLoading:
       forecastLineQuery.isLoading ||
       stackedBarQuery.isLoading ||
@@ -64,4 +72,3 @@ export function useChartData() {
       treemapQuery.isLoading,
   };
 }
-

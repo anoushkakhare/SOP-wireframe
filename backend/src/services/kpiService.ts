@@ -1,12 +1,16 @@
 import { kpiRepository } from '../repositories/kpiRepository';
-import { KpiItem, ProductLevel, CustomerLevel, Uom } from '../types';
+import { KpiItem, Uom } from '../types';
 
 export class KpiService {
   async getKpis(params: {
-    productLevel?: ProductLevel;
-    customerLevel?: CustomerLevel;
+    productLevel?: number;
+    scope?: string;
+    apg?: string;
     uom?: Uom;
-    parent?: string;
+    measure?: string;
+    timeGrain?: string;
+    from?: string;
+    to?: string;
     scenarioId?: string;
   }): Promise<KpiItem[]> {
     return kpiRepository.getKpis(params);
@@ -14,4 +18,3 @@ export class KpiService {
 }
 
 export const kpiService = new KpiService();
-

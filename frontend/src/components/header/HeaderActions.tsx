@@ -11,6 +11,7 @@ interface HeaderActionsProps {
   onOpenScenarios: () => void;
   isTableActive?: boolean;
   hasActiveFilters?: boolean;
+  activeFilterCount?: number;
 }
 
 export const HeaderActions: React.FC<HeaderActionsProps> = ({
@@ -21,6 +22,7 @@ export const HeaderActions: React.FC<HeaderActionsProps> = ({
   onOpenScenarios,
   isTableActive = false,
   hasActiveFilters = false,
+  activeFilterCount = 0,
 }) => {
   const { actions } = labels.header;
 
@@ -57,8 +59,14 @@ export const HeaderActions: React.FC<HeaderActionsProps> = ({
         tooltip={actions.filters}
         onClick={onOpenFilter}
         badge={
-          hasActiveFilters ? (
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-warning border border-primary-700" />
+          (hasActiveFilters || activeFilterCount > 0) ? (
+            activeFilterCount > 0 ? (
+              <span className="absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full bg-warning border border-primary-700 text-[8px] font-bold text-primary-900 flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            ) : (
+              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-warning border border-primary-700" />
+            )
           ) : null
         }
         ariaLabel={actions.filters}

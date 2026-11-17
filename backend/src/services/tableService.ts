@@ -1,19 +1,23 @@
 import { tableRepository } from '../repositories/tableRepository';
-import { TableResponse, ProductLevel } from '../types';
+import { TableResponse } from '../types';
 
 export class TableService {
   async getTable(params: {
-    level?: ProductLevel;
-    parent?: string;
+    productLevel?: number;
+    scope?: string;
+    apg?: string;
+    timeGrain?: string;
+    measure?: string;
+    from?: string;
+    to?: string;
     filters?: any;
   }): Promise<TableResponse> {
     return tableRepository.getTable(params);
   }
 
-  async desegregate(parent?: string): Promise<TableResponse> {
-    return tableRepository.desegregate(parent);
+  async desegregate(scope?: string, params: { timeGrain?: string; measure?: string; from?: string; to?: string } = {}): Promise<TableResponse> {
+    return tableRepository.desegregate(scope, params);
   }
 }
 
 export const tableService = new TableService();
-
