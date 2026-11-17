@@ -18,7 +18,7 @@ interface EditableCellProps {
  * EditableCell – displays a number in view mode; switches to an <input>
  * in edit mode.
  *
- * Edit-mode styling: white bg + primary-300 border (per spec).
+ * Cell commit occurs on Enter, Tab or blur with no keystroke updates.
  */
 export const EditableCell: React.FC<EditableCellProps> = ({
   value,
@@ -101,8 +101,11 @@ export const EditableCell: React.FC<EditableCellProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      (e.target as HTMLInputElement).blur();
+    if (e.key === 'Enter' || e.key === 'Tab') {
+      commitValue();
+      if (e.key === 'Enter') {
+        (e.target as HTMLInputElement).blur();
+      }
     } else if (e.key === 'Escape') {
       e.preventDefault();
       setInlineError(null);

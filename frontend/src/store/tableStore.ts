@@ -2,27 +2,35 @@ import { create } from 'zustand';
 
 export type TableMode = 'view' | 'edit' | 'delta';
 
-export interface CellDelta {
-  period?: string;
+export interface DraftCellEdit {
+  forecastUnit: string;
+  apg: string;
+  period: string;
   forecast?: number;
   opportunity?: number;
   risk?: number;
-  forecastMeasure?: number;
-  opportunityMeasure?: number;
-  riskMeasure?: number;
+  fuId?: string;
+  brand?: string;
+  category?: string;
+  sop?: string;
+  forecastGroup?: string;
+  unitsPerCase?: number;
+  price?: number;
 }
 
 export interface CellEditKey {
-  rowId: string;
+  forecastUnit: string;
+  apg: string;
+  period: string;
   defType: 'opportunity' | 'actualFcst' | 'risk' | 'forecast';
-  month: string;
+  rowMeta?: Partial<DraftCellEdit>;
 }
 
 interface TableState {
   isDockOpen: boolean;
   mode: TableMode;
-  draftEdits: Record<string, CellDelta>;
-  savedEdits: Record<string, CellDelta>;
+  draftEdits: Record<string, DraftCellEdit>;
+  savedEdits: Record<string, DraftCellEdit>;
   isDesegregated: boolean;
   desegregatedParent?: string;
 
@@ -30,12 +38,16 @@ interface TableState {
   openDock: () => void;
   closeDock: () => void;
   setMode: (mode: TableMode) => void;
-  setCellEdit: (key: CellEditKey, deltaBase: number, deltaMeasure?: number) => void;
+  setCellEdit: (key: CellEditKey, deltaBase: number) => void;
   revertCellEdit: (key: CellEditKey) => void;
   saveEdits: () => void;
   discardEdits: () => void;
   hasUnsavedEdits: () => boolean;
   setDesegregated: (desegregated: boolean, parent?: string) => void;
+}
+
+export function makeDraftKey(forecastUnit: string, apg: string, period: string): string {
+  return `${forecastUnit}__${apg}__${period}`;
 }
 
 export const useTableStore = create<TableState>((set, get) => ({
@@ -52,39 +64,41 @@ export const useTableStore = create<TableState>((set, get) => ({
 
   setMode: (mode) => set({ mode }),
 
-  setCellEdit: (key, deltaBase, deltaMeasure) => {
-    const cellKey = `${key.rowId}_${key.month}`;
+  setCellEdit: (key, deltaBase) => {
+    const draftKey = makeDraftKey(key.forecastUnit, key.apg, key.period);
     const field: 'forecast' | 'opportunity' | 'risk' =
       key.defType === 'actualFcst' ? 'forecast' : (key.defType as any);
-    const measureField =
-      field === 'forecast'
-        ? 'forecastMeasure'
-        : field === 'opportunity'
-        ? 'opportunityMeasure'
-        : 'riskMeasure';
 
     set((s) => {
-      const existing = s.draftEdits[cellKey] || {};
-      if (deltaBase === 0 && (deltaMeasure ?? 0) === 0) {
+      const existing = s.draftEdits[draftKey] || {
+        forecastUnit: key.forecastUnit,
+        apg: key.apg,
+        period: key.period,
+        ...key.rowMeta,
+      };
+
+      if (deltaBase === 0) {
         const updated = { ...existing };
         delete updated[field];
-        delete updated[measureField];
         const nextEdits = { ...s.draftEdits };
         if (!updated.forecast && !updated.opportunity && !updated.risk) {
-          delete nextEdits[cellKey];
+          delete nextEdits[draftKey];
         } else {
-          nextEdits[cellKey] = updated;
+          nextEdits[draftKey] = updated;
         }
         return { draftEdits: nextEdits };
       }
+
       return {
         draftEdits: {
           ...s.draftEdits,
-          [cellKey]: {
+          [draftKey]: {
             ...existing,
-            period: key.month,
+            ...key.rowMeta,
+            forecastUnit: key.forecastUnit,
+            apg: key.apg,
+            period: key.period,
             [field]: deltaBase,
-            [measureField]: deltaMeasure ?? deltaBase,
           },
         },
       };
@@ -92,27 +106,20 @@ export const useTableStore = create<TableState>((set, get) => ({
   },
 
   revertCellEdit: (key) => {
-    const cellKey = `${key.rowId}_${key.month}`;
+    const draftKey = makeDraftKey(key.forecastUnit, key.apg, key.period);
     const field: 'forecast' | 'opportunity' | 'risk' =
       key.defType === 'actualFcst' ? 'forecast' : (key.defType as any);
-    const measureField =
-      field === 'forecast'
-        ? 'forecastMeasure'
-        : field === 'opportunity'
-        ? 'opportunityMeasure'
-        : 'riskMeasure';
 
     set((s) => {
-      const existing = s.draftEdits[cellKey];
+      const existing = s.draftEdits[draftKey];
       if (!existing) return s;
       const updated = { ...existing };
       delete updated[field];
-      delete updated[measureField];
       const nextEdits = { ...s.draftEdits };
       if (!updated.forecast && !updated.opportunity && !updated.risk) {
-        delete nextEdits[cellKey];
+        delete nextEdits[draftKey];
       } else {
-        nextEdits[cellKey] = updated;
+        nextEdits[draftKey] = updated;
       }
       return { draftEdits: nextEdits };
     });
@@ -122,21 +129,22 @@ export const useTableStore = create<TableState>((set, get) => ({
     const { draftEdits } = get();
     set({
       savedEdits: JSON.parse(JSON.stringify(draftEdits)),
+      draftEdits: {},
       mode: 'view',
     });
   },
 
   discardEdits: () => {
-    const { savedEdits } = get();
     set({
-      draftEdits: JSON.parse(JSON.stringify(savedEdits)),
+      draftEdits: {},
+      savedEdits: {},
       mode: 'view',
     });
   },
 
   hasUnsavedEdits: () => {
-    const { draftEdits, savedEdits } = get();
-    return JSON.stringify(draftEdits) !== JSON.stringify(savedEdits);
+    const { draftEdits } = get();
+    return Object.keys(draftEdits).length > 0;
   },
 
   setDesegregated: (desegregated, parent) => {
@@ -146,4 +154,3 @@ export const useTableStore = create<TableState>((set, get) => ({
     });
   },
 }));
-

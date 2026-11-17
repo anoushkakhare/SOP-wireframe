@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlanningTableRow, ProductLevel } from '../../types';
-import { TableMode, CellDelta } from '../../store/tableStore';
+import { TableMode, DraftCellEdit, makeDraftKey } from '../../store/tableStore';
 import { EditableCell } from './EditableCell';
 import { DeltaCell } from './DeltaCell';
 import { formatCompactNumber } from '../../utils/formatters';
@@ -15,9 +15,9 @@ interface PlanningTableProps {
   level: ProductLevel;
   productLevelNum?: number;
   mode: TableMode;
-  draftEdits: Record<string, CellDelta>;
-  onCellEdit: (rowId: string, defType: 'opportunity' | 'actualFcst' | 'risk', month: string, deltaBase: number, deltaMeasure: number) => void;
-  onCellRevert?: (rowId: string, defType: 'opportunity' | 'actualFcst' | 'risk', month: string) => void;
+  draftEdits: Record<string, DraftCellEdit>;
+  onCellEdit: (row: PlanningTableRow, defType: 'opportunity' | 'actualFcst' | 'risk', month: string, deltaBase: number) => void;
+  onCellRevert?: (row: PlanningTableRow, defType: 'opportunity' | 'actualFcst' | 'risk', month: string) => void;
   isLoading?: boolean;
 }
 
@@ -193,9 +193,12 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                       );
                     }
 
-                    const cellKey = `${row.id}_${m}`;
+                    const fu = row.forecastUnit || row.product || row.forecastGroup || row.brand || row.id;
+                    const apg = row.apg || 'All';
+                    const draftKey = makeDraftKey(fu, apg, m);
+                    const cellDelta = draftEdits[draftKey];
                     const baseOpp = row.definitions.opportunity[m] ?? 0;
-                    const oppDeltaBase = draftEdits[cellKey]?.opportunity;
+                    const oppDeltaBase = cellDelta?.opportunity;
                     const hasOppEdit = oppDeltaBase !== undefined && oppDeltaBase !== 0;
                     const currentOpp = oppDeltaBase !== undefined ? baseOpp + toMeasure(oppDeltaBase, upc, prc) : baseOpp;
                     const oppDiff = hasOppEdit ? toMeasure(oppDeltaBase, upc, prc) : (row.diffs?.opportunity?.[m] ?? 0);
@@ -229,11 +232,10 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                           measure={measure}
                           hasEdit={hasOppEdit}
                           onChange={(newVal) => {
-                            const deltaMeasure = newVal - baseOpp;
                             const deltaBase = toBase(newVal, upc, prc) - toBase(baseOpp, upc, prc);
-                            onCellEdit(row.id, 'opportunity', m, deltaBase, deltaMeasure);
+                            onCellEdit(row, 'opportunity', m, deltaBase);
                           }}
-                          onRevert={() => onCellRevert?.(row.id, 'opportunity', m)}
+                          onRevert={() => onCellRevert?.(row, 'opportunity', m)}
                         />
                       </td>
                     );
@@ -253,9 +255,12 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                     const isPast = mIdx < currentMonthIndex;
                     if (isPast) return null; // covered by rowSpan={3}
 
-                    const cellKey = `${row.id}_${m}`;
+                    const fu = row.forecastUnit || row.product || row.forecastGroup || row.brand || row.id;
+                    const apg = row.apg || 'All';
+                    const draftKey = makeDraftKey(fu, apg, m);
+                    const cellDelta = draftEdits[draftKey];
                     const baseFcst = row.definitions.actualFcst[m] ?? 0;
-                    const fcstDeltaBase = draftEdits[cellKey]?.forecast;
+                    const fcstDeltaBase = cellDelta?.forecast;
                     const hasFcstEdit = fcstDeltaBase !== undefined && fcstDeltaBase !== 0;
                     const currentFcst = fcstDeltaBase !== undefined ? baseFcst + toMeasure(fcstDeltaBase, upc, prc) : baseFcst;
                     const fcstDiff = hasFcstEdit ? toMeasure(fcstDeltaBase, upc, prc) : (row.diffs?.actualFcst?.[m] ?? 0);
@@ -289,11 +294,10 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                           measure={measure}
                           hasEdit={hasFcstEdit}
                           onChange={(newVal) => {
-                            const deltaMeasure = newVal - baseFcst;
                             const deltaBase = toBase(newVal, upc, prc) - toBase(baseFcst, upc, prc);
-                            onCellEdit(row.id, 'actualFcst', m, deltaBase, deltaMeasure);
+                            onCellEdit(row, 'actualFcst', m, deltaBase);
                           }}
-                          onRevert={() => onCellRevert?.(row.id, 'actualFcst', m)}
+                          onRevert={() => onCellRevert?.(row, 'actualFcst', m)}
                         />
                       </td>
                     );
@@ -313,9 +317,12 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                     const isPast = mIdx < currentMonthIndex;
                     if (isPast) return null; // covered by rowSpan={3}
 
-                    const cellKey = `${row.id}_${m}`;
+                    const fu = row.forecastUnit || row.product || row.forecastGroup || row.brand || row.id;
+                    const apg = row.apg || 'All';
+                    const draftKey = makeDraftKey(fu, apg, m);
+                    const cellDelta = draftEdits[draftKey];
                     const baseRisk = row.definitions.risk[m] ?? 0;
-                    const riskDeltaBase = draftEdits[cellKey]?.risk;
+                    const riskDeltaBase = cellDelta?.risk;
                     const hasRiskEdit = riskDeltaBase !== undefined && riskDeltaBase !== 0;
                     const currentRisk = riskDeltaBase !== undefined ? baseRisk + toMeasure(riskDeltaBase, upc, prc) : baseRisk;
                     const riskDiff = hasRiskEdit ? toMeasure(riskDeltaBase, upc, prc) : (row.diffs?.risk?.[m] ?? 0);
@@ -350,11 +357,10 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                           isNegative
                           hasEdit={hasRiskEdit}
                           onChange={(newVal) => {
-                            const deltaMeasure = newVal - baseRisk;
                             const deltaBase = toBase(newVal, upc, prc) - toBase(baseRisk, upc, prc);
-                            onCellEdit(row.id, 'risk', m, deltaBase, deltaMeasure);
+                            onCellEdit(row, 'risk', m, deltaBase);
                           }}
-                          onRevert={() => onCellRevert?.(row.id, 'risk', m)}
+                          onRevert={() => onCellRevert?.(row, 'risk', m)}
                         />
                       </td>
                     );

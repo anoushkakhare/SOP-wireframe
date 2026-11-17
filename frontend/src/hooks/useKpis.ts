@@ -5,12 +5,13 @@ import { useFilterStore } from '../store/filterStore';
 import { useScenarioStore } from '../store/scenarioStore';
 import { useTableStore } from '../store/tableStore';
 import { KpiItem } from '../types';
+import { toMeasureUnits, editMatchesFilters } from '../utils/editsOverlay';
 
 export function useKpis() {
   const { productLevel, scope, apg, measure, timeGrain } = useViewStore();
   const { appliedFilters } = useFilterStore();
   const { activeScenario } = useScenarioStore();
-  const { mode, draftEdits, savedEdits } = useTableStore();
+  const { draftEdits, savedEdits } = useTableStore();
 
   const scopeStr = scope.join(',') || undefined;
   const apgStr = apg.join(',') || undefined;
@@ -35,19 +36,26 @@ export function useKpis() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const edits = mode === 'edit' ? draftEdits : savedEdits;
-  const totalForecastDelta = Object.values(edits).reduce(
-    (sum, val) => sum + (val.forecastMeasure ?? val.forecast ?? 0),
-    0
-  );
-  const totalOpportunityDelta = Object.values(edits).reduce(
-    (sum, val) => sum + (val.opportunityMeasure ?? val.opportunity ?? 0),
-    0
-  );
-  const totalRiskDelta = Object.values(edits).reduce(
-    (sum, val) => sum + (val.riskMeasure ?? val.risk ?? 0),
-    0
-  );
+  const edits = Object.keys(draftEdits).length > 0 ? draftEdits : savedEdits;
+  let totalForecastDelta = 0;
+  let totalOpportunityDelta = 0;
+  let totalRiskDelta = 0;
+
+  for (const edit of Object.values(edits)) {
+    if (editMatchesFilters(edit, scope, apg)) {
+      const upc = edit.unitsPerCase || 12;
+      const price = edit.price || 100;
+      if (edit.forecast) {
+        totalForecastDelta += toMeasureUnits(edit.forecast, measure, upc, price);
+      }
+      if (edit.opportunity) {
+        totalOpportunityDelta += toMeasureUnits(edit.opportunity, measure, upc, price);
+      }
+      if (edit.risk) {
+        totalRiskDelta += toMeasureUnits(edit.risk, measure, upc, price);
+      }
+    }
+  }
 
   const kpis: KpiItem[] = (query.data || []).map((item) => {
     if (item.key === 'total_forecast' && totalForecastDelta !== 0) {

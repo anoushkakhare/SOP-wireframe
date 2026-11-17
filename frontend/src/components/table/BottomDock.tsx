@@ -34,6 +34,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
     setCellEdit,
     revertCellEdit,
     saveEdits,
+    discardEdits,
     closeDock,
     hasUnsavedEdits,
   } = useTableStore();
@@ -42,6 +43,8 @@ export const BottomDock: React.FC<BottomDockProps> = ({
   const canEdit = timeGrain === 'month' || timeGrain === 'week';
 
   const { setDiscardConfirmModalOpen, addToast } = useUiStore();
+
+  const hasDraft = Object.keys(draftEdits).length > 0;
 
   React.useEffect(() => {
     if (mode === 'edit' && !canEdit) {
@@ -54,7 +57,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
   const handleToggleEdit = () => {
     if (!canEdit) return;
     if (mode === 'edit') {
-      if (hasUnsavedEdits()) {
+      if (hasDraft || hasUnsavedEdits()) {
         setDiscardConfirmModalOpen(true);
       } else {
         setMode('view');
@@ -73,6 +76,9 @@ export const BottomDock: React.FC<BottomDockProps> = ({
       saveEdits();
       addToast(labels.toasts.editSaved, 'success');
     } else {
+      if (hasDraft) {
+        discardEdits();
+      }
       closeDock();
     }
   };
@@ -84,7 +90,12 @@ export const BottomDock: React.FC<BottomDockProps> = ({
         <div className="flex-1 mr-4">
           <ModeHint mode={mode} isDesegregated={isDesegregated} />
         </div>
-        <div className="shrink-0">
+        <div className="shrink-0 flex items-center gap-3">
+          {hasDraft && (
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300 shadow-sm animate-in fade-in">
+              Previewing unsaved edits
+            </span>
+          )}
           <TableFloatingButtons
             mode={mode}
             onToggleEdit={handleToggleEdit}
@@ -105,12 +116,34 @@ export const BottomDock: React.FC<BottomDockProps> = ({
           productLevelNum={productLevelNum}
           mode={mode}
           draftEdits={draftEdits}
-          onCellEdit={(rowId, defType, month, deltaBase, deltaMeasure) =>
-            setCellEdit({ rowId, defType, month }, deltaBase, deltaMeasure)
-          }
-          onCellRevert={(rowId, defType, month) =>
-            revertCellEdit({ rowId, defType, month })
-          }
+          onCellEdit={(row, defType, month, deltaBase) => {
+            const fu = row.forecastUnit || row.product || row.forecastGroup || row.brand || row.id;
+            const apg = row.apg || 'All';
+            setCellEdit(
+              {
+                forecastUnit: fu,
+                apg,
+                period: month,
+                defType,
+                rowMeta: {
+                  fuId: row.id,
+                  forecastUnit: fu,
+                  forecastGroup: row.forecastGroup,
+                  brand: row.brand,
+                  sop: row.sop,
+                  category: row.category,
+                  unitsPerCase: row.unitsPerCase || 12,
+                  price: row.price || 100,
+                },
+              },
+              deltaBase
+            );
+          }}
+          onCellRevert={(row, defType, month) => {
+            const fu = row.forecastUnit || row.product || row.forecastGroup || row.brand || row.id;
+            const apg = row.apg || 'All';
+            revertCellEdit({ forecastUnit: fu, apg, period: month, defType });
+          }}
           isLoading={isLoading}
         />
       </div>
