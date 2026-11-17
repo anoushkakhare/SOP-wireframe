@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { RoleBadge } from '../header/RoleBadge';
 import { LabeledSelect } from '../header/LabeledSelect';
 import { HeaderActions } from '../header/HeaderActions';
+import { ReadinessChip } from '../header/ReadinessChip';
+import { CalendarPopover } from '../header/CalendarPopover';
 import { Uom, ProductLevelNum, TimeGrain } from '../../types';
 import { CustomerViewOption } from '../../store/viewStore';
 import { SlidersHorizontal, X, RotateCcw } from 'lucide-react';
@@ -11,23 +14,23 @@ import { LEVEL_MAP } from '../../constants/hierarchy';
 interface StickyHeaderProps {
   roleTitle: string;
   userName?: string;
-  productLevel: ProductLevelNum;
-  allowedLevels: ProductLevelNum[];
-  customerView: CustomerViewOption;
-  measure: Uom;
+  productLevel?: ProductLevelNum;
+  allowedLevels?: ProductLevelNum[];
+  customerView?: CustomerViewOption;
+  measure?: Uom;
   measureOptions?: Array<{ value: string; label: string }>;
   timeGrain?: TimeGrain;
   timeGrainOptions?: Array<{ value: string; label: string }>;
-  onProductLevelChange: (val: ProductLevelNum) => void;
-  onCustomerViewChange: (val: CustomerViewOption) => void;
-  onMeasureChange: (val: Uom) => void;
+  onProductLevelChange?: (val: ProductLevelNum) => void;
+  onCustomerViewChange?: (val: CustomerViewOption) => void;
+  onMeasureChange?: (val: Uom) => void;
   onTimeGrainChange?: (val: TimeGrain) => void;
-  onResetHeaderOnly: () => void;
-  onSaveScenario: () => void;
-  onCommitScenario: () => void;
-  onToggleTable: () => void;
-  onOpenFilter: () => void;
-  onOpenScenarios: () => void;
+  onResetHeaderOnly?: () => void;
+  onSaveScenario?: () => void;
+  onCommitScenario?: () => void;
+  onToggleTable?: () => void;
+  onOpenFilter?: () => void;
+  onOpenScenarios?: () => void;
   isTableActive?: boolean;
   activeFilterCount?: number;
 }
@@ -35,10 +38,10 @@ interface StickyHeaderProps {
 export const StickyHeader: React.FC<StickyHeaderProps> = ({
   roleTitle,
   userName,
-  productLevel,
-  allowedLevels,
-  customerView,
-  measure,
+  productLevel = 1,
+  allowedLevels = [1, 2, 3, 4, 5],
+  customerView = 'apg',
+  measure = 'cases',
   measureOptions,
   timeGrain = 'month',
   timeGrainOptions,
@@ -56,6 +59,8 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
   activeFilterCount = 0,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const isDataReview = location.pathname === '/data-review';
   const { selects } = labels.header;
 
   // Build product level options showing only allowed levels with colour dots
@@ -93,14 +98,14 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
   const LevelDot = ({ color }: { color?: string }) =>
     color ? <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: color }} /> : null;
 
-  const selects_desktop = (
+  const selects_desktop = !isDataReview ? (
     <div className="hidden lg:flex items-center gap-3 flex-1 justify-center max-w-2xl">
       {/* Product view */}
       <LabeledSelect
         label={selects.productView}
         value={String(productLevel)}
         options={productLevelOptions.map(o => ({ value: o.value, label: o.label }))}
-        onChange={(v) => onProductLevelChange(Number(v) as ProductLevelNum)}
+        onChange={(v) => onProductLevelChange?.(Number(v) as ProductLevelNum)}
         renderOption={(o) => (
           <span className="flex items-center">
             <LevelDot color={productLevelOptions.find(p => p.value === o.value)?.color} />
@@ -120,75 +125,89 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
         label={selects.customerView}
         value={customerView}
         options={customerViewOptions}
-        onChange={(v) => onCustomerViewChange(v as CustomerViewOption)}
+        onChange={(v) => onCustomerViewChange?.(v as CustomerViewOption)}
       />
       {/* Measure */}
       <LabeledSelect
         label={selects.measure}
         value={measure}
         options={resolvedMeasures}
-        onChange={(v) => onMeasureChange(v as Uom)}
+        onChange={(v) => onMeasureChange?.(v as Uom)}
       />
       {/* Reset header */}
-      <button
-        type="button"
-        onClick={onResetHeaderOnly}
-        title="Reset view"
-        className="p-1.5 rounded text-white/70 hover:text-white hover:bg-white/10 transition-colors shrink-0"
-        aria-label="Reset view"
-      >
-        <RotateCcw className="w-3.5 h-3.5" />
-      </button>
+      {onResetHeaderOnly && (
+        <button
+          type="button"
+          onClick={onResetHeaderOnly}
+          title="Reset view"
+          className="p-1.5 rounded text-white/70 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+          aria-label="Reset view"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
+  ) : (
+    <div className="flex-1" />
   );
 
   return (
-    <header className="sticky top-0 z-30 w-full bg-primary-700 px-4 md:px-6 py-3 shadow-sm min-h-[56px]">
+    <header className="sticky top-0 z-30 w-full bg-primary-700 px-4 md:px-6 py-2.5 shadow-sm min-h-[56px]">
       <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-4">
         {/* 1. Left: Unilever logo + Role badge */}
         <div className="flex items-center gap-4 shrink-0">
           <img
             src="/unilever-logo.png"
             alt="Unilever"
-            style={{ height: 40, width: 'auto', objectFit: 'contain', display: 'block' }}
+            style={{ height: 38, width: 'auto', objectFit: 'contain', display: 'block' }}
           />
           <RoleBadge roleTitle={roleTitle} userName={userName} />
         </div>
 
         {selects_desktop}
 
-        <div className="hidden sm:flex items-center gap-2 shrink-0">
-          <HeaderActions
-            onSaveScenario={onSaveScenario}
-            onCommitScenario={onCommitScenario}
-            onToggleTable={onToggleTable}
-            onOpenFilter={onOpenFilter}
-            onOpenScenarios={onOpenScenarios}
-            isTableActive={isTableActive}
-            activeFilterCount={activeFilterCount}
-          />
-        </div>
+        {/* Right side: Readiness chip, calendar icon, and dashboard-only actions */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <ReadinessChip />
+          <CalendarPopover />
 
-        <div className="flex sm:hidden items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 border border-white/30 rounded-card bg-white/10 text-white hover:bg-white/20 transition-colors"
-            aria-label={labels.header.mobileMenuToggle}
-          >
-            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <SlidersHorizontal className="w-5 h-5" />}
-          </button>
+          {!isDataReview && onSaveScenario && onCommitScenario && onToggleTable && onOpenFilter && onOpenScenarios && (
+            <div className="hidden sm:flex items-center gap-2 pl-1 border-l border-white/20">
+              <HeaderActions
+                onSaveScenario={onSaveScenario}
+                onCommitScenario={onCommitScenario}
+                onToggleTable={onToggleTable}
+                onOpenFilter={onOpenFilter}
+                onOpenScenarios={onOpenScenarios}
+                isTableActive={isTableActive}
+                activeFilterCount={activeFilterCount}
+              />
+            </div>
+          )}
+
+          {!isDataReview && (
+            <div className="flex sm:hidden items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 border border-white/30 rounded-card bg-white/10 text-white hover:bg-white/20 transition-colors"
+                aria-label={labels.header.mobileMenuToggle}
+              >
+                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <SlidersHorizontal className="w-5 h-5" />}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {isMobileMenuOpen && (
+      {!isDataReview && isMobileMenuOpen && (
         <div className="lg:hidden mt-3 pt-3 border-t border-white/20 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
             <LabeledSelect
               label={selects.productView}
               value={String(productLevel)}
               options={productLevelOptions.map(o => ({ value: o.value, label: o.label }))}
-              onChange={(v) => onProductLevelChange(Number(v) as ProductLevelNum)}
+              onChange={(v) => onProductLevelChange?.(Number(v) as ProductLevelNum)}
             />
             <LabeledSelect
               label="Time view"
@@ -200,26 +219,28 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
               label={selects.customerView}
               value={customerView}
               options={customerViewOptions}
-              onChange={(v) => onCustomerViewChange(v as CustomerViewOption)}
+              onChange={(v) => onCustomerViewChange?.(v as CustomerViewOption)}
             />
             <LabeledSelect
               label={selects.measure}
               value={measure}
               options={resolvedMeasures}
-              onChange={(v) => onMeasureChange(v as Uom)}
+              onChange={(v) => onMeasureChange?.(v as Uom)}
             />
           </div>
-          <div className="flex sm:hidden justify-end pt-2 border-t border-white/20">
-            <HeaderActions
-              onSaveScenario={onSaveScenario}
-              onCommitScenario={onCommitScenario}
-              onToggleTable={onToggleTable}
-              onOpenFilter={onOpenFilter}
-              onOpenScenarios={onOpenScenarios}
-              isTableActive={isTableActive}
-              activeFilterCount={activeFilterCount}
-            />
-          </div>
+          {onSaveScenario && onCommitScenario && onToggleTable && onOpenFilter && onOpenScenarios && (
+            <div className="flex sm:hidden justify-end pt-2 border-t border-white/20">
+              <HeaderActions
+                onSaveScenario={onSaveScenario}
+                onCommitScenario={onCommitScenario}
+                onToggleTable={onToggleTable}
+                onOpenFilter={onOpenFilter}
+                onOpenScenarios={onOpenScenarios}
+                isTableActive={isTableActive}
+                activeFilterCount={activeFilterCount}
+              />
+            </div>
+          )}
         </div>
       )}
     </header>

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LoginPage } from './pages/LoginPage';
 import { DemandPlannerPage } from './pages/DemandPlannerPage';
+import { DataReviewPage } from './pages/DataReviewPage';
 import { DevGalleryPage } from './pages/DevGalleryPage';
 import { NotFound } from './pages/NotFound';
 import { RoleGuard } from './roles/RoleGuard';
@@ -16,6 +17,11 @@ const queryClient = new QueryClient({
   },
 });
 
+const LandingRedirect: React.FC = () => {
+  const lastPage = localStorage.getItem('unilever_last_page') || '/dashboard';
+  return <Navigate to={lastPage} replace />;
+};
+
 export const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
@@ -26,7 +32,23 @@ export const App: React.FC = () => {
             path="/"
             element={
               <RoleGuard>
+                <LandingRedirect />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <RoleGuard>
                 <DemandPlannerPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="/data-review"
+            element={
+              <RoleGuard>
+                <DataReviewPage />
               </RoleGuard>
             }
           />
@@ -40,4 +62,3 @@ export const App: React.FC = () => {
 };
 
 export default App;
-

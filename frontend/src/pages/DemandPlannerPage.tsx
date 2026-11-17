@@ -31,6 +31,10 @@ import { ProductLevelNum } from '../types';
 
 export const DemandPlannerPage: React.FC = () => {
   const { user } = useAuthStore();
+
+  React.useEffect(() => {
+    localStorage.setItem('unilever_last_page', '/dashboard');
+  }, []);
   const {
     productLevel,
     scope,

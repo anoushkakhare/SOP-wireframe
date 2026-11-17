@@ -12,11 +12,19 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
   children,
   allowedRoles,
 }) => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, layoutManifest } = useAuthStore();
   const location = useLocation();
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Check if role layout manifest disables this page
+  if (layoutManifest?.pages && layoutManifest.pages.length > 0) {
+    const pageConfig = layoutManifest.pages.find(p => p.path === location.pathname);
+    if (pageConfig && pageConfig.enabled === false) {
+      return <Navigate to="/dashboard" replace />;
+    }
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {

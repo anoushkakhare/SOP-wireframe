@@ -24,6 +24,14 @@ export interface WidgetManifest {
   props?: Record<string, any>;
 }
 
+export interface PageManifest {
+  id: string;
+  label: string;
+  path: string;
+  icon: string;
+  enabled: boolean;
+}
+
 export interface LayoutManifest {
   role: Role;
   roleTitle: string;
@@ -34,6 +42,7 @@ export interface LayoutManifest {
     showUom: boolean;
     actions: ('save' | 'commit' | 'table' | 'filter' | 'scenarios')[];
   };
+  pages?: PageManifest[];
 }
 
 export interface LoginResponse {
@@ -210,4 +219,61 @@ export interface DataQueryParams {
   to?: string;
   planningCycle?: string;
   activity?: string;
+}
+
+export type FeedType = 'master' | 'transactional';
+export type FeedStatus = 'loaded' | 'delayed' | 'pending' | 'failed';
+
+export interface DataReviewFeed {
+  id: string;
+  name: string;
+  type: FeedType;
+  expectedDate: string;
+  status: FeedStatus;
+  loadedAt: string | null;
+  rowCount: number | null;
+  source: string;
+  delayHours?: number;
+}
+
+export interface DataReviewHistoryItem {
+  id: string;
+  feedId: string;
+  feedName: string;
+  type: FeedType;
+  cycle: string;
+  expectedDate: string;
+  loadedAt: string | null;
+  status: FeedStatus;
+  delayHours: number;
+  rowCount: number | null;
+  source: string;
+}
+
+export interface ReadinessCheckItem {
+  id: string;
+  label: string;
+  status: 'passed' | 'failed' | 'pending';
+  checked: boolean;
+  isManual: boolean;
+  details?: string;
+}
+
+export interface DataReviewReadinessResponse {
+  totalSteps: number;
+  completedSteps: number;
+  signedOff: boolean;
+  signoff: {
+    signedBy: string;
+    signedAt: string;
+    cycle: string;
+  } | null;
+  checklist: ReadinessCheckItem[];
+  blockingItems: string[];
+}
+
+export interface SignoffRequest {
+  signedBy?: string;
+  signedAt?: string;
+  cycle?: string;
 }

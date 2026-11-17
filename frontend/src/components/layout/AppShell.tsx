@@ -1,5 +1,6 @@
 import React from 'react';
 import { StickyHeader } from './StickyHeader';
+import { LeftIconRail } from './LeftIconRail';
 import { ScrollRegion } from './ScrollRegion';
 import { FilterDrawer } from '../filters/FilterDrawer';
 import { ScenarioSelectorDrawer } from '../scenarios/ScenarioSelectorDrawer';
@@ -12,96 +13,96 @@ import {
   HierarchyNode,
   Uom,
   TimeGrain,
+  ProductLevelNum,
 } from '../../types';
-import { ProductLevelNum } from '../../types';
 import { CustomerViewOption } from '../../store/viewStore';
 import { labels } from '../../constants/labels';
 
 interface AppShellProps {
   children: React.ReactNode;
-  roleTitle: string;
+  roleTitle?: string;
   userName?: string;
-  metaOptions: MetaOptions | null;
-  hierarchyNodes: HierarchyNode[];
-  productLevel: ProductLevelNum;
-  allowedLevels: ProductLevelNum[];
-  customerView: CustomerViewOption;
-  measure: Uom;
+  metaOptions?: MetaOptions | null;
+  hierarchyNodes?: HierarchyNode[];
+  productLevel?: ProductLevelNum;
+  allowedLevels?: ProductLevelNum[];
+  customerView?: CustomerViewOption;
+  measure?: Uom;
   timeGrain?: TimeGrain;
-  apg: string[];
-  onProductLevelChange: (val: ProductLevelNum) => void;
-  onCustomerViewChange: (val: CustomerViewOption) => void;
-  onMeasureChange: (val: Uom) => void;
+  apg?: string[];
+  onProductLevelChange?: (val: ProductLevelNum) => void;
+  onCustomerViewChange?: (val: CustomerViewOption) => void;
+  onMeasureChange?: (val: Uom) => void;
   onTimeGrainChange?: (val: TimeGrain) => void;
-  onApgChange: (val: string[]) => void;
-  onResetHeaderOnly: () => void;
+  onApgChange?: (val: string[]) => void;
+  onResetHeaderOnly?: () => void;
 
-  isTableActive: boolean;
-  onToggleTable: () => void;
+  isTableActive?: boolean;
+  onToggleTable?: () => void;
   activeFilterCount?: number;
 
-  isFilterOpen: boolean;
-  onCloseFilter: () => void;
-  onApplyFilter: () => void;
-  onResetFilter: () => void;
+  isFilterOpen?: boolean;
+  onCloseFilter?: () => void;
+  onApplyFilter?: () => void;
+  onResetFilter?: () => void;
 
-  isScenarioOpen: boolean;
-  onCloseScenario: () => void;
-  isSaveModalOpen: boolean;
-  onCloseSaveModal: () => void;
-  onSaveScenario: (name: string) => Promise<void>;
-  isCommitModalOpen: boolean;
-  onCloseCommitModal: () => void;
-  onConfirmCommit: () => Promise<void>;
+  isScenarioOpen?: boolean;
+  onCloseScenario?: () => void;
+  isSaveModalOpen?: boolean;
+  onCloseSaveModal?: () => void;
+  onSaveScenario?: (name: string) => Promise<void>;
+  isCommitModalOpen?: boolean;
+  onCloseCommitModal?: () => void;
+  onConfirmCommit?: () => Promise<void>;
 
-  deleteTarget: { id: string; name: string } | null;
-  onCloseDeleteModal: () => void;
-  onConfirmDelete: () => Promise<void>;
+  deleteTarget?: { id: string; name: string } | null;
+  onCloseDeleteModal?: () => void;
+  onConfirmDelete?: () => Promise<void>;
 
-  isDiscardModalOpen: boolean;
-  onCloseDiscardModal: () => void;
-  onConfirmDiscard: () => void;
+  isDiscardModalOpen?: boolean;
+  onCloseDiscardModal?: () => void;
+  onConfirmDiscard?: () => void;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({
   children,
-  roleTitle,
+  roleTitle = 'Demand Planner',
   userName,
-  metaOptions,
-  hierarchyNodes,
-  productLevel,
-  allowedLevels,
-  customerView,
-  measure,
+  metaOptions = null,
+  hierarchyNodes = [],
+  productLevel = 1,
+  allowedLevels = [1, 2, 3, 4, 5],
+  customerView = 'apg',
+  measure = 'cases',
   timeGrain = 'month',
-  apg,
-  onProductLevelChange,
-  onCustomerViewChange,
-  onMeasureChange,
-  onTimeGrainChange,
-  onApgChange,
-  onResetHeaderOnly,
-  isTableActive,
-  onToggleTable,
-  activeFilterCount,
-  isFilterOpen,
-  onCloseFilter,
-  onApplyFilter,
-  onResetFilter,
-  isScenarioOpen,
-  onCloseScenario,
-  isSaveModalOpen,
-  onCloseSaveModal,
-  onSaveScenario,
-  isCommitModalOpen,
-  onCloseCommitModal,
-  onConfirmCommit,
-  deleteTarget,
-  onCloseDeleteModal,
-  onConfirmDelete,
-  isDiscardModalOpen,
-  onCloseDiscardModal,
-  onConfirmDiscard,
+  apg = [],
+  onProductLevelChange = () => {},
+  onCustomerViewChange = () => {},
+  onMeasureChange = () => {},
+  onTimeGrainChange = () => {},
+  onApgChange = () => {},
+  onResetHeaderOnly = () => {},
+  isTableActive = false,
+  onToggleTable = () => {},
+  activeFilterCount = 0,
+  isFilterOpen = false,
+  onCloseFilter = () => {},
+  onApplyFilter = () => {},
+  onResetFilter = () => {},
+  isScenarioOpen = false,
+  onCloseScenario = () => {},
+  isSaveModalOpen = false,
+  onCloseSaveModal = () => {},
+  onSaveScenario = async () => {},
+  isCommitModalOpen = false,
+  onCloseCommitModal = () => {},
+  onConfirmCommit = async () => {},
+  deleteTarget = null,
+  onCloseDeleteModal = () => {},
+  onConfirmDelete = async () => {},
+  isDiscardModalOpen = false,
+  onCloseDiscardModal = () => {},
+  onConfirmDiscard = () => {},
 }) => {
   const { dialogs: d } = labels;
 
@@ -131,9 +132,14 @@ export const AppShell: React.FC<AppShellProps> = ({
         activeFilterCount={activeFilterCount}
       />
 
-      <ScrollRegion hasBottomDock={isTableActive}>
-        {children}
-      </ScrollRegion>
+      <div className="flex flex-1 min-h-[calc(100vh-56px)] pb-14 md:pb-0 overflow-hidden">
+        <LeftIconRail />
+        <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
+          <ScrollRegion hasBottomDock={isTableActive}>
+            {children}
+          </ScrollRegion>
+        </main>
+      </div>
 
       <FilterDrawer
         isOpen={isFilterOpen}

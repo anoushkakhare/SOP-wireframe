@@ -165,6 +165,45 @@ async function main() {
     else fail(`bar chart (${barTotal}) vs treemap (${treemapSum}) differ by ${(tmPct * 100).toFixed(1)}%`);
   }
 
+  // 7. Data Review Endpoints
+  console.log('7. GET /data-review/pipeline');
+  const pipelineRes = await request('GET', '/data-review/pipeline');
+  if (pipelineRes.status === 200 && Array.isArray(pipelineRes.json) && pipelineRes.json.length === 5) {
+    ok(`pipeline: 5 feeds present (${pipelineRes.json.map(f => f.name).join(', ')})`);
+  } else {
+    fail(`pipeline returned ${pipelineRes.status} (length ${pipelineRes.json?.length})`);
+  }
+
+  console.log('8. GET /data-review/history');
+  const historyRes = await request('GET', '/data-review/history');
+  if (historyRes.status === 200 && Array.isArray(historyRes.json) && historyRes.json.length === 20) {
+    ok(`history: 20 load records present`);
+  } else {
+    fail(`history returned ${historyRes.status} (length ${historyRes.json?.length})`);
+  }
+
+  console.log('9. GET /data-review/readiness');
+  const readinessRes = await request('GET', '/data-review/readiness');
+  if (
+    readinessRes.status === 200 &&
+    readinessRes.json?.totalSteps === 7 &&
+    readinessRes.json?.completedSteps >= 3 &&
+    Array.isArray(readinessRes.json?.checklist) &&
+    readinessRes.json?.checklist.length === 5
+  ) {
+    ok(`readiness: ${readinessRes.json.completedSteps}/${readinessRes.json.totalSteps} steps, 5 checklist items`);
+  } else {
+    fail(`readiness returned unexpected shape: ${JSON.stringify(readinessRes.json)}`);
+  }
+
+  console.log('10. GET /data-review/calendar');
+  const calendarRes = await request('GET', '/data-review/calendar');
+  if (calendarRes.status === 200 && Array.isArray(calendarRes.json) && calendarRes.json.length > 0) {
+    ok(`calendar: ${calendarRes.json.length} calendar feed entries found`);
+  } else {
+    fail(`calendar returned ${calendarRes.status}`);
+  }
+
   // Summary
   console.log('\n── Results ──────────────────────────────────');
   if (failures === 0) {
