@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlanningTableRow, ProductLevel } from '../../types';
-import { TableMode } from '../../store/tableStore';
+import { TableMode, CellDelta } from '../../store/tableStore';
 import { EditableCell } from './EditableCell';
 import { DeltaCell } from './DeltaCell';
 import { formatCompactNumber } from '../../utils/formatters';
@@ -15,8 +15,9 @@ interface PlanningTableProps {
   level: ProductLevel;
   productLevelNum?: number;
   mode: TableMode;
-  draftEdits: Record<string, number>;
-  onCellEdit: (rowId: string, defType: 'opportunity' | 'actualFcst' | 'risk', month: string, val: number) => void;
+  draftEdits: Record<string, CellDelta>;
+  onCellEdit: (rowId: string, defType: 'opportunity' | 'actualFcst' | 'risk', month: string, deltaBase: number, deltaMeasure: number) => void;
+  onCellRevert?: (rowId: string, defType: 'opportunity' | 'actualFcst' | 'risk', month: string) => void;
   isLoading?: boolean;
 }
 
@@ -42,6 +43,7 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
   mode,
   draftEdits,
   onCellEdit,
+  onCellRevert,
   isLoading = false,
 }) => {
   const { measure } = useViewStore();
@@ -191,20 +193,48 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                       );
                     }
 
+                    const cellKey = `${row.id}_${m}`;
                     const baseOpp = row.definitions.opportunity[m] ?? 0;
-                    const diffVal = row.diffs?.opportunity?.[m];
+                    const oppDeltaBase = draftEdits[cellKey]?.opportunity;
+                    const hasOppEdit = oppDeltaBase !== undefined && oppDeltaBase !== 0;
+                    const currentOpp = oppDeltaBase !== undefined ? baseOpp + toMeasure(oppDeltaBase, upc, prc) : baseOpp;
+                    const oppDiff = hasOppEdit ? toMeasure(oppDeltaBase, upc, prc) : (row.diffs?.opportunity?.[m] ?? 0);
 
                     if (mode === 'delta') {
                       return (
                         <td key={m} className="py-1 px-1.5 text-center border-r border-border">
-                          <DeltaCell delta={diffVal !== undefined ? diffVal : 0} measure={measure} />
+                          <DeltaCell delta={oppDiff} measure={measure} />
                         </td>
                       );
                     }
 
                     return (
-                      <td key={m} className="py-1.5 px-2 text-center text-positive font-semibold tabular-nums border-r border-border">
-                        {formatCompactNumber(baseOpp, { withSign: true, measure })}
+                      <td
+                        key={m}
+                        className={`py-1.5 px-2 text-center text-positive font-semibold tabular-nums border-r border-border ${
+                          hasOppEdit
+                            ? oppDiff > 0
+                              ? 'bg-positive-bg/40'
+                              : 'bg-negative-bg/40'
+                            : mode === 'edit'
+                              ? 'bg-surface border-primary-300'
+                              : ''
+                        }`}
+                      >
+                        <EditableCell
+                          value={currentOpp}
+                          originalValue={baseOpp}
+                          isEditable={mode === 'edit'}
+                          rowType="opportunity"
+                          measure={measure}
+                          hasEdit={hasOppEdit}
+                          onChange={(newVal) => {
+                            const deltaMeasure = newVal - baseOpp;
+                            const deltaBase = toBase(newVal, upc, prc) - toBase(baseOpp, upc, prc);
+                            onCellEdit(row.id, 'opportunity', m, deltaBase, deltaMeasure);
+                          }}
+                          onRevert={() => onCellRevert?.(row.id, 'opportunity', m)}
+                        />
                       </td>
                     );
                   })}
@@ -223,16 +253,17 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                     const isPast = mIdx < currentMonthIndex;
                     if (isPast) return null; // covered by rowSpan={3}
 
-                    const editKey = `${row.id}_actualFcst_${m}`;
+                    const cellKey = `${row.id}_${m}`;
                     const baseFcst = row.definitions.actualFcst[m] ?? 0;
-                    const currentFcst = draftEdits[editKey] !== undefined ? toMeasure(draftEdits[editKey], upc, prc) : baseFcst;
-                    const hasEdit = draftEdits[editKey] !== undefined;
-                    const diffVal = row.diffs?.actualFcst?.[m] || (currentFcst - baseFcst);
+                    const fcstDeltaBase = draftEdits[cellKey]?.forecast;
+                    const hasFcstEdit = fcstDeltaBase !== undefined && fcstDeltaBase !== 0;
+                    const currentFcst = fcstDeltaBase !== undefined ? baseFcst + toMeasure(fcstDeltaBase, upc, prc) : baseFcst;
+                    const fcstDiff = hasFcstEdit ? toMeasure(fcstDeltaBase, upc, prc) : (row.diffs?.actualFcst?.[m] ?? 0);
 
                     if (mode === 'delta') {
                       return (
                         <td key={m} className="py-1 px-1.5 text-center border-r border-border">
-                          <DeltaCell delta={diffVal} measure={measure} />
+                          <DeltaCell delta={fcstDiff} measure={measure} />
                         </td>
                       );
                     }
@@ -240,20 +271,29 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                     return (
                       <td
                         key={m}
-                        className={`py-1.5 px-2 text-center border-r border-border ${hasEdit
-                            ? diffVal > 0
+                        className={`py-1.5 px-2 text-center border-r border-border ${
+                          hasFcstEdit
+                            ? fcstDiff > 0
                               ? 'bg-positive-bg/40'
                               : 'bg-negative-bg/40'
                             : mode === 'edit'
                               ? 'bg-surface border-primary-300'
                               : ''
-                          }`}
+                        }`}
                       >
                         <EditableCell
                           value={currentFcst}
+                          originalValue={baseFcst}
                           isEditable={mode === 'edit'}
+                          rowType="forecast"
                           measure={measure}
-                          onChange={(newVal) => onCellEdit(row.id, 'actualFcst', m, toBase(newVal, upc, prc))}
+                          hasEdit={hasFcstEdit}
+                          onChange={(newVal) => {
+                            const deltaMeasure = newVal - baseFcst;
+                            const deltaBase = toBase(newVal, upc, prc) - toBase(baseFcst, upc, prc);
+                            onCellEdit(row.id, 'actualFcst', m, deltaBase, deltaMeasure);
+                          }}
+                          onRevert={() => onCellRevert?.(row.id, 'actualFcst', m)}
                         />
                       </td>
                     );
@@ -273,20 +313,49 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                     const isPast = mIdx < currentMonthIndex;
                     if (isPast) return null; // covered by rowSpan={3}
 
+                    const cellKey = `${row.id}_${m}`;
                     const baseRisk = row.definitions.risk[m] ?? 0;
-                    const diffVal = row.diffs?.risk?.[m];
+                    const riskDeltaBase = draftEdits[cellKey]?.risk;
+                    const hasRiskEdit = riskDeltaBase !== undefined && riskDeltaBase !== 0;
+                    const currentRisk = riskDeltaBase !== undefined ? baseRisk + toMeasure(riskDeltaBase, upc, prc) : baseRisk;
+                    const riskDiff = hasRiskEdit ? toMeasure(riskDeltaBase, upc, prc) : (row.diffs?.risk?.[m] ?? 0);
 
                     if (mode === 'delta') {
                       return (
                         <td key={m} className="py-1 px-1.5 text-center border-r border-border">
-                          <DeltaCell delta={diffVal !== undefined ? diffVal : 0} measure={measure} />
+                          <DeltaCell delta={riskDiff} measure={measure} />
                         </td>
                       );
                     }
 
                     return (
-                      <td key={m} className="py-1.5 px-2 text-center text-negative font-semibold tabular-nums border-r border-border">
-                        {formatCompactNumber(baseRisk, { withSign: true, measure })}
+                      <td
+                        key={m}
+                        className={`py-1.5 px-2 text-center text-negative font-semibold tabular-nums border-r border-border ${
+                          hasRiskEdit
+                            ? riskDiff > 0
+                              ? 'bg-positive-bg/40'
+                              : 'bg-negative-bg/40'
+                            : mode === 'edit'
+                              ? 'bg-surface border-primary-300'
+                              : ''
+                        }`}
+                      >
+                        <EditableCell
+                          value={currentRisk}
+                          originalValue={baseRisk}
+                          isEditable={mode === 'edit'}
+                          rowType="risk"
+                          measure={measure}
+                          isNegative
+                          hasEdit={hasRiskEdit}
+                          onChange={(newVal) => {
+                            const deltaMeasure = newVal - baseRisk;
+                            const deltaBase = toBase(newVal, upc, prc) - toBase(baseRisk, upc, prc);
+                            onCellEdit(row.id, 'risk', m, deltaBase, deltaMeasure);
+                          }}
+                          onRevert={() => onCellRevert?.(row.id, 'risk', m)}
+                        />
                       </td>
                     );
                   })}

@@ -2,18 +2,27 @@ import { create } from 'zustand';
 
 export type TableMode = 'view' | 'edit' | 'delta';
 
+export interface CellDelta {
+  period?: string;
+  forecast?: number;
+  opportunity?: number;
+  risk?: number;
+  forecastMeasure?: number;
+  opportunityMeasure?: number;
+  riskMeasure?: number;
+}
+
 export interface CellEditKey {
   rowId: string;
-  defType: 'opportunity' | 'actualFcst' | 'risk';
+  defType: 'opportunity' | 'actualFcst' | 'risk' | 'forecast';
   month: string;
 }
 
 interface TableState {
   isDockOpen: boolean;
   mode: TableMode;
-  // Local edits map: key = `${rowId}_${defType}_${month}`, value = new number
-  draftEdits: Record<string, number>;
-  savedEdits: Record<string, number>;
+  draftEdits: Record<string, CellDelta>;
+  savedEdits: Record<string, CellDelta>;
   isDesegregated: boolean;
   desegregatedParent?: string;
 
@@ -21,7 +30,8 @@ interface TableState {
   openDock: () => void;
   closeDock: () => void;
   setMode: (mode: TableMode) => void;
-  setCellEdit: (key: CellEditKey, value: number) => void;
+  setCellEdit: (key: CellEditKey, deltaBase: number, deltaMeasure?: number) => void;
+  revertCellEdit: (key: CellEditKey) => void;
   saveEdits: () => void;
   discardEdits: () => void;
   hasUnsavedEdits: () => boolean;
@@ -42,20 +52,76 @@ export const useTableStore = create<TableState>((set, get) => ({
 
   setMode: (mode) => set({ mode }),
 
-  setCellEdit: (key, value) => {
-    const editKey = `${key.rowId}_${key.defType}_${key.month}`;
-    set((s) => ({
-      draftEdits: {
-        ...s.draftEdits,
-        [editKey]: value,
-      },
-    }));
+  setCellEdit: (key, deltaBase, deltaMeasure) => {
+    const cellKey = `${key.rowId}_${key.month}`;
+    const field: 'forecast' | 'opportunity' | 'risk' =
+      key.defType === 'actualFcst' ? 'forecast' : (key.defType as any);
+    const measureField =
+      field === 'forecast'
+        ? 'forecastMeasure'
+        : field === 'opportunity'
+        ? 'opportunityMeasure'
+        : 'riskMeasure';
+
+    set((s) => {
+      const existing = s.draftEdits[cellKey] || {};
+      if (deltaBase === 0 && (deltaMeasure ?? 0) === 0) {
+        const updated = { ...existing };
+        delete updated[field];
+        delete updated[measureField];
+        const nextEdits = { ...s.draftEdits };
+        if (!updated.forecast && !updated.opportunity && !updated.risk) {
+          delete nextEdits[cellKey];
+        } else {
+          nextEdits[cellKey] = updated;
+        }
+        return { draftEdits: nextEdits };
+      }
+      return {
+        draftEdits: {
+          ...s.draftEdits,
+          [cellKey]: {
+            ...existing,
+            period: key.month,
+            [field]: deltaBase,
+            [measureField]: deltaMeasure ?? deltaBase,
+          },
+        },
+      };
+    });
+  },
+
+  revertCellEdit: (key) => {
+    const cellKey = `${key.rowId}_${key.month}`;
+    const field: 'forecast' | 'opportunity' | 'risk' =
+      key.defType === 'actualFcst' ? 'forecast' : (key.defType as any);
+    const measureField =
+      field === 'forecast'
+        ? 'forecastMeasure'
+        : field === 'opportunity'
+        ? 'opportunityMeasure'
+        : 'riskMeasure';
+
+    set((s) => {
+      const existing = s.draftEdits[cellKey];
+      if (!existing) return s;
+      const updated = { ...existing };
+      delete updated[field];
+      delete updated[measureField];
+      const nextEdits = { ...s.draftEdits };
+      if (!updated.forecast && !updated.opportunity && !updated.risk) {
+        delete nextEdits[cellKey];
+      } else {
+        nextEdits[cellKey] = updated;
+      }
+      return { draftEdits: nextEdits };
+    });
   },
 
   saveEdits: () => {
     const { draftEdits } = get();
     set({
-      savedEdits: { ...draftEdits },
+      savedEdits: JSON.parse(JSON.stringify(draftEdits)),
       mode: 'view',
     });
   },
@@ -63,7 +129,7 @@ export const useTableStore = create<TableState>((set, get) => ({
   discardEdits: () => {
     const { savedEdits } = get();
     set({
-      draftEdits: { ...savedEdits },
+      draftEdits: JSON.parse(JSON.stringify(savedEdits)),
       mode: 'view',
     });
   },

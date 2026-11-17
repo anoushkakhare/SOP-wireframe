@@ -32,6 +32,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
     isDesegregated,
     setMode,
     setCellEdit,
+    revertCellEdit,
     saveEdits,
     closeDock,
     hasUnsavedEdits,
@@ -104,8 +105,11 @@ export const BottomDock: React.FC<BottomDockProps> = ({
           productLevelNum={productLevelNum}
           mode={mode}
           draftEdits={draftEdits}
-          onCellEdit={(rowId, defType, month, val) =>
-            setCellEdit({ rowId, defType, month }, val)
+          onCellEdit={(rowId, defType, month, deltaBase, deltaMeasure) =>
+            setCellEdit({ rowId, defType, month }, deltaBase, deltaMeasure)
+          }
+          onCellRevert={(rowId, defType, month) =>
+            revertCellEdit({ rowId, defType, month })
           }
           isLoading={isLoading}
         />
