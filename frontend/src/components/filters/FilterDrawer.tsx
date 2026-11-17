@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Drawer } from '../layout/Drawer';
 import { TimeRangeSlider } from './TimeRangeSlider';
-import { FilterSelect } from './FilterSelect';
 import { FilterActions } from './FilterActions';
-import { MetaOptions } from '../../types';
+import { HierarchyTreePicker } from './HierarchyTreePicker';
+import { FilterSelect } from './FilterSelect';
+import { HierarchyNode } from '../../types';
+import { useViewStore } from '../../store/viewStore';
 import { useFilterStore } from '../../store/filterStore';
+import { APG_OPTIONS } from '../../constants/hierarchy';
 import { labels } from '../../constants/labels';
 
 interface FilterDrawerProps {
@@ -12,7 +15,7 @@ interface FilterDrawerProps {
   onClose: () => void;
   onApply: () => void;
   onReset: () => void;
-  metaOptions: MetaOptions | null;
+  hierarchyNodes: HierarchyNode[];
 }
 
 export const FilterDrawer: React.FC<FilterDrawerProps> = ({
@@ -20,34 +23,49 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
   onClose,
   onApply,
   onReset,
-  metaOptions,
+  hierarchyNodes,
 }) => {
+  const { scope, apg, setScope, setApg } = useViewStore();
   const { draftFilters, setDraftFilter, setTimeRangeDraft, applyFilters, resetDraft } = useFilterStore();
-  const { fields, placeholder } = labels.filterDrawer;
+
+  // Draft state for scope/apg (committed on Apply)
+  const [draftScope, setDraftScope] = useState<string[]>([]);
+  const [draftApg,   setDraftApg]   = useState<string[]>([]);
+
+  // Sync draft from store when drawer opens
+  useEffect(() => {
+    if (isOpen) {
+      setDraftScope(scope);
+      setDraftApg(apg);
+    }
+  }, [isOpen, scope, apg]);
 
   const handleApply = () => {
+    setScope(draftScope);
+    setApg(draftApg);
     applyFilters();
     onApply();
     onClose();
   };
 
   const handleReset = () => {
+    setDraftScope([]);
+    setDraftApg([]);
     resetDraft();
     onReset();
   };
 
-  // Fallback lists use realistic Unilever-style names from master data
-  const categories     = metaOptions?.filters.categories     || ['Beauty & Wellbeing', 'Personal Care', 'Home Care', 'Foods'];
-  const brands         = metaOptions?.filters.brands         || ["Dove", "Pond's", "Vaseline", "Sunsilk", "Lux", "Lifebuoy", "Rexona", "Closeup", "Surf Excel", "Comfort", "Domestos", "Vim", "Knorr", "Hellmann's", "Brooke Bond", "Lipton"];
-  const products       = metaOptions?.filters.products       || ['Dove Nourishing Shampoo', 'Surf Excel Matic Liquid', 'Knorr Chicken Stock Cubes'];
-  const customerGroups = metaOptions?.filters.customerGroups || ['Modern trade', 'General trade', 'E-commerce', 'Quick commerce'];
-  const customers      = metaOptions?.filters.customers      || ['Reliance Retail', 'DMart', 'Amazon', 'Flipkart', 'Blinkit', 'Zepto'];
-  const businessUnits  = metaOptions?.filters.businessUnits  || ['Beauty & Wellbeing', 'Personal Care', 'Home Care', 'Foods'];
+  const handleClose = () => {
+    // Discard draft – reset to current store values
+    setDraftScope(scope);
+    setDraftApg(apg);
+    onClose();
+  };
 
   return (
-    <Drawer isOpen={isOpen} onClose={onClose} title={labels.filterDrawer.title}>
+    <Drawer isOpen={isOpen} onClose={handleClose} title={labels.filterDrawer.title}>
       <div className="flex flex-col h-full justify-between">
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* Time range slider */}
           <TimeRangeSlider
             range={draftFilters.timeRange}
@@ -58,60 +76,30 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
             onChangeEndDate={(d) => setDraftFilter('endDate', d)}
           />
 
-          <FilterSelect
-            label={fields.category}
-            options={categories}
-            selected={draftFilters.categories}
-            onChange={(sel) => setDraftFilter('categories', sel)}
-            allLabel={placeholder('categor')}
-          />
+          {/* Product hierarchy picker */}
+          <div>
+            <p className="text-xs font-semibold text-text-secondary mb-1.5">Product hierarchy</p>
+            <HierarchyTreePicker
+              nodes={hierarchyNodes}
+              value={draftScope}
+              onChange={setDraftScope}
+            />
+          </div>
 
+          {/* APG multi-select */}
           <FilterSelect
-            label={fields.brand}
-            options={brands}
-            selected={draftFilters.brands}
-            onChange={(sel) => setDraftFilter('brands', sel)}
-            allLabel={placeholder('brand')}
-          />
-
-          <FilterSelect
-            label={fields.product}
-            options={products}
-            selected={draftFilters.products}
-            onChange={(sel) => setDraftFilter('products', sel)}
-            allLabel={placeholder('product')}
-          />
-
-          <FilterSelect
-            label={fields.customerGroup}
-            options={customerGroups}
-            selected={draftFilters.customerGroups}
-            onChange={(sel) => setDraftFilter('customerGroups', sel)}
-            allLabel={placeholder('customer group')}
-          />
-
-          <FilterSelect
-            label={fields.customer}
-            options={customers}
-            selected={draftFilters.customers}
-            onChange={(sel) => setDraftFilter('customers', sel)}
-            allLabel={placeholder('customer')}
-          />
-
-          <FilterSelect
-            label={fields.businessUnit}
-            options={businessUnits}
-            selected={draftFilters.businessUnits}
-            onChange={(sel) => setDraftFilter('businessUnits', sel)}
-            allLabel={placeholder('business unit')}
+            label="APG (Account Planning Group)"
+            options={APG_OPTIONS as unknown as string[]}
+            selected={draftApg}
+            onChange={setDraftApg}
+            allLabel="All APGs"
           />
         </div>
 
-        {/* Bottom Actions */}
         <FilterActions
           onApply={handleApply}
           onReset={handleReset}
-          onClose={onClose}
+          onClose={handleClose}
         />
       </div>
     </Drawer>

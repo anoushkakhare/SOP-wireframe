@@ -4,29 +4,41 @@ import {
   StackedBarResponse,
   WaterfallResponse,
   TreemapResponse,
-  ProductLevel,
 } from '../types';
 
+export interface DataParams {
+  productLevel?: number;
+  scope?: string;
+  apg?: string;
+  from?: string;
+  to?: string;
+}
+
+function toQs(params: DataParams): string {
+  const p = new URLSearchParams();
+  if (params.productLevel !== undefined) p.set('productLevel', String(params.productLevel));
+  if (params.scope)  p.set('scope',  params.scope);
+  if (params.apg)    p.set('apg',    params.apg);
+  if (params.from)   p.set('from',   params.from);
+  if (params.to)     p.set('to',     params.to);
+  const s = p.toString();
+  return s ? `?${s}` : '';
+}
+
 export const chartService = {
-  async getForecastLine(parent?: string): Promise<ForecastLineResponse> {
-    const qs = parent ? `?parent=${encodeURIComponent(parent)}` : '';
-    return request<ForecastLineResponse>(`/charts/forecast-line${qs}`);
+  async getForecastLine(params: DataParams = {}): Promise<ForecastLineResponse> {
+    return request<ForecastLineResponse>(`/charts/forecast-line${toQs(params)}`);
   },
 
-  async getStackedBar(level: ProductLevel = 'brand', parent?: string): Promise<StackedBarResponse> {
-    const params = new URLSearchParams();
-    params.set('level', level);
-    if (parent) params.set('parent', parent);
-    return request<StackedBarResponse>(`/charts/stacked-bar?${params.toString()}`);
+  async getStackedBar(params: DataParams = {}): Promise<StackedBarResponse> {
+    return request<StackedBarResponse>(`/charts/stacked-bar${toQs(params)}`);
   },
 
-  async getWaterfall(parent?: string): Promise<WaterfallResponse> {
-    const qs = parent ? `?parent=${encodeURIComponent(parent)}` : '';
-    return request<WaterfallResponse>(`/charts/waterfall${qs}`);
+  async getWaterfall(params: DataParams = {}): Promise<WaterfallResponse> {
+    return request<WaterfallResponse>(`/charts/waterfall${toQs(params)}`);
   },
 
-  async getTreemap(level: ProductLevel = 'brand'): Promise<TreemapResponse> {
-    return request<TreemapResponse>(`/charts/treemap?level=${level}`);
+  async getTreemap(params: DataParams = {}): Promise<TreemapResponse> {
+    return request<TreemapResponse>(`/charts/treemap${toQs(params)}`);
   },
 };
-

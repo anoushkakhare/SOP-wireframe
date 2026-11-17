@@ -2,7 +2,7 @@ import React from 'react';
 import { PlanningTable } from './PlanningTable';
 import { ModeHint } from './ModeHint';
 import { TableFloatingButtons } from './TableFloatingButtons';
-import { TableResponse, ProductLevel } from '../../types';
+import { TableResponse, ProductLevel, ProductLevelNum } from '../../types';
 import { useTableStore } from '../../store/tableStore';
 import { useUiStore } from '../../store/uiStore';
 import { labels } from '../../constants/labels';
@@ -10,6 +10,7 @@ import { labels } from '../../constants/labels';
 interface BottomDockProps {
   tableData?: TableResponse;
   level: ProductLevel;
+  productLevelNum?: ProductLevelNum;
   isLoading?: boolean;
 }
 
@@ -20,6 +21,7 @@ interface BottomDockProps {
 export const BottomDock: React.FC<BottomDockProps> = ({
   tableData,
   level,
+  productLevelNum,
   isLoading = false,
 }) => {
   const {
@@ -87,6 +89,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
           period={tableData?.period || []}
           currentMonthIndex={tableData?.currentMonthIndex || 5}
           level={level}
+          productLevelNum={productLevelNum}
           mode={mode}
           draftEdits={draftEdits}
           onCellEdit={(rowId, defType, month, val) =>

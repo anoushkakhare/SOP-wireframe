@@ -1,8 +1,11 @@
 export type Role = 'demand_planner' | 'leadership';
 
+export type ProductLevelNum = 1 | 2 | 3 | 4 | 5;
+export type Uom = 'units' | 'volume' | 'revenue';
+
+// Keep old aliases for backward compat during migration
 export type ProductLevel = 'brand' | 'product';
 export type CustomerLevel = 'customer' | 'customer_group';
-export type Uom = 'units' | 'volume' | 'revenue';
 
 export interface User {
   id: string;
@@ -37,6 +40,13 @@ export interface LoginResponse {
   layoutManifest: LayoutManifest;
 }
 
+export interface HierarchyNode {
+  id: string;
+  name: string;
+  level: number;
+  parentId: string | null;
+}
+
 export interface MetaOptions {
   productLevels: Array<{ value: ProductLevel; label: string }>;
   customerLevels: Array<{ value: CustomerLevel; label: string }>;
@@ -52,9 +62,9 @@ export interface MetaOptions {
 }
 
 export interface FilterState {
-  timeRange: [number, number]; // Timestamp or month index
-  startDate: string; // e.g. "Jan 2026"
-  endDate: string; // e.g. "Dec 2026"
+  timeRange: [number, number];
+  startDate: string;
+  endDate: string;
   categories: string[];
   brands: string[];
   products: string[];
@@ -128,7 +138,7 @@ export interface Scenario {
   id: string;
   name: string;
   status: ScenarioStatus;
-  lastModified: string; // ISO string
+  lastModified: string;
   userId: string;
   userName: string;
 }
@@ -139,11 +149,17 @@ export interface CreateScenarioDto {
 
 export interface PlanningTableRow {
   id: string;
-  category: string;
-  brand: string;
+  // Level columns (level 1..productLevel)
+  category?: string;
+  sop?: string;
+  brand?: string;
+  forecastGroup?: string;
+  forecastUnit?: string;
+  // Legacy compat
   product?: string;
   customerGroup: string;
   customer: string;
+  apg?: string;
   definitions: {
     opportunity: Record<string, number>;
     actualFcst: Record<string, number>;
@@ -157,6 +173,7 @@ export interface TableResponse {
   period: string[];
   currentMonthIndex: number;
   level: ProductLevel;
+  productLevelNum?: number;
   rows: PlanningTableRow[];
 }
 
@@ -168,3 +185,11 @@ export interface TableEdit {
   originalValue: number;
 }
 
+// New params shape for all data endpoints
+export interface DataQueryParams {
+  productLevel?: ProductLevelNum;
+  scope?: string;        // comma-separated node ids
+  apg?: string;          // comma-separated APG names
+  from?: string;
+  to?: string;
+}

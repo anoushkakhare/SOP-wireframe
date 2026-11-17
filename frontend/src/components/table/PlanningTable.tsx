@@ -5,12 +5,14 @@ import { EditableCell } from './EditableCell';
 import { DeltaCell } from './DeltaCell';
 import { formatCompactNumber } from '../../utils/formatters';
 import { labels } from '../../constants/labels';
+import { LEVELS, LEVEL_MAP } from '../../constants/hierarchy';
 
 interface PlanningTableProps {
   rows: PlanningTableRow[];
   period: string[];
   currentMonthIndex: number;
   level: ProductLevel;
+  productLevelNum?: number;
   mode: TableMode;
   draftEdits: Record<string, number>;
   onCellEdit: (rowId: string, defType: 'opportunity' | 'actualFcst' | 'risk', month: string, val: number) => void;
@@ -35,6 +37,7 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
   period,
   currentMonthIndex,
   level,
+  productLevelNum,
   mode,
   draftEdits,
   onCellEdit,

@@ -12,6 +12,8 @@ interface LabeledSelectProps {
   options: Option[];
   onChange: (value: string) => void;
   ariaLabel?: string;
+  /** Optional renderer for each option in the native select (unused in native select, but accepted for compat) */
+  renderOption?: (opt: Option) => React.ReactNode;
 }
 
 /**
@@ -25,6 +27,7 @@ export const LabeledSelect: React.FC<LabeledSelectProps> = ({
   options,
   onChange,
   ariaLabel,
+  renderOption: _renderOption,
 }) => {
   return (
     <div className="relative inline-flex flex-col justify-center min-w-[130px] sm:min-w-[145px] px-2.5 py-1.5 bg-white/12 border border-white/25 rounded-card hover:bg-white/20 transition-colors">

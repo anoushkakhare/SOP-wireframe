@@ -1,14 +1,14 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import { tableService } from '../services/tableService';
-import { ProductLevel } from '../types';
 
 export class TableController {
   async getTable(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const level = (req.query.level as ProductLevel) || 'brand';
-      const parent = req.query.parent as string | undefined;
-      const data = await tableService.getTable({ level, parent, filters: req.query });
+      const productLevel = req.query.productLevel ? Number(req.query.productLevel) : undefined;
+      const scope  = req.query.scope  as string | undefined;
+      const apg    = req.query.apg    as string | undefined;
+      const data = await tableService.getTable({ productLevel, scope, apg, filters: req.query });
       res.json(data);
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'Error fetching table data' });
@@ -17,8 +17,8 @@ export class TableController {
 
   async desegregate(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const parent = req.body?.parent || (req.query.parent as string);
-      const data = await tableService.desegregate(parent);
+      const scope = req.body?.scope || (req.query.scope as string);
+      const data = await tableService.desegregate(scope);
       res.json(data);
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'Error running desegregation' });
@@ -27,4 +27,3 @@ export class TableController {
 }
 
 export const tableController = new TableController();
-
