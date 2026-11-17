@@ -158,6 +158,11 @@ async function main() {
     const linePct = kpiTotal > 0 ? lineDiff / kpiTotal : 1;
     if (linePct < 0.001) ok(`KPI vs line chart match (diff=${lineDiff}, <0.1%)`);
     else fail(`KPI (${kpiTotal}) vs line chart (${lineTotal}) differ by ${(linePct * 100).toFixed(1)}%`);
+
+    const tmDiff = Math.abs(barTotal - treemapSum);
+    const tmPct = barTotal > 0 ? tmDiff / barTotal : 1;
+    if (tmPct < 0.001) ok(`treemap tiles total vs bar chart match (diff=${tmDiff}, <0.1%)`);
+    else fail(`bar chart (${barTotal}) vs treemap (${treemapSum}) differ by ${(tmPct * 100).toFixed(1)}%`);
   }
 
   // Summary

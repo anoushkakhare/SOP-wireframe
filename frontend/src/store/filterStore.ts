@@ -30,7 +30,8 @@ interface FilterStoreState {
   setTimeRangeDraft: (range: [number, number], grain?: TimeGrain | string) => void;
   syncWithGrain: (grain: TimeGrain | string) => void;
   applyFilters: () => void;
-  resetDraft: () => void;
+  resetDraft: (grain?: TimeGrain | string) => void;
+  discardDraft: () => void;
   resetAll: () => void;
 }
 
@@ -95,10 +96,22 @@ export const useFilterStore = create<FilterStoreState>((set, get) => ({
     }));
   },
 
-  resetDraft: () => {
+  resetDraft: (grain?: TimeGrain | string) => {
+    const def = grain ? getDefaultRangeForGrain(grain) : defMonth;
     set({
-      draftFilters: { ...initialFilters },
+      draftFilters: {
+        ...initialFilters,
+        timeRange: def.range,
+        startDate: def.from,
+        endDate: def.to,
+      },
     });
+  },
+
+  discardDraft: () => {
+    set((state) => ({
+      draftFilters: { ...state.appliedFilters },
+    }));
   },
 
   resetAll: () => {

@@ -246,12 +246,14 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
   let items = masterData.items as any[];
 
   if (apg) {
-    const apgSet = new Set(apg.split(',').map(s => s.trim()));
+    const apgList = Array.isArray(apg) ? apg : String(apg).split(',');
+    const apgSet = new Set(apgList.map(s => String(s).trim()));
     items = items.filter(it => apgSet.has(it.apg));
   }
 
   if (scope) {
-    const scopeIds = new Set(scope.split(',').map(s => s.trim()).filter(Boolean));
+    const scopeList = Array.isArray(scope) ? scope : String(scope).split(',');
+    const scopeIds = new Set(scopeList.map(s => String(s).trim()).filter(Boolean));
     const fuIds = descendantFuIds(scopeIds);
     if (fuIds.size > 0) {
       items = items.filter(it => fuIds.has(it.fuId));

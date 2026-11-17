@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Drawer } from '../layout/Drawer';
 import { TimeRangeSlider } from './TimeRangeSlider';
 import { FilterActions } from './FilterActions';
@@ -15,7 +15,7 @@ interface FilterDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onApply: () => void;
-  onReset: () => void;
+  onReset?: () => void;
   hierarchyNodes: HierarchyNode[];
 }
 
@@ -23,13 +23,20 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
   isOpen,
   onClose,
   onApply,
-  onReset,
   hierarchyNodes,
 }) => {
   const { scope, apg, timeGrain, setScope, setApg } = useViewStore();
-  const { appliedFilters, draftFilters, setDraftFilter, setTimeRangeDraft, applyFilters, resetDraft } = useFilterStore();
+  const {
+    appliedFilters,
+    draftFilters,
+    setDraftFilter,
+    setTimeRangeDraft,
+    applyFilters,
+    resetDraft,
+    discardDraft,
+  } = useFilterStore();
 
-  // Draft state for scope/apg/cycle/activity (committed on Apply)
+  // Draft state for scope/apg/cycle/activity (committed on Apply only)
   const [draftScope, setDraftScope] = useState<string[]>([]);
   const [draftApg, setDraftApg] = useState<string[]>([]);
   const [draftPlanningCycle, setDraftPlanningCycle] = useState<string>(
@@ -39,15 +46,64 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
     appliedFilters.activity || 'Demand driver'
   );
 
-  // Sync draft from store when drawer opens
+  // Sync draft from store whenever drawer opens
   useEffect(() => {
     if (isOpen) {
-      setDraftScope(scope);
-      setDraftApg(apg);
+      setDraftScope([...scope]);
+      setDraftApg([...apg]);
       setDraftPlanningCycle(appliedFilters.planningCycle || 'Current cycle');
       setDraftActivity(appliedFilters.activity || 'Demand driver');
+      discardDraft();
     }
-  }, [isOpen, scope, apg, timeGrain, appliedFilters.planningCycle, appliedFilters.activity]);
+  }, [isOpen, scope, apg, appliedFilters, discardDraft]);
+
+  // Determine if draft differs from applied state
+  const hasChanges = useMemo(() => {
+    // 1. Compare scope
+    if (draftScope.length !== scope.length) return true;
+    const scopeSet = new Set(scope);
+    for (const s of draftScope) {
+      if (!scopeSet.has(s)) return true;
+    }
+
+    // 2. Compare apg
+    if (draftApg.length !== apg.length) return true;
+    const apgSet = new Set(apg);
+    for (const a of draftApg) {
+      if (!apgSet.has(a)) return true;
+    }
+
+    // 3. Compare planning cycle
+    if (draftPlanningCycle !== (appliedFilters.planningCycle || 'Current cycle')) {
+      return true;
+    }
+
+    // 4. Compare activity
+    if (draftActivity !== (appliedFilters.activity || 'Demand driver')) {
+      return true;
+    }
+
+    // 5. Compare time range
+    if (
+      draftFilters.timeRange[0] !== appliedFilters.timeRange[0] ||
+      draftFilters.timeRange[1] !== appliedFilters.timeRange[1] ||
+      draftFilters.startDate !== appliedFilters.startDate ||
+      draftFilters.endDate !== appliedFilters.endDate
+    ) {
+      return true;
+    }
+
+    return false;
+  }, [
+    scope,
+    draftScope,
+    apg,
+    draftApg,
+    draftPlanningCycle,
+    draftActivity,
+    appliedFilters,
+    draftFilters,
+  ]);
 
   const handleApply = () => {
     setScope(draftScope);
@@ -60,20 +116,21 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
   };
 
   const handleReset = () => {
+    // Clears the DRAFT only (nothing changes in applied state until Apply)
     setDraftScope([]);
     setDraftApg([]);
     setDraftPlanningCycle('Current cycle');
     setDraftActivity('Demand driver');
-    resetDraft();
-    onReset();
+    resetDraft(timeGrain);
   };
 
   const handleClose = () => {
-    // Discard draft – reset to current store values
-    setDraftScope(scope);
-    setDraftApg(apg);
+    // Discard draft – revert to current applied store values
+    setDraftScope([...scope]);
+    setDraftApg([...apg]);
     setDraftPlanningCycle(appliedFilters.planningCycle || 'Current cycle');
     setDraftActivity(appliedFilters.activity || 'Demand driver');
+    discardDraft();
     onClose();
   };
 
@@ -157,6 +214,8 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
           onApply={handleApply}
           onReset={handleReset}
           onClose={handleClose}
+          isApplyDisabled={!hasChanges}
+          hasChanges={hasChanges}
         />
       </div>
     </Drawer>

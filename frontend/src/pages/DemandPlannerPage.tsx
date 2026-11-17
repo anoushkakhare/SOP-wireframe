@@ -51,6 +51,7 @@ export const DemandPlannerPage: React.FC = () => {
   } = useViewStore();
 
   const [barDrillOn, setBarDrillOn] = React.useState(false);
+  const [treemapDrillOn, setTreemapDrillOn] = React.useState(false);
 
   const { appliedFilters, applyFilters, resetAll, syncWithGrain } = useFilterStore();
   const { activeScenario } = useScenarioStore();
@@ -107,13 +108,12 @@ export const DemandPlannerPage: React.FC = () => {
     }
   }, [allowed, productLevel, setProductLevel]);
 
-  // Drill down: go to clicked bar's nodeId at level+1
+  // Drill down: go to clicked bar/tile's nodeId at level+1
   const handleDrillDown = (barNodeIdOrLabel: string) => {
     const matchById = hierarchyNodes.find(n => n.id === barNodeIdOrLabel);
     if (matchById) {
       drillDown(matchById.id);
       setDesegregated(true, matchById.id);
-      openDock();
       return;
     }
     const matchNode = hierarchyNodes.find(
@@ -123,7 +123,6 @@ export const DemandPlannerPage: React.FC = () => {
     if (matchNode) {
       drillDown(matchNode.id);
       setDesegregated(true, matchNode.id);
-      openDock();
     }
   };
 
@@ -189,6 +188,18 @@ export const DemandPlannerPage: React.FC = () => {
       drillOn={barDrillOn}
       onUp={handleDrillUp}
       onToggleDown={() => setBarDrillOn((v) => !v)}
+      drillHistoryEmpty={drillHistory.length === 0}
+    />
+  );
+
+  const treemapDrillToolbar = (
+    <DrillToolbar
+      level={productLevel}
+      minLevel={allowed[0] ?? 1}
+      maxLevel={5}
+      drillOn={treemapDrillOn}
+      onUp={handleDrillUp}
+      onToggleDown={() => setTreemapDrillOn((v) => !v)}
       drillHistoryEmpty={drillHistory.length === 0}
     />
   );
@@ -276,13 +287,16 @@ export const DemandPlannerPage: React.FC = () => {
               </FullscreenChartFrame>
             )}
             {fullscreenChartId === 'chart-treemap' && (
-              <FullscreenChartFrame title={cl.productMix} onClose={closeFullscreen}>
+              <FullscreenChartFrame title={cl.productMix} onClose={closeFullscreen} headerAction={treemapDrillToolbar}>
                 <TreemapChart
                   data={chartData.treemap.data?.data}
                   level={legacyLevel}
+                  productLevelNum={productLevel}
                   isLoading={chartData.treemap.isLoading}
                   isError={chartData.treemap.isError}
                   onRetry={chartData.treemap.refetch}
+                  drillOn={treemapDrillOn}
+                  onDrillDown={handleDrillDown}
                 />
               </FullscreenChartFrame>
             )}
@@ -319,13 +333,20 @@ export const DemandPlannerPage: React.FC = () => {
               />
             </ChartCard>
 
-            <ChartCard title={cl.productMix} onToggleFullscreen={() => openFullscreen('chart-treemap')}>
+            <ChartCard
+              title={cl.productMix}
+              onToggleFullscreen={() => openFullscreen('chart-treemap')}
+              headerAction={treemapDrillToolbar}
+            >
               <TreemapChart
                 data={chartData.treemap.data?.data}
                 level={legacyLevel}
+                productLevelNum={productLevel}
                 isLoading={chartData.treemap.isLoading}
                 isError={chartData.treemap.isError}
                 onRetry={chartData.treemap.refetch}
+                drillOn={treemapDrillOn}
+                onDrillDown={handleDrillDown}
               />
             </ChartCard>
           </div>

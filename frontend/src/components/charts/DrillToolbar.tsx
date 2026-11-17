@@ -40,11 +40,10 @@ export const DrillToolbar: React.FC<DrillToolbarProps> = ({
         onClick={onUp}
         title={upTooltip}
         aria-label={upTooltip}
-        className={`w-7 h-7 flex items-center justify-center rounded-card transition-colors border ${
-          isUpDisabled
+        className={`w-7 h-7 flex items-center justify-center rounded-card transition-colors border ${isUpDisabled
             ? 'opacity-40 cursor-not-allowed text-text-secondary border-transparent'
             : 'text-text-secondary hover:text-primary-700 hover:bg-primary-50 border-transparent hover:border-border'
-        }`}
+          }`}
       >
         <ArrowUp className="w-3.5 h-3.5" />
       </button>
@@ -55,13 +54,12 @@ export const DrillToolbar: React.FC<DrillToolbarProps> = ({
         onClick={onToggleDown}
         title={downTooltip}
         aria-label={downTooltip}
-        className={`w-7 h-7 flex items-center justify-center rounded-card transition-all ${
-          isDownDisabled
+        className={`w-7 h-7 flex items-center justify-center rounded-card transition-all ${isDownDisabled
             ? 'opacity-40 cursor-not-allowed text-text-secondary border border-transparent'
             : drillOn
-            ? 'bg-primary-700 text-white hover:bg-primary-800 border border-primary-700 shadow-sm'
-            : 'text-text-secondary hover:text-primary-700 hover:bg-primary-50 border border-transparent hover:border-border'
-        }`}
+              ? 'bg-primary-700 text-white hover:bg-primary-800 border border-primary-700 shadow-sm'
+              : 'text-text-secondary hover:text-primary-700 hover:bg-primary-50 border border-transparent hover:border-border'
+          }`}
       >
         <ArrowDown className="w-3.5 h-3.5" />
       </button>

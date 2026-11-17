@@ -128,9 +128,12 @@ export interface WaterfallResponse {
 }
 
 export interface TreemapNode {
+  id?: string;
   name: string;
   value?: number;
   brand?: string;
+  parentId?: string | null;
+  parentName?: string;
   children?: TreemapNode[];
   color?: string;
 }
