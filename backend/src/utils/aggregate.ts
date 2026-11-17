@@ -223,7 +223,18 @@ export interface AggregatedGroup {
   priorYtdForecast: number;
   ytgForecast: number;
   priorYtgForecast: number;
+  apgForecast: Record<string, number>;
 }
+
+export const APG_DISPLAY_NAMES: Record<string, string> = {
+  'Modern Trade': 'Modern trade',
+  'General Trade': 'General trade',
+  'E-commerce': 'E-commerce',
+  'Quick Commerce': 'Quick commerce',
+  'Modern trade': 'Modern trade',
+  'General trade': 'General trade',
+  'Quick commerce': 'Quick commerce',
+};
 
 export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
   const { scope, level = 3, apg, timeGrain, measure, from, to, planningCycle, activity } = params;
@@ -235,12 +246,14 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
   let items = masterData.items as any[];
 
   if (apg) {
-    const apgSet = new Set(apg.split(',').map(s => s.trim()));
+    const apgList = Array.isArray(apg) ? apg : String(apg).split(',');
+    const apgSet = new Set(apgList.map(s => String(s).trim()));
     items = items.filter(it => apgSet.has(it.apg));
   }
 
   if (scope) {
-    const scopeIds = new Set(scope.split(',').map(s => s.trim()).filter(Boolean));
+    const scopeList = Array.isArray(scope) ? scope : String(scope).split(',');
+    const scopeIds = new Set(scopeList.map(s => String(s).trim()).filter(Boolean));
     const fuIds = descendantFuIds(scopeIds);
     if (fuIds.size > 0) {
       items = items.filter(it => fuIds.has(it.fuId));
@@ -307,6 +320,7 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
         priorYtdForecast: 0,
         ytgForecast: 0,
         priorYtgForecast: 0,
+        apgForecast: {},
       };
     }
     const g = groups[groupId];
@@ -382,6 +396,8 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
         g.ytgForecast += val;
       }
       g.totalForecast += val;
+      const apgKey = APG_DISPLAY_NAMES[it.apg] || it.apg;
+      g.apgForecast[apgKey] = (g.apgForecast[apgKey] || 0) + val;
 
       // Backward compat aliases
       g.monthlyForecast[p.label] = g.periodForecast[p.label];
@@ -436,6 +452,16 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
     for (const k of Object.keys(g.periodRisk)) {
       g.periodRisk[k] = Math.round(g.periodRisk[k]);
       g.monthlyRisk[k] = g.periodRisk[k];
+    }
+    let apgSum = 0;
+    for (const k of Object.keys(g.apgForecast)) {
+      g.apgForecast[k] = Math.round(g.apgForecast[k]);
+      apgSum += g.apgForecast[k];
+    }
+    if (apgSum !== g.totalForecast && Object.keys(g.apgForecast).length > 0) {
+      const diff = g.totalForecast - apgSum;
+      const largestKey = Object.entries(g.apgForecast).sort((a, b) => b[1] - a[1])[0][0];
+      g.apgForecast[largestKey] += diff;
     }
   }
 

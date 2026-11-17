@@ -76,39 +76,17 @@ export class ChartRepository {
       planningCycle: params.planningCycle,
       activity: params.activity,
     });
-    const availableCustomerGroups = ['Modern Trade', 'General Trade', 'E-commerce', 'Quick Commerce'];
+    const availableCustomerGroups = ['Modern trade', 'General trade', 'E-commerce', 'Quick commerce'];
 
     const hasChild = level < 5;
 
-    const items: StackedBarItem[] = groups.map(g => {
-      const segMap: Record<string, number> = {};
-      for (const item of g.items) {
-        // Aggregate across this item's contribution
-        const itemGroups = aggregate({
-          scope: item.fuId,
-          level: 5,
-          timeGrain: params.timeGrain as string,
-          measure: params.measure,
-          from: params.from,
-          to: params.to,
-          planningCycle: params.planningCycle,
-          activity: params.activity,
-        });
-        const itemTotal = itemGroups.reduce((s, ig) => s + ig.totalForecast, 0);
-        segMap[item.apg] = (segMap[item.apg] || 0) + itemTotal;
-      }
-
-      for (const k of Object.keys(segMap)) {
-        segMap[k] = Math.round(segMap[k]);
-      }
-
-      return {
-        category: g.name,
-        hasDrillDown: hasChild,
-        segments: segMap,
-        total: Math.round(g.totalForecast),
-      };
-    });
+    const items: StackedBarItem[] = groups.map(g => ({
+      id: g.id,
+      category: g.name,
+      hasDrillDown: hasChild,
+      segments: { ...g.apgForecast },
+      total: g.totalForecast,
+    }));
 
     const levelStr: ProductLevel = level <= 3 ? 'brand' : 'product';
 
@@ -173,23 +151,26 @@ export class ChartRepository {
       activity: params.activity,
     });
 
-    const color = LEVEL_COLORS[level] || '#0F0E9A';
     const levelStr: ProductLevel = level <= 3 ? 'brand' : 'product';
 
-    if (level >= 4) {
-      const nodes: TreemapNode[] = groups.map(g => ({
-        name: g.name,
-        value: Math.round(g.totalForecast),
-        brand: g.name,
-        color,
-      }));
-      return { level: levelStr, data: nodes };
+    // Level 1 is flat with no band
+    if (level === 1) {
+      const data: TreemapNode[] = groups
+        .filter(g => g.totalForecast > 0)
+        .map(g => ({
+          id: g.id,
+          name: g.name,
+          value: Math.round(g.totalForecast),
+        }));
+      return { level: levelStr, data };
     }
 
-    const childGroups = aggregate({
+    // Level > 1: Treemap tiles = nodes at the selected productLevel, grouped by their own parent (level-1)
+    const parentLevel = level - 1;
+    const parentGroups = aggregate({
       scope: params.scope,
       apg: params.apg,
-      level: level + 1,
+      level: parentLevel,
       timeGrain: params.timeGrain as string,
       measure: params.measure,
       from: params.from,
@@ -197,24 +178,42 @@ export class ChartRepository {
       planningCycle: params.planningCycle,
       activity: params.activity,
     });
-    const parentMap: Record<string, TreemapNode[]> = {};
-    for (const cg of childGroups) {
-      const pid = cg.parentId as string | null;
+
+    const parentMap = new Map<string, typeof parentGroups[0]>();
+    for (const pg of parentGroups) {
+      parentMap.set(pg.id, pg);
+    }
+
+    // Group tiles by their parentId from masterData nodes hierarchy
+    const childrenByParent = new Map<string, TreemapNode[]>();
+    for (const tg of groups) {
+      if (tg.totalForecast <= 0) continue;
+      const pid = tg.parentId as string;
       if (!pid) continue;
-      (parentMap[pid] ||= []).push({
-        name: cg.name,
-        value: Math.round(cg.totalForecast),
-        brand: cg.name,
-        color: LEVEL_COLORS[level + 1] || color,
+      if (!childrenByParent.has(pid)) {
+        childrenByParent.set(pid, []);
+      }
+      childrenByParent.get(pid)!.push({
+        id: tg.id,
+        name: tg.name,
+        value: Math.round(tg.totalForecast),
+        parentId: pid,
+        parentName: parentMap.get(pid)?.name || '',
       });
     }
 
-    const data: TreemapNode[] = groups.map(g => ({
-      name: g.name,
-      brand: g.name,
-      color,
-      children: parentMap[g.id] || [],
-    }));
+    const data: TreemapNode[] = [];
+    for (const pg of parentGroups) {
+      const children = childrenByParent.get(pg.id);
+      if (!children || children.length === 0) continue;
+      const parentTotal = children.reduce((sum, c) => sum + (c.value || 0), 0);
+      data.push({
+        id: pg.id,
+        name: pg.name,
+        value: parentTotal,
+        children,
+      });
+    }
 
     return { level: levelStr, data };
   }

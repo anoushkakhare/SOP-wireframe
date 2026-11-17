@@ -4,10 +4,15 @@
  */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ProductLevelNum, Uom, TimeGrain } from '../types';
+import { ProductLevelNum, Uom, TimeGrain, HierarchyNode } from '../types';
 import { APG_OPTIONS } from '../constants/hierarchy';
 
 export type CustomerViewOption = 'apg';
+
+export interface DrillState {
+  level: ProductLevelNum;
+  scope: string[];
+}
 
 interface ViewState {
   productLevel: ProductLevelNum;
@@ -16,6 +21,7 @@ interface ViewState {
   measure: Uom;
   timeGrain: TimeGrain;
   apg: string[];            // selected APG values (empty = all)
+  drillHistory: DrillState[];
 
   setProductLevel: (level: ProductLevelNum) => void;
   setScope: (ids: string[]) => void;
@@ -23,8 +29,8 @@ interface ViewState {
   setMeasure: (m: Uom) => void;
   setTimeGrain: (grain: TimeGrain) => void;
   setApg: (apg: string[]) => void;
-  drillDown: (nodeId: string, childLevel: ProductLevelNum) => void;
-  drillUp: (parentScope: string[], parentLevel: ProductLevelNum) => void;
+  drillDown: (nodeId: string, childLevel?: ProductLevelNum) => void;
+  drillUp: (parentScopeOrNodes?: string[] | HierarchyNode[], parentLevel?: ProductLevelNum) => void;
   resetHeaderOnly: () => void;
 }
 
@@ -44,6 +50,7 @@ export const useViewStore = create<ViewState>()(
       measure: DEFAULT.measure,
       timeGrain: DEFAULT.timeGrain,
       apg: [],
+      drillHistory: [],
 
       setProductLevel: (level) => set({ productLevel: level }),
       setScope: (ids) => set({ scope: ids }),
@@ -53,10 +60,35 @@ export const useViewStore = create<ViewState>()(
       setApg: (apg) => set({ apg }),
 
       drillDown: (nodeId, childLevel) =>
-        set({ scope: [nodeId], productLevel: childLevel }),
+        set((state) => ({
+          drillHistory: [...state.drillHistory, { level: state.productLevel, scope: state.scope }],
+          productLevel: (childLevel ?? Math.min(state.productLevel + 1, 5)) as ProductLevelNum,
+          scope: [nodeId],
+        })),
 
-      drillUp: (parentScope, parentLevel) =>
-        set({ scope: parentScope, productLevel: parentLevel }),
+      drillUp: (parentScopeOrNodes, parentLevel) =>
+        set((state) => {
+          if (parentLevel !== undefined && Array.isArray(parentScopeOrNodes)) {
+            return { scope: parentScopeOrNodes as string[], productLevel: parentLevel };
+          }
+          if (state.drillHistory.length > 0) {
+            const last = state.drillHistory[state.drillHistory.length - 1];
+            return {
+              drillHistory: state.drillHistory.slice(0, -1),
+              productLevel: last.level,
+              scope: last.scope,
+            };
+          }
+          const prevLevel = Math.max(state.productLevel - 1, 1) as ProductLevelNum;
+          const nodes = Array.isArray(parentScopeOrNodes) ? (parentScopeOrNodes as HierarchyNode[]) : undefined;
+          const parentIds = nodes
+            ? [...new Set(state.scope.map((id) => nodes.find((n) => n.id === id)?.parentId).filter((id): id is string => !!id))]
+            : [];
+          return {
+            productLevel: prevLevel,
+            scope: parentIds,
+          };
+        }),
 
       resetHeaderOnly: () =>
         set({

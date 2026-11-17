@@ -84,9 +84,9 @@ export const labels = {
   // ─── Charts ───────────────────────────────────────────────────────────
   charts: {
     forecastTrend:        'Forecast trend',
-    /** Dynamic: "Forecast by brand and customer group" */
+    /** Dynamic: "Forecast by Brand and APG" */
     forecastBy:  (level: string) =>
-      `Forecast by ${level} and customer group`,
+      `Forecast by ${level} and APG`,
     forecastBridge:       'Forecast bridge',
     productMix:           'Product mix',
 

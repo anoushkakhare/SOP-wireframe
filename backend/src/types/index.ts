@@ -100,6 +100,7 @@ export interface ForecastLineResponse {
 }
 
 export interface StackedBarItem {
+  id?: string;
   category: string;
   hasDrillDown: boolean;
   segments: Record<string, number>;
@@ -126,9 +127,12 @@ export interface WaterfallResponse {
 }
 
 export interface TreemapNode {
+  id?: string;
   name: string;
   value?: number;
   brand?: string;
+  parentId?: string | null;
+  parentName?: string;
   children?: TreemapNode[];
   color?: string;
 }

@@ -1,108 +1,274 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ResponsiveContainer, Treemap, Tooltip } from 'recharts';
 import { TreemapNode, ProductLevel } from '../../types';
 import { formatCompactNumber } from '../../utils/formatters';
 import { labels } from '../../constants/labels';
+import { LEVELS } from '../../constants/hierarchy';
 import { ChartEmptyState } from './ChartEmptyState';
 import { useViewStore } from '../../store/viewStore';
 
-// ── Treemap brand colours – one indigo tint per parent brand (darkest → lightest)
-const TREEMAP_BRAND_COLORS = [
-  '#0F0E9A',  // primary-700
-  '#2B2AB0',  // primary-600
-  '#4F4EC6',  // primary-500
-  '#7A79D6',
-  '#A3A2E2',  // primary-300
-  '#C9C8EC',
+// ── 6-step indigo/blue-slate palette (darker tint for header, lighter tint for tiles)
+export const TREEMAP_PALETTE = [
+  { header: '#1E1B4B', tile: '#C7D2FE' }, // Indigo: Dark Indigo header / Soft Indigo tint
+  { header: '#1E3A8A', tile: '#BFDBFE' }, // Royal Blue: Deep Navy header / Soft Blue tint
+  { header: '#0F172A', tile: '#CBD5E1' }, // Slate: Dark Slate header / Soft Slate tint
+  { header: '#172554', tile: '#BAE6FD' }, // Cobalt Blue: Deep Cobalt header / Soft Sky tint
+  { header: '#312E81', tile: '#DDD6FE' }, // Lavender Indigo: Deep Violet header / Soft Lavender tint
+  { header: '#1E293B', tile: '#CFE0ED' }, // Blue Slate: Steel Navy header / Soft Blue-Slate tint
 ];
 
-// Map brand name → index for deterministic colour
-const brandColorIndex: Record<string, number> = {};
-let brandColorCounter = 0;
+export const HEADER_HEIGHT = 22;
 
-function getBrandColor(brand: string): string {
-  if (brandColorIndex[brand] === undefined) {
-    brandColorIndex[brand] = brandColorCounter % TREEMAP_BRAND_COLORS.length;
-    brandColorCounter++;
-  }
-  return TREEMAP_BRAND_COLORS[brandColorIndex[brand]];
+export function getLuminance(hex: string): number {
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.slice(0, 2), 16) / 255;
+  const g = parseInt(clean.slice(2, 4), 16) / 255;
+  const b = parseInt(clean.slice(4, 6), 16) / 255;
+  const a = [r, g, b].map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+  return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
 }
 
-/** Determine whether text should be white or dark based on tile colour lightness */
-function textColorForBg(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance < 0.42 ? '#FFFFFF' : '#000000';
+export function getContrastRatio(hex1: string, hex2: string): number {
+  const l1 = getLuminance(hex1);
+  const l2 = getLuminance(hex2);
+  return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 }
 
-// Custom treemap node renderer
-const CustomizedContent: React.FC<any> = (props) => {
-  const { depth, x, y, width, height, name, value, brand, color } = props;
-  const { measure } = useViewStore();
+export function pickTextColor(bgHex: string): string {
+  const cWhite = getContrastRatio(bgHex, '#FFFFFF');
+  const cDark = getContrastRatio(bgHex, '#0F172A');
+  return cWhite >= cDark ? '#FFFFFF' : '#0F172A';
+}
 
-  // Brand group border – no fill
-  if (depth === 1 && props.children && props.children.length > 0) {
+interface CustomizedContentProps {
+  depth?: number;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  name?: string;
+  value?: number;
+  id?: string;
+  children?: any[];
+  root?: any;
+  index?: number;
+  drillOn?: boolean;
+  onTileClick?: (id: string) => void;
+  parentIndexMap?: Map<string, number>;
+  measure?: string;
+}
+
+const CustomizedContent: React.FC<CustomizedContentProps> = (props) => {
+  const {
+    depth,
+    x = 0,
+    y = 0,
+    width = 0,
+    height = 0,
+    name = '',
+    value = 0,
+    id = '',
+    children,
+    root,
+    index = 0,
+    drillOn = false,
+    onTileClick,
+    parentIndexMap,
+    measure,
+  } = props;
+
+  // Skip virtual root node at depth 0 completely (avoids ghost background text)
+  if (!depth || depth === 0) return null;
+
+  // 1. Parent group container (depth === 1 when children exist)
+  if (depth === 1 && children && children.length > 0) {
+    const parentIdx = parentIndexMap?.get(id) ?? parentIndexMap?.get(name) ?? index;
+    const paletteIndex = parentIdx % TREEMAP_PALETTE.length;
+    const headerColor = TREEMAP_PALETTE[paletteIndex].header;
+    const formattedTotal = formatCompactNumber(value || 0, { isNeutral: true, measure });
+    const headerWidth = width;
+
+    // Available text space inside header band
+    const maxChars = Math.max(3, Math.floor((headerWidth - 16) / 7.5));
+    const labelText = `${name}  ${formattedTotal}`;
+    const truncatedLabel =
+      labelText.length > maxChars
+        ? `${name.slice(0, Math.max(2, maxChars - formattedTotal.length - 4))}…  ${formattedTotal}`
+        : labelText;
+
     return (
-      <g>
+      <g className="select-none">
+        {/* Full parent outline */}
         <rect
-          x={x} y={y} width={width} height={height}
+          x={x}
+          y={y}
+          width={width}
+          height={height}
           fill="none"
-          stroke="#2B2AB0"
-          strokeWidth={1.5}
+          stroke="#FFFFFF"
+          strokeWidth={1}
+          pointerEvents="none"
         />
-        {height > 26 && width > 50 && (
+        {/* Always-visible OPAQUE header band (22px) */}
+        <rect
+          x={x}
+          y={y}
+          width={headerWidth}
+          height={HEADER_HEIGHT}
+          fill={headerColor}
+          fillOpacity={1}
+          stroke="#FFFFFF"
+          strokeWidth={1}
+          pointerEvents="none"
+        />
+        {headerWidth >= 30 && (
           <text
-            x={x + 7} y={y + 15}
-            fill="#1A1C2E"
+            x={x + 6}
+            y={y + 15}
+            fill="#FFFFFF"
+            stroke="none"
+            strokeWidth={0}
             fontSize={11}
             fontWeight={700}
-            className="select-none"
+            className="pointer-events-none select-none"
+            style={{ textShadow: 'none', fill: '#FFFFFF' }}
           >
-            {name}
+            {truncatedLabel}
           </text>
         )}
       </g>
     );
   }
 
-  const tileColor = color || getBrandColor(brand || name);
-  const textColor = textColorForBg(tileColor);
+  // 2. Tile node: calculate exact position below parent's header band
+  let tileX = x;
+  let tileY = y;
+  let tileWidth = width;
+  let tileHeight = height;
+
+  let parentIdx = index;
+  if (root && depth === 2) {
+    const parentY = root.y ?? 0;
+    const parentHeight = root.height ?? 0;
+    const usableHeight = Math.max(0, parentHeight - HEADER_HEIGHT);
+    const scale = parentHeight > 0 ? usableHeight / parentHeight : 1;
+
+    tileY = parentY + HEADER_HEIGHT + (y - parentY) * scale;
+    tileHeight = height * scale;
+
+    const pid = root.id || root.name || '';
+    parentIdx = parentIndexMap?.get(pid) ?? index;
+  }
+
+  if (tileWidth <= 0 || tileHeight <= 0) return null;
+
+  const paletteIndex = parentIdx % TREEMAP_PALETTE.length;
+  const tileColor = TREEMAP_PALETTE[paletteIndex].tile;
+  const textColor = pickTextColor(tileColor);
+
+  // Label visibility: hide label when tile is smaller than 40x24px (tooltip only)
+  const isLabelVisible = tileWidth >= 40 && tileHeight >= 24;
+  const isTall = tileHeight > 48;
+  const formattedVal = formatCompactNumber(value || 0, { isNeutral: true, measure });
+
+  // Word wrap / truncate
+  let line1 = name;
+  let line2: string | null = null;
+  const maxChars = Math.max(2, Math.floor((tileWidth - 12) / 7.2));
+
+  if (isTall && name.length > maxChars) {
+    const words = name.split(' ');
+    if (words.length > 1) {
+      line1 = '';
+      let wIdx = 0;
+      while (wIdx < words.length && (line1 + (line1 ? ' ' : '') + words[wIdx]).length <= maxChars) {
+        line1 += (line1 ? ' ' : '') + words[wIdx];
+        wIdx++;
+      }
+      if (!line1) {
+        line1 = words[0].slice(0, Math.max(1, maxChars - 1)) + '…';
+        line2 = words.slice(1).join(' ');
+      } else {
+        line2 = words.slice(wIdx).join(' ');
+      }
+      if (line2 && line2.length > maxChars) {
+        line2 = line2.slice(0, Math.max(1, maxChars - 1)) + '…';
+      }
+    } else {
+      line1 = name.slice(0, Math.max(1, maxChars - 1)) + '…';
+    }
+  } else if (name.length > maxChars) {
+    line1 = name.slice(0, Math.max(1, maxChars - 1)) + '…';
+  }
+
+  // Show value if tile is high enough
+  const showValue = isTall ? tileHeight >= 48 : tileHeight >= 36;
+  const clipId = `tm-clip-${id || `${tileX.toFixed(0)}-${tileY.toFixed(0)}`}`;
 
   return (
-    <g>
+    <g
+      onClick={() => {
+        if (drillOn && id) {
+          onTileClick?.(id);
+        }
+      }}
+      className={drillOn ? 'cursor-pointer' : 'cursor-default'}
+    >
+      <defs>
+        <clipPath id={clipId}>
+          <rect x={tileX} y={tileY} width={tileWidth} height={tileHeight} />
+        </clipPath>
+      </defs>
+
+      {/* 1px white border gaps */}
       <rect
-        x={x} y={y} width={width} height={height}
+        x={tileX}
+        y={tileY}
+        width={tileWidth}
+        height={tileHeight}
         fill={tileColor}
         stroke="#FFFFFF"
         strokeWidth={1}
-        className="transition-opacity hover:opacity-85 cursor-pointer"
+        className={drillOn ? 'transition-opacity hover:opacity-85' : ''}
       />
-      {width > 42 && height > 28 && (
-        <text
-          x={x + width / 2}
-          y={y + height / 2 - (height > 44 ? 6 : 0)}
-          textAnchor="middle"
-          fill={textColor}
-          fontSize={10}
-          fontWeight={600}
-          className="select-none pointer-events-none"
-        >
-          {name}
-        </text>
-      )}
-      {width > 42 && height > 44 && (
-        <text
-          x={x + width / 2}
-          y={y + height / 2 + 10}
-          textAnchor="middle"
-          fill={textColor}
-          fontSize={9}
-          className="select-none pointer-events-none"
-        >
-          {formatCompactNumber(value || 0, { isNeutral: true, measure })}
-        </text>
+
+      {isLabelVisible && (
+        <g clipPath={`url(#${clipId})`}>
+          <text
+            x={tileX + 6}
+            y={tileY + 16}
+            fill={textColor}
+            stroke="none"
+            strokeWidth={0}
+            fontSize={12}
+            fontWeight={600}
+            className="select-none pointer-events-none"
+            style={{ textShadow: 'none', fill: textColor }}
+          >
+            <tspan x={tileX + 6} dy="0" fill={textColor} stroke="none">
+              {line1}
+            </tspan>
+            {line2 && (
+              <tspan x={tileX + 6} dy="14" fill={textColor} stroke="none">
+                {line2}
+              </tspan>
+            )}
+            {showValue && (
+              <tspan
+                x={tileX + 6}
+                dy={line2 ? '15' : '15'}
+                fill={textColor}
+                stroke="none"
+                fontSize={12}
+                fontWeight={500}
+                className="tabular-nums"
+                style={{ fontVariantNumeric: 'tabular-nums', fill: textColor }}
+              >
+                {formattedVal}
+              </tspan>
+            )}
+          </text>
+        </g>
       )}
     </g>
   );
@@ -111,22 +277,51 @@ const CustomizedContent: React.FC<any> = (props) => {
 interface TreemapChartProps {
   data?: TreemapNode[];
   level: ProductLevel;
+  productLevelNum?: number;
   isLoading?: boolean;
   isError?: boolean;
   statusCode?: number;
   onRetry?: () => void;
+  drillOn?: boolean;
+  onDrillDown?: (nodeId: string) => void;
 }
 
 export const TreemapChart: React.FC<TreemapChartProps> = ({
   data = [],
-  level,
   isLoading = false,
   isError = false,
   statusCode,
   onRetry,
+  drillOn = false,
+  onDrillDown,
 }) => {
   const { charts } = labels;
-  const { measure } = useViewStore();
+  const { measure, productLevel } = useViewStore();
+
+  // Deterministic parent index map (assigned by parent index cycling)
+  const parentIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    data.forEach((item, idx) => {
+      if (item.id) map.set(item.id, idx);
+      if (item.name) map.set(item.name, idx);
+    });
+    return map;
+  }, [data]);
+
+  // Grand total of all tiles in the treemap
+  const totalValue = useMemo(() => {
+    let sum = 0;
+    for (const item of data) {
+      if (item.children && item.children.length > 0) {
+        for (const child of item.children) {
+          sum += child.value || 0;
+        }
+      } else {
+        sum += item.value || 0;
+      }
+    }
+    return sum;
+  }, [data]);
 
   if (isLoading) {
     return (
@@ -152,23 +347,50 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
           dataKey="value"
           aspectRatio={4 / 3}
           stroke="#FFFFFF"
-          content={<CustomizedContent />}
+          type="flat"
+          isAnimationActive={false}
+          content={
+            <CustomizedContent
+              drillOn={drillOn}
+              onTileClick={onDrillDown}
+              parentIndexMap={parentIndexMap}
+              measure={measure}
+            />
+          }
         >
           <Tooltip
             content={({ active, payload }) => {
               if (active && payload && payload.length) {
                 const node = payload[0].payload;
+                // Never show faint hover tooltip for parent groups
+                if (node.depth === 1 && node.children && node.children.length > 0) {
+                  return null;
+                }
+
+                // Path using LEVELS labels
+                const path = LEVELS.slice(0, productLevel).map((l) => l.label).join(' › ');
+                const parentVal = node.parentTotal || node.root?.value || totalValue;
+                const xPct = parentVal > 0 ? ((node.value || 0) / parentVal) * 100 : 100;
+                const yPct = totalValue > 0 ? ((node.value || 0) / totalValue) * 100 : 0;
+                const pctString =
+                  productLevel === 1
+                    ? `${yPct.toFixed(1)}% of total`
+                    : `${xPct.toFixed(1)}% of parent · ${yPct.toFixed(1)}% of total`;
+
                 return (
                   <div className="bg-surface border border-border p-2.5 text-xs shadow-md rounded-card space-y-1">
-                    <div className="font-semibold text-text-primary border-b border-border pb-1">{node.name}</div>
-                    {node.brand && (
-                      <div className="text-[11px] text-text-secondary">
-                        {charts.tooltip.brand}: {node.brand}
-                      </div>
-                    )}
+                    <div className="text-[11px] text-text-secondary font-medium">{path}</div>
+                    <div className="font-semibold text-text-primary border-b border-border pb-1">
+                      {node.name}
+                    </div>
                     <div className="flex justify-between gap-4 font-semibold text-text-primary">
-                      <span>{charts.tooltip.value}:</span>
-                      <span className="tabular-nums">{formatCompactNumber(node.value || 0, { isNeutral: true, measure })}</span>
+                      <span>Value:</span>
+                      <span className="tabular-nums font-mono">
+                        {formatCompactNumber(node.value || 0, { isNeutral: true, measure })}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-text-secondary tabular-nums">
+                      {pctString}
                     </div>
                   </div>
                 );
