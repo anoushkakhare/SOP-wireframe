@@ -5,21 +5,27 @@ export const MONTHS = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-export const YEARS = [2025, 2026];
+export const YEARS = [2025, 2026, 2027];
 
 export const GRAIN_PERIODS: Record<string, string[]> = {
-  year: ['FY25', 'FY26'],
-  half: ['H1 25', 'H2 25', 'H1 26', 'H2 26'],
-  quarter: ['Q1 25', 'Q2 25', 'Q3 25', 'Q4 25', 'Q1 26', 'Q2 26', 'Q3 26', 'Q4 26'],
+  year: ['FY25', 'FY26', 'FY27'],
+  half: ['H1 25', 'H2 25', 'H1 26', 'H2 26', 'H1 27', 'H2 27'],
+  quarter: [
+    'Q1 25', 'Q2 25', 'Q3 25', 'Q4 25',
+    'Q1 26', 'Q2 26', 'Q3 26', 'Q4 26',
+    'Q1 27', 'Q2 27', 'Q3 27', 'Q4 27',
+  ],
   month: [
     'Jan 25', 'Feb 25', 'Mar 25', 'Apr 25', 'May 25', 'Jun 25',
     'Jul 25', 'Aug 25', 'Sep 25', 'Oct 25', 'Nov 25', 'Dec 25',
     'Jan 26', 'Feb 26', 'Mar 26', 'Apr 26', 'May 26', 'Jun 26',
     'Jul 26', 'Aug 26', 'Sep 26', 'Oct 26', 'Nov 26', 'Dec 26',
+    'Jan 27', 'Feb 27', 'Mar 27', 'Apr 27', 'May 27', 'Jun 27',
+    'Jul 27', 'Aug 27', 'Sep 27', 'Oct 27', 'Nov 27', 'Dec 27',
   ],
-  week: Array.from({ length: 52 }, (_, i) => `W${String(i + 1).padStart(2, '0')} 25`).concat(
-    Array.from({ length: 53 }, (_, i) => `W${String(i + 1).padStart(2, '0')} 26`)
-  ),
+  week: Array.from({ length: 52 }, (_, i) => `W${String(i + 1).padStart(2, '0')} 25`)
+    .concat(Array.from({ length: 52 }, (_, i) => `W${String(i + 1).padStart(2, '0')} 26`))
+    .concat(Array.from({ length: 52 }, (_, i) => `W${String(i + 1).padStart(2, '0')} 27`)),
 };
 
 export function normalizeGrain(grain?: string): string {
@@ -85,7 +91,7 @@ export function monthIndexToDateString(index: number, grain?: TimeGrain | string
 export function dateStringToMonthIndex(dateString: string, grain?: TimeGrain | string): number {
   if (grain) {
     const periods = getGrainPeriods(grain);
-    const norm = dateString.replace(/\b2025\b/, '25').replace(/\b2026\b/, '26').trim();
+    const norm = dateString.replace(/\b2025\b/, '25').replace(/\b2026\b/, '26').replace(/\b2027\b/, '27').trim();
     const idx = periods.indexOf(norm);
     if (idx >= 0) return idx;
     const def = getDefaultRangeForGrain(grain);
