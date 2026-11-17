@@ -43,8 +43,20 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
   onCellEdit,
   isLoading = false,
 }) => {
-  const isProductLevel = level === 'product';
-  const { columns, rows: rowLabels } = labels.table;
+  const activeLevel = productLevelNum || (level === 'product' ? 5 : 3);
+  const activeLevels = LEVELS.filter((l) => l.id <= activeLevel);
+  const { rows: rowLabels } = labels.table;
+
+  function getLevelValue(row: PlanningTableRow, levelId: number): string {
+    switch (levelId) {
+      case 1: return row.category || '—';
+      case 2: return row.sop || '—';
+      case 3: return row.brand || '—';
+      case 4: return row.forecastGroup || '—';
+      case 5: return row.forecastUnit || row.product || '—';
+      default: return '—';
+    }
+  }
 
   if (isLoading) {
     return (
@@ -68,25 +80,19 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
         {/* ── Header ── primary-700 bg, white text */}
         <thead>
           <tr className="bg-primary-700 text-white text-[10px] font-semibold border-b border-primary-900">
-            <th className="py-2.5 px-3 sticky left-0 z-20 bg-primary-700 min-w-[100px] border-r border-primary-900">
-              {columns.category}
-            </th>
-            <th className="py-2.5 px-3 sticky left-[100px] z-20 bg-primary-700 min-w-[90px] border-r border-primary-900">
-              {columns.brand}
-            </th>
-            {isProductLevel && (
-              <th className="py-2.5 px-3 sticky left-[190px] z-20 bg-primary-700 min-w-[100px] border-r border-primary-900">
-                {columns.product}
+            {activeLevels.map((lvl) => (
+              <th
+                key={lvl.id}
+                className="py-2.5 px-3 min-w-[90px] border-r border-primary-900 whitespace-nowrap"
+              >
+                {lvl.label}
               </th>
-            )}
-            <th className="py-2.5 px-3 min-w-[120px] border-r border-primary-900">
-              {columns.customerGroup}
+            ))}
+            <th className="py-2.5 px-3 min-w-[110px] border-r border-primary-900 whitespace-nowrap">
+              APG
             </th>
-            <th className="py-2.5 px-3 min-w-[110px] border-r border-primary-900">
-              {columns.customer}
-            </th>
-            <th className="py-2.5 px-3 min-w-[110px] border-r border-primary-900 text-center">
-              {columns.measure}
+            <th className="py-2.5 px-3 min-w-[100px] border-r border-primary-900 text-center whitespace-nowrap">
+              Definition
             </th>
 
             {/* Month columns */}
@@ -115,35 +121,22 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
             <React.Fragment key={row.id}>
               {/* Sub-row 1 – Opportunity */}
               <tr className="border-t border-border hover:bg-primary-50 transition-colors">
-                {/* Dimension cells – span 3 sub-rows */}
-                <td
-                  rowSpan={3}
-                  className="py-2 px-3 align-top font-semibold text-text-primary border-r border-border-strong sticky left-0 z-10 bg-surface shadow-[1px_0_0_0_#E0E3EC]"
-                >
-                  {row.category}
-                </td>
-                <td
-                  rowSpan={3}
-                  className="py-2 px-3 align-top font-medium text-text-primary border-r border-border sticky left-[100px] z-10 bg-surface shadow-[1px_0_0_0_#E0E3EC]"
-                >
-                  {row.brand}
-                </td>
-                {isProductLevel && (
+                {/* Product level columns 1..productLevel */}
+                {activeLevels.map((lvl) => (
                   <td
+                    key={lvl.id}
                     rowSpan={3}
-                    className="py-2 px-3 align-top text-text-primary border-r border-border sticky left-[190px] z-10 bg-surface shadow-[1px_0_0_0_#E0E3EC]"
+                    className="py-2 px-3 align-top font-medium text-text-primary border-r border-border bg-surface whitespace-nowrap"
                   >
-                    {row.product || '—'}
+                    {getLevelValue(row, lvl.id)}
                   </td>
-                )}
-                <td rowSpan={3} className="py-2 px-3 align-top text-text-secondary border-r border-border">
-                  {row.customerGroup}
-                </td>
-                <td rowSpan={3} className="py-2 px-3 align-top text-text-secondary border-r border-border">
-                  {row.customer}
+                ))}
+                {/* APG column */}
+                <td rowSpan={3} className="py-2 px-3 align-top text-text-secondary border-r border-border whitespace-nowrap">
+                  {row.apg || row.customerGroup || 'All'}
                 </td>
 
-                {/* Opportunity measure label */}
+                {/* Definition label */}
                 <td className="py-1.5 px-2.5 font-semibold italic text-positive border-r border-border text-center bg-positive-bg/20">
                   {rowLabels.opportunity}
                 </td>
