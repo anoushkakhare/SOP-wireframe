@@ -12,6 +12,7 @@ import {
 import { WaterfallStep } from '../../types';
 import { formatCompactNumber } from '../../utils/formatters';
 import { labels } from '../../constants/labels';
+import { ChartEmptyState } from './ChartEmptyState';
 
 // ── Design-system colour constants for Recharts
 const COLORS = {
@@ -38,11 +39,17 @@ const STEP_LABELS: Record<string, string> = {
 interface WaterfallChartProps {
   data?: WaterfallStep[];
   isLoading?: boolean;
+  isError?: boolean;
+  statusCode?: number;
+  onRetry?: () => void;
 }
 
 export const WaterfallChart: React.FC<WaterfallChartProps> = ({
   data = [],
   isLoading = false,
+  isError = false,
+  statusCode,
+  onRetry,
 }) => {
   const { charts } = labels;
 
@@ -54,12 +61,12 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({
     );
   }
 
+  if (isError) {
+    return <ChartEmptyState isError statusCode={statusCode} onRetry={onRetry} />;
+  }
+
   if (!data || data.length === 0) {
-    return (
-      <div className="w-full h-full flex items-center justify-center text-xs text-text-secondary">
-        {charts.noData}
-      </div>
-    );
+    return <ChartEmptyState />;
   }
 
   // Build floating bar data

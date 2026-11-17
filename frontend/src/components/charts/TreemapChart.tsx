@@ -3,6 +3,7 @@ import { ResponsiveContainer, Treemap, Tooltip } from 'recharts';
 import { TreemapNode, ProductLevel } from '../../types';
 import { formatCompactNumber } from '../../utils/formatters';
 import { labels } from '../../constants/labels';
+import { ChartEmptyState } from './ChartEmptyState';
 
 // ── Treemap brand colours – one indigo tint per parent brand (darkest → lightest)
 const TREEMAP_BRAND_COLORS = [
@@ -109,12 +110,18 @@ interface TreemapChartProps {
   data?: TreemapNode[];
   level: ProductLevel;
   isLoading?: boolean;
+  isError?: boolean;
+  statusCode?: number;
+  onRetry?: () => void;
 }
 
 export const TreemapChart: React.FC<TreemapChartProps> = ({
   data = [],
   level,
   isLoading = false,
+  isError = false,
+  statusCode,
+  onRetry,
 }) => {
   const { charts } = labels;
 
@@ -126,12 +133,12 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
     );
   }
 
+  if (isError) {
+    return <ChartEmptyState isError statusCode={statusCode} onRetry={onRetry} />;
+  }
+
   if (!data || data.length === 0) {
-    return (
-      <div className="w-full h-full flex items-center justify-center text-xs text-text-secondary">
-        {charts.noData}
-      </div>
-    );
+    return <ChartEmptyState />;
   }
 
   return (

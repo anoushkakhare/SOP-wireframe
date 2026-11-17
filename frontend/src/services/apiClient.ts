@@ -39,6 +39,17 @@ export async function request<T>(
     } catch {
       // Non-json error
     }
+
+    // If the token is expired/invalid, clear stored auth so the user is
+    // redirected to the login page instead of silently seeing empty data.
+    if (response.status === 401) {
+      localStorage.removeItem('sop_token');
+      localStorage.removeItem('sop_user');
+      localStorage.removeItem('sop_layout');
+      // Force a page reload so the RoleGuard redirects to /login
+      window.location.href = '/login';
+    }
+
     throw new ApiError(errorMsg, response.status);
   }
 
