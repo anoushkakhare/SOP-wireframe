@@ -58,7 +58,7 @@ try {
   console.log('✓ Premature sign-off properly rejected');
 }
 
-// 5. Complete manual checks and load remaining feeds
+// 5. Complete manual checks, fix validation gaps, and load remaining feeds
 dataReviewRepository.updateReadiness({
   innovationReviewed: true,
   comboPacksReviewed: true,
@@ -69,6 +69,19 @@ uncompleted.forEach(f => {
   dataReviewRepository.loadFeed(f.id);
 });
 
+// Fix mapping gaps and null values
+const valBefore = dataReviewRepository.getValidationData();
+if (valBefore.mappingGaps.count !== 25) {
+  throw new Error(`Expected initial mapping gaps 25, got ${valBefore.mappingGaps.count}`);
+}
+dataReviewRepository.fixMappingGap('mg-1', 'master');
+const valAfterOne = dataReviewRepository.getValidationData();
+if (valAfterOne.mappingGaps.count !== 20) {
+  throw new Error(`Expected 20 after fixing one mapping gap, got ${valAfterOne.mappingGaps.count}`);
+}
+dataReviewRepository.fixAllMappingGaps();
+dataReviewRepository.fixAllNullValues('zero');
+
 const readyState = dataReviewRepository.getReadiness();
 if (readyState.completedSteps !== 7) {
   throw new Error(`Expected completedSteps 7, got ${readyState.completedSteps}`);
@@ -76,7 +89,7 @@ if (readyState.completedSteps !== 7) {
 if (readyState.blockingItems.length !== 0) {
   throw new Error(`Expected 0 blocking items, got ${readyState.blockingItems.length}`);
 }
-console.log('✓ When all feeds and manual ticks completed: 7/7 steps');
+console.log('✓ When all feeds, validation fixes, and manual ticks completed: 7/7 steps and 0 blocking');
 
 // 6. Sign off
 const signed = dataReviewRepository.signoff({ signedBy: 'Nishta', cycle: '2026-11' });

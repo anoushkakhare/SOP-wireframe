@@ -1,8 +1,11 @@
 import { request } from './apiClient';
 import {
+  ComboPack,
   DataReviewFeed,
   DataReviewHistoryItem,
   DataReviewReadinessResponse,
+  DataValidationData,
+  InnovationProduct,
   SignoffRequest,
   TransactionReviewQueryParams,
   TransactionReviewResponse,
@@ -63,6 +66,72 @@ export const dataReviewService = {
     const qs = sp.toString() ? `?${sp.toString()}` : '';
     return request<TransactionReviewResponse>(`/data-review/transactions${qs}`);
   },
+
+  getValidationData(): Promise<DataValidationData> {
+    return request<DataValidationData>('/data-review/validation');
+  },
+
+  fixMappingGap(id: string, fixType: 'master' | 'transaction' = 'master'): Promise<DataValidationData> {
+    return request<DataValidationData>(`/data-review/validation/mapping-gaps/${id}/fix`, {
+      method: 'POST',
+      body: JSON.stringify({ fixType }),
+    });
+  },
+
+  replaceNullValue(id: string, method: 'zero' | 'mean' | 'mode'): Promise<DataValidationData> {
+    return request<DataValidationData>(`/data-review/validation/null-values/${id}/replace`, {
+      method: 'POST',
+      body: JSON.stringify({ method }),
+    });
+  },
+
+  rerunMissingIntegration(): Promise<{ success: boolean; pendingFeeds: string[] }> {
+    return request<{ success: boolean; pendingFeeds: string[] }>('/data-review/validation/rerun-integration', {
+      method: 'POST',
+    });
+  },
+
+  getInnovations(): Promise<InnovationProduct[]> {
+    return request<InnovationProduct[]>('/data-review/innovations');
+  },
+
+  addInnovation(product: Omit<InnovationProduct, 'id'>): Promise<InnovationProduct> {
+    return request<InnovationProduct>('/data-review/innovations', {
+      method: 'POST',
+      body: JSON.stringify(product),
+    });
+  },
+
+  deleteInnovation(id: string): Promise<{ success: boolean }> {
+    return request<{ success: boolean }>(`/data-review/innovations/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  getCombos(): Promise<ComboPack[]> {
+    return request<ComboPack[]>('/data-review/combos');
+  },
+
+  createCombo(combo: Omit<ComboPack, 'id'>): Promise<ComboPack> {
+    return request<ComboPack>('/data-review/combos', {
+      method: 'POST',
+      body: JSON.stringify(combo),
+    });
+  },
+
+  updateCombo(id: string, combo: Partial<ComboPack>): Promise<ComboPack> {
+    return request<ComboPack>(`/data-review/combos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(combo),
+    });
+  },
+
+  deleteCombo(id: string): Promise<{ success: boolean }> {
+    return request<{ success: boolean }>(`/data-review/combos/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
+
 
 

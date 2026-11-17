@@ -304,3 +304,72 @@ export interface TransactionReviewResponse {
   };
 }
 
+export interface MappingGapRow {
+  id: string;
+  transactionCode: string;
+  description: string;
+  period: string;
+  value: number;
+  suggestedMaster: string;
+  fixed: boolean;
+  fixedType?: 'master' | 'transaction';
+}
+
+export interface NullValueRow {
+  id: string;
+  column: string;
+  row: string;
+  expected: string;
+  fixed: boolean;
+  replacedWith?: 'zero' | 'mean' | 'mode' | null;
+}
+
+export interface MissingItemRow {
+  id: string;
+  feedId: string;
+  feedName: string;
+  description: string;
+}
+
+export interface DataValidationData {
+  mappingGaps: {
+    count: number;
+    rows: MappingGapRow[];
+  };
+  nullValues: {
+    count: number;
+    rows: NullValueRow[];
+  };
+  missingItems: {
+    count: number;
+    rows: MissingItemRow[];
+  };
+}
+
+export interface InnovationProduct {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  sopGroup: string;
+  brand: string;
+  sourceForecastUnits: string[];
+  launchMonth: string;
+  upliftPct: number;
+}
+
+export interface ComboPackComponent {
+  id: string;
+  name: string;
+  code: string;
+  quantity: number;
+}
+
+export interface ComboPack {
+  id: string;
+  name: string;
+  code: string;
+  components: ComboPackComponent[];
+}
+
+

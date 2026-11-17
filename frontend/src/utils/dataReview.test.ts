@@ -86,6 +86,80 @@ describe('Data Review Readiness Logic', () => {
       'Combo packs reviewed',
     ]);
   });
+
+  it('verifies sign-off enables only after validation counts reach 0 and both Reviewed ticks are set', () => {
+    let mappingGapsCount = 25;
+    let nullValuesCount = 5;
+    let feedsLoaded = true;
+    let innovationReviewed = false;
+    let comboPacksReviewed = false;
+
+    const buildChecklist = () => [
+      { id: 'feeds_loaded', label: '5 feeds loaded', checked: feedsLoaded },
+      { id: 'mapping_gaps', label: `${mappingGapsCount} mapping gaps`, checked: mappingGapsCount === 0 },
+      { id: 'null_values', label: `${nullValuesCount} null values`, checked: nullValuesCount === 0 },
+      { id: 'innovation_reviewed', label: 'Innovation reviewed', checked: innovationReviewed },
+      { id: 'combo_packs_reviewed', label: 'Combo packs reviewed', checked: comboPacksReviewed },
+    ];
+
+    // Initially: blocked by mapping gaps, null values, and both manual ticks
+    let checklist = buildChecklist();
+    expect(checklist.every(c => c.checked)).toBe(false);
+
+    // Fixing mapping gaps row by row decrements count
+    for (let i = 0; i < 5; i++) {
+      mappingGapsCount = Math.max(0, mappingGapsCount - 5);
+    }
+    expect(mappingGapsCount).toBe(0);
+
+    // Still blocked because null values > 0 and reviews pending
+    checklist = buildChecklist();
+    expect(checklist.find(c => c.id === 'mapping_gaps')?.checked).toBe(true);
+    expect(checklist.every(c => c.checked)).toBe(false);
+
+    // Replacing null values
+    for (let i = 0; i < 5; i++) {
+      nullValuesCount = Math.max(0, nullValuesCount - 1);
+    }
+    expect(nullValuesCount).toBe(0);
+
+    checklist = buildChecklist();
+    expect(checklist.find(c => c.id === 'null_values')?.checked).toBe(true);
+    expect(checklist.every(c => c.checked)).toBe(false);
+
+    // Set Innovation tick
+    innovationReviewed = true;
+    checklist = buildChecklist();
+    expect(checklist.every(c => c.checked)).toBe(false);
+
+    // Set Special packs tick
+    comboPacksReviewed = true;
+    checklist = buildChecklist();
+
+    // Now all 5 items are checked and sign-off enables!
+    expect(checklist.every(c => c.checked)).toBe(true);
+  });
+
+  it('validates innovation product uniqueness and source forecast unit requirements', () => {
+    const existing = [
+      { code: 'NPD-2026-001', name: 'Dove Men Care Fresh Radiance' },
+    ];
+
+    const validateInnovation = (code: string, sourceUnits: string[]) => {
+      if (!code.trim()) return 'Code is required';
+      if (existing.some(e => e.code.toLowerCase() === code.trim().toLowerCase())) {
+        return 'Code must be unique';
+      }
+      if (sourceUnits.length === 0) {
+        return 'At least one source forecast unit is required';
+      }
+      return null;
+    };
+
+    expect(validateInnovation('NPD-2026-001', ['Dove Daily Moisture'])).toBe('Code must be unique');
+    expect(validateInnovation('NPD-2026-002', [])).toBe('At least one source forecast unit is required');
+    expect(validateInnovation('NPD-2026-002', ['Dove Daily Moisture'])).toBeNull();
+  });
 });
 
 describe('Data Review Visual & Transaction Review Logic', () => {

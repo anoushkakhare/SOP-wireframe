@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dataReviewService } from '../services/dataReviewService';
-import { SignoffRequest, TransactionReviewQueryParams } from '../types';
+import {
+  ComboPack,
+  InnovationProduct,
+  SignoffRequest,
+  TransactionReviewQueryParams,
+} from '../types';
 
 export function useDataReviewTransactions(params: TransactionReviewQueryParams = {}) {
   return useQuery({
@@ -8,7 +13,6 @@ export function useDataReviewTransactions(params: TransactionReviewQueryParams =
     queryFn: () => dataReviewService.getTransactions(params),
   });
 }
-
 
 export function useDataReviewPipeline() {
   return useQuery({
@@ -38,6 +42,27 @@ export function useDataReviewCalendarFeeds() {
   });
 }
 
+export function useDataReviewValidation() {
+  return useQuery({
+    queryKey: ['data-review-validation'],
+    queryFn: () => dataReviewService.getValidationData(),
+  });
+}
+
+export function useDataReviewInnovations() {
+  return useQuery({
+    queryKey: ['data-review-innovations'],
+    queryFn: () => dataReviewService.getInnovations(),
+  });
+}
+
+export function useDataReviewCombos() {
+  return useQuery({
+    queryKey: ['data-review-combos'],
+    queryFn: () => dataReviewService.getCombos(),
+  });
+}
+
 export function useDataReviewMutations() {
   const queryClient = useQueryClient();
 
@@ -46,6 +71,9 @@ export function useDataReviewMutations() {
     queryClient.invalidateQueries({ queryKey: ['data-review-history'] });
     queryClient.invalidateQueries({ queryKey: ['data-review-readiness'] });
     queryClient.invalidateQueries({ queryKey: ['data-review-calendar'] });
+    queryClient.invalidateQueries({ queryKey: ['data-review-validation'] });
+    queryClient.invalidateQueries({ queryKey: ['data-review-innovations'] });
+    queryClient.invalidateQueries({ queryKey: ['data-review-combos'] });
   };
 
   const loadFeedMutation = useMutation({
@@ -69,6 +97,50 @@ export function useDataReviewMutations() {
     onSuccess: () => invalidateAll(),
   });
 
+  const fixMappingGapMutation = useMutation({
+    mutationFn: ({ id, fixType }: { id: string; fixType?: 'master' | 'transaction' }) =>
+      dataReviewService.fixMappingGap(id, fixType),
+    onSuccess: () => invalidateAll(),
+  });
+
+  const replaceNullValueMutation = useMutation({
+    mutationFn: ({ id, method }: { id: string; method: 'zero' | 'mean' | 'mode' }) =>
+      dataReviewService.replaceNullValue(id, method),
+    onSuccess: () => invalidateAll(),
+  });
+
+  const rerunMissingIntegrationMutation = useMutation({
+    mutationFn: () => dataReviewService.rerunMissingIntegration(),
+    onSuccess: () => invalidateAll(),
+  });
+
+  const addInnovationMutation = useMutation({
+    mutationFn: (product: Omit<InnovationProduct, 'id'>) =>
+      dataReviewService.addInnovation(product),
+    onSuccess: () => invalidateAll(),
+  });
+
+  const deleteInnovationMutation = useMutation({
+    mutationFn: (id: string) => dataReviewService.deleteInnovation(id),
+    onSuccess: () => invalidateAll(),
+  });
+
+  const createComboMutation = useMutation({
+    mutationFn: (combo: Omit<ComboPack, 'id'>) => dataReviewService.createCombo(combo),
+    onSuccess: () => invalidateAll(),
+  });
+
+  const updateComboMutation = useMutation({
+    mutationFn: ({ id, combo }: { id: string; combo: Partial<ComboPack> }) =>
+      dataReviewService.updateCombo(id, combo),
+    onSuccess: () => invalidateAll(),
+  });
+
+  const deleteComboMutation = useMutation({
+    mutationFn: (id: string) => dataReviewService.deleteCombo(id),
+    onSuccess: () => invalidateAll(),
+  });
+
   return {
     loadFeed: loadFeedMutation.mutateAsync,
     isLoadFeedPending: loadFeedMutation.isPending,
@@ -78,6 +150,18 @@ export function useDataReviewMutations() {
     isSignoffPending: signoffMutation.isPending,
     reopen: reopenMutation.mutateAsync,
     isReopenPending: reopenMutation.isPending,
+    fixMappingGap: fixMappingGapMutation.mutateAsync,
+    isFixMappingGapPending: fixMappingGapMutation.isPending,
+    replaceNullValue: replaceNullValueMutation.mutateAsync,
+    isReplaceNullValuePending: replaceNullValueMutation.isPending,
+    rerunMissingIntegration: rerunMissingIntegrationMutation.mutateAsync,
+    isRerunPending: rerunMissingIntegrationMutation.isPending,
+    addInnovation: addInnovationMutation.mutateAsync,
+    isAddInnovationPending: addInnovationMutation.isPending,
+    deleteInnovation: deleteInnovationMutation.mutateAsync,
+    createCombo: createComboMutation.mutateAsync,
+    updateCombo: updateComboMutation.mutateAsync,
+    deleteCombo: deleteComboMutation.mutateAsync,
   };
 }
 
