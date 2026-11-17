@@ -6,15 +6,27 @@ interface MonthPickerProps {
   value: string;
   grain?: string;
   onChange: (val: string) => void;
+  className?: string;
 }
 
-export const MonthPicker: React.FC<MonthPickerProps> = ({ label, value, grain = 'month', onChange }) => {
+export const MonthPicker: React.FC<MonthPickerProps> = ({
+  label,
+  value,
+  grain = 'month',
+  onChange,
+  className,
+}) => {
   const periods = getGrainPeriods(grain);
   const isMonthGrain = grain === 'month';
 
+  const containerClass =
+    className !== undefined
+      ? className
+      : 'flex-1 bg-surface border border-border rounded-card p-2 shadow-xs';
+
   if (!isMonthGrain) {
     return (
-      <div className="flex-1 bg-surface border border-border rounded-card p-2 shadow-xs">
+      <div className={containerClass}>
         <span className="block text-[10px] font-medium text-text-secondary uppercase tracking-wider mb-1">
           {label}
         </span>
@@ -50,7 +62,7 @@ export const MonthPicker: React.FC<MonthPickerProps> = ({ label, value, grain = 
   const normYear = currentYear < 100 ? 2000 + currentYear : currentYear;
 
   return (
-    <div className="flex-1 bg-surface border border-border rounded-card p-2 shadow-xs">
+    <div className={containerClass}>
       <span className="block text-[10px] font-medium text-text-secondary uppercase tracking-wider mb-1">
         {label}
       </span>

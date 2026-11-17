@@ -145,7 +145,13 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
   return (
     <header className="sticky top-0 z-30 w-full bg-primary-700 px-4 md:px-6 py-3 shadow-sm min-h-[56px]">
       <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-4">
-        <div className="shrink-0">
+        {/* 1. Left: Unilever logo + Role badge */}
+        <div className="flex items-center gap-4 shrink-0">
+          <img
+            src="/unilever-logo.png"
+            alt="Unilever"
+            style={{ height: 40, width: 'auto', objectFit: 'contain', display: 'block' }}
+          />
           <RoleBadge roleTitle={roleTitle} userName={userName} />
         </div>
 
