@@ -84,6 +84,21 @@ export class DataReviewController {
       res.status(500).json({ error: err.message || 'Error reopening signoff' });
     }
   }
+
+  async getTransactions(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const { measure, groupBy, from, to } = req.query as {
+        measure?: 'cases' | 'units' | 'value';
+        groupBy?: 'category' | 'sop' | 'brand';
+        from?: string;
+        to?: string;
+      };
+      const result = await dataReviewService.getTransactions({ measure, groupBy, from, to });
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message || 'Error fetching transactions review' });
+    }
+  }
 }
 
 export const dataReviewController = new DataReviewController();

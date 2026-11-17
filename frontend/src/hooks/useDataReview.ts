@@ -1,6 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dataReviewService } from '../services/dataReviewService';
-import { SignoffRequest } from '../types';
+import { SignoffRequest, TransactionReviewQueryParams } from '../types';
+
+export function useDataReviewTransactions(params: TransactionReviewQueryParams = {}) {
+  return useQuery({
+    queryKey: ['data-review-transactions', params],
+    queryFn: () => dataReviewService.getTransactions(params),
+  });
+}
+
 
 export function useDataReviewPipeline() {
   return useQuery({

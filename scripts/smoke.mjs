@@ -204,6 +204,14 @@ async function main() {
     fail(`calendar returned ${calendarRes.status}`);
   }
 
+  console.log('11. GET /data-review/transactions');
+  const txRes = await request('GET', '/data-review/transactions?groupBy=category&measure=value');
+  if (txRes.status === 200 && Array.isArray(txRes.json?.items) && txRes.json.items.length > 0) {
+    ok(`transactions: ${txRes.json.items.length} items found across ${txRes.json.periods?.length} periods`);
+  } else {
+    fail(`transactions returned ${txRes.status}`);
+  }
+
   // Summary
   console.log('\n── Results ──────────────────────────────────');
   if (failures === 0) {

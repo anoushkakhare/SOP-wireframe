@@ -4,6 +4,8 @@ import {
   DataReviewHistoryItem,
   DataReviewReadinessResponse,
   SignoffRequest,
+  TransactionReviewQueryParams,
+  TransactionReviewResponse,
 } from '../types';
 
 export class DataReviewService {
@@ -45,7 +47,14 @@ export class DataReviewService {
   async reopen(): Promise<DataReviewReadinessResponse> {
     return dataReviewRepository.reopen();
   }
+
+  async getTransactions(
+    query: TransactionReviewQueryParams = {}
+  ): Promise<TransactionReviewResponse> {
+    return dataReviewRepository.getTransactions(query);
+  }
 }
 
 export const dataReviewService = new DataReviewService();
+
 

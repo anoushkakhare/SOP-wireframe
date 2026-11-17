@@ -4,6 +4,8 @@ import {
   DataReviewHistoryItem,
   DataReviewReadinessResponse,
   SignoffRequest,
+  TransactionReviewQueryParams,
+  TransactionReviewResponse,
 } from '../types';
 
 export const dataReviewService = {
@@ -51,5 +53,16 @@ export const dataReviewService = {
       method: 'POST',
     });
   },
+
+  getTransactions(params: TransactionReviewQueryParams = {}): Promise<TransactionReviewResponse> {
+    const sp = new URLSearchParams();
+    if (params.measure) sp.set('measure', params.measure);
+    if (params.groupBy) sp.set('groupBy', params.groupBy);
+    if (params.from) sp.set('from', params.from);
+    if (params.to) sp.set('to', params.to);
+    const qs = sp.toString() ? `?${sp.toString()}` : '';
+    return request<TransactionReviewResponse>(`/data-review/transactions${qs}`);
+  },
 };
+
 

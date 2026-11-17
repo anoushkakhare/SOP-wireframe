@@ -3,6 +3,7 @@ import { AppShell } from '../components/layout/AppShell';
 import { PipelineStepperCard } from '../components/data-review/PipelineStepperCard';
 import { HistoryTableCard } from '../components/data-review/HistoryTableCard';
 import { PlaceholderCard } from '../components/data-review/PlaceholderCard';
+import { DataReviewCard } from '../components/data-review/DataReviewCard';
 import { SignoffCard } from '../components/data-review/SignoffCard';
 
 import {
@@ -77,67 +78,8 @@ export const DataReviewPage: React.FC = () => {
         {/* 2. Integration status & history */}
         <HistoryTableCard history={history} isLoading={isHistoryLoading} />
 
-        {/* 3. Titled Placeholder Card: Data review */}
-        <PlaceholderCard
-          orderNumber={3}
-          title="Data review"
-          subtitle="Master data completeness, SKU volume profiling, and category coverage"
-          icon={Database}
-          badge="14,250 SKUs Profiled"
-          badgeVariant="blue"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3.5">
-              <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">
-                Active SKUs
-              </span>
-              <span className="text-xl font-bold text-gray-900">14,250</span>
-              <span className="text-[11px] text-emerald-600 block mt-1 font-medium">
-                100% mapped to brand hierarchy
-              </span>
-            </div>
-
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3.5">
-              <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">
-                Customer Accounts
-              </span>
-              <span className="text-xl font-bold text-gray-900">3,820</span>
-              <span className="text-[11px] text-emerald-600 block mt-1 font-medium">
-                Mapped to APG & Channel
-              </span>
-            </div>
-
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3.5">
-              <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">
-                Price Records
-              </span>
-              <span className="text-xl font-bold text-gray-900">89,400</span>
-              <span className="text-[11px] text-emerald-600 block mt-1 font-medium">
-                Current cycle prices loaded
-              </span>
-            </div>
-
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3.5">
-              <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block mb-1">
-                History Range
-              </span>
-              <span className="text-xl font-bold text-gray-900">36 Months</span>
-              <span className="text-[11px] text-gray-500 block mt-1">
-                From Nov 2023 to Oct 2026
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-blue-50/50 border border-blue-200 rounded-lg p-3 text-xs text-blue-900 flex items-start gap-2.5">
-            <FileSpreadsheet className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
-            <div>
-              <span className="font-semibold">Master Dimension Profiling:</span> All product units,
-              customer groupings, price tiers, and transactional actuals have passed dimension
-              conformance. Deep-dive profiling tools and column frequency distributions will be
-              rendered in this panel.
-            </div>
-          </div>
-        </PlaceholderCard>
+        {/* 3. Data review visual card */}
+        <DataReviewCard orderNumber={3} />
 
         {/* 4. Titled Placeholder Card: Data validation */}
         <PlaceholderCard

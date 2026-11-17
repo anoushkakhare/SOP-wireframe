@@ -274,3 +274,33 @@ export interface SignoffRequest {
   signedAt?: string;
   cycle?: string;
 }
+
+export interface TransactionReviewItem {
+  period: string;
+  group: string;
+  value: number;
+  rowCount: number;
+  isAnomaly?: 'gap' | 'spike';
+}
+
+export interface TransactionReviewQueryParams {
+  measure?: 'cases' | 'units' | 'value';
+  groupBy?: 'category' | 'sop' | 'brand';
+  from?: string;
+  to?: string;
+}
+
+export interface TransactionReviewResponse {
+  items: TransactionReviewItem[];
+  periods: string[];
+  groups: string[];
+  measure: 'cases' | 'units' | 'value';
+  groupBy: 'category' | 'sop' | 'brand';
+  summary: {
+    totalValue: number;
+    totalRows: number;
+    gapCount: number;
+    spikeCount: number;
+  };
+}
+

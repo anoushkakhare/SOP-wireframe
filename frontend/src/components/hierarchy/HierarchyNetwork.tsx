@@ -568,8 +568,19 @@ export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
     const handleResize = () => chart.resize();
     window.addEventListener('resize', handleResize);
 
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && chartRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        chart.resize();
+      });
+      resizeObserver.observe(chartRef.current);
+    }
+
     return () => {
       window.removeEventListener('resize', handleResize);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
     };
   }, [mode, productData, customerData, timeGraphData]);
 

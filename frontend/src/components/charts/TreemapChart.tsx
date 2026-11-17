@@ -276,7 +276,7 @@ const CustomizedContent: React.FC<CustomizedContentProps> = (props) => {
 
 interface TreemapChartProps {
   data?: TreemapNode[];
-  level: ProductLevel;
+  level?: ProductLevel;
   productLevelNum?: number;
   isLoading?: boolean;
   isError?: boolean;

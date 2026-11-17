@@ -1,10 +1,14 @@
 import dataReviewRaw from '../data/dataReview.json';
+import masterDataRaw from '../data/masterData.json';
 import {
   DataReviewFeed,
   DataReviewHistoryItem,
   DataReviewReadinessResponse,
   ReadinessCheckItem,
   SignoffRequest,
+  TransactionReviewItem,
+  TransactionReviewQueryParams,
+  TransactionReviewResponse,
 } from '../types';
 
 interface RawFeedTemplate {
@@ -345,6 +349,137 @@ export class DataReviewRepository {
     this.signoffState.signedBy = null;
     this.signoffState.signedAt = null;
     return this.getReadiness();
+  }
+
+  getTransactions(query: TransactionReviewQueryParams = {}): TransactionReviewResponse {
+    const measure = query.measure || 'value';
+    const groupBy = query.groupBy || 'category';
+
+    const allMonths: string[] = masterDataRaw.months || [];
+    let startIdx = 0;
+    let endIdx = allMonths.length - 1;
+
+    if (query.from) {
+      const idx = allMonths.indexOf(query.from);
+      if (idx !== -1) startIdx = idx;
+    }
+    if (query.to) {
+      const idx = allMonths.indexOf(query.to);
+      if (idx !== -1) endIdx = idx;
+    }
+    if (startIdx > endIdx) {
+      const tmp = startIdx;
+      startIdx = endIdx;
+      endIdx = tmp;
+    }
+
+    const periods = allMonths.slice(startIdx, endIdx + 1);
+
+    const items = masterDataRaw.items || [];
+    const groupKey = groupBy === 'sop' ? 'sop' : groupBy === 'brand' ? 'brand' : 'category';
+
+    const groupSet = new Set<string>();
+    for (const item of items) {
+      const val = (item as any)[groupKey];
+      if (val) groupSet.add(val);
+    }
+    const groups = Array.from(groupSet);
+
+    const itemsByGroup = new Map<string, typeof items>();
+    for (const g of groups) {
+      itemsByGroup.set(g, []);
+    }
+    for (const item of items) {
+      const g = (item as any)[groupKey];
+      if (g && itemsByGroup.has(g)) {
+        itemsByGroup.get(g)!.push(item);
+      }
+    }
+
+    const resultItems: TransactionReviewItem[] = [];
+    let totalValue = 0;
+    let totalRows = 0;
+    let gapCount = 0;
+    let spikeCount = 0;
+
+    for (const p of periods) {
+      for (const g of groups) {
+        const groupItems = itemsByGroup.get(g) || [];
+        let baseUnits = 0;
+        let baseCases = 0;
+        let baseVal = 0;
+        let baseRows = 0;
+
+        for (const it of groupItems) {
+          const u =
+            (it.pastActuals as Record<string, number>)?.[p] ||
+            (it.weeklyActuals
+              ? Math.round(
+                  Object.values(it.weeklyActuals)
+                    .slice(0, 4)
+                    .reduce((a: number, b: any) => a + Number(b), 0)
+                )
+              : 1000);
+          baseUnits += u;
+          const upc = it.unitsPerCase || 12;
+          baseCases += Math.round(u / upc);
+          const pr = it.price || 150;
+          baseVal += Math.round(u * pr);
+          baseRows += Math.round(u / 20 + 35);
+        }
+
+        let finalValue = measure === 'cases' ? baseCases : measure === 'units' ? baseUnits : baseVal;
+        let finalRows = baseRows;
+        let isAnomaly: 'gap' | 'spike' | undefined;
+
+        // Seeded gap: in Sep 25 for Home Care (or Fabric Solutions / Surf Excel)
+        const isGapTarget =
+          p === 'Sep 25' &&
+          (g === 'Home Care' || g === 'Fabric Solutions' || g === 'Surf Excel');
+
+        // Seeded spike: in Mar 26 for Beauty & Wellbeing (or Hair Care / Dove)
+        const isSpikeTarget =
+          p === 'Mar 26' &&
+          (g === 'Beauty & Wellbeing' || g === 'Hair Care' || g === 'Dove');
+
+        if (isGapTarget) {
+          finalValue = 0;
+          finalRows = 0;
+          isAnomaly = 'gap';
+          gapCount++;
+        } else if (isSpikeTarget) {
+          finalValue = Math.round(finalValue * 2.35);
+          finalRows = Math.round(finalRows * 2.5);
+          isAnomaly = 'spike';
+          spikeCount++;
+        }
+
+        totalValue += finalValue;
+        totalRows += finalRows;
+
+        resultItems.push({
+          period: p,
+          group: g,
+          value: finalValue,
+          rowCount: finalRows,
+          isAnomaly,
+        });
+      }
+    }
+
+    return {
+      items: resultItems,
+      periods,
+      groups,
+      measure,
+      groupBy,
+      summary: {
+        totalValue,
+        totalRows,
+        gapCount,
+        spikeCount,
+      },
+    };
   }
 }
 

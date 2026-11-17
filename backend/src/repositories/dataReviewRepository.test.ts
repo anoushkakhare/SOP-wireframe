@@ -92,5 +92,34 @@ if (reopened.signedOff !== false || reopened.signoff !== null) {
 }
 console.log('✓ Successfully reopened');
 
+// 8. Transactions review
+const txDefault = dataReviewRepository.getTransactions();
+if (!txDefault.items || txDefault.items.length === 0) {
+  throw new Error('Expected transaction items');
+}
+if (!txDefault.groups.includes('Beauty & Wellbeing') || !txDefault.groups.includes('Home Care')) {
+  throw new Error('Expected default category groups');
+}
+if (txDefault.summary.gapCount < 1 || txDefault.summary.spikeCount < 1) {
+  throw new Error(`Expected at least 1 gap and 1 spike, got gap=${txDefault.summary.gapCount}, spike=${txDefault.summary.spikeCount}`);
+}
+
+const gapItem = txDefault.items.find(i => i.isAnomaly === 'gap');
+if (!gapItem || gapItem.value !== 0 || gapItem.rowCount !== 0) {
+  throw new Error('Seeded gap item invalid');
+}
+
+const spikeItem = txDefault.items.find(i => i.isAnomaly === 'spike');
+if (!spikeItem || spikeItem.value <= 0) {
+  throw new Error('Seeded spike item invalid');
+}
+
+const txSop = dataReviewRepository.getTransactions({ groupBy: 'sop', measure: 'cases' });
+if (txSop.groupBy !== 'sop' || txSop.measure !== 'cases' || txSop.groups.length < 5) {
+  throw new Error('S&OP grouping with cases measure failed');
+}
+console.log('✓ Successfully tested getTransactions with seeded anomalies and groupings');
+
 console.log('All DataReviewRepository tests passed successfully!');
+
 
