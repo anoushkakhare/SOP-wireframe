@@ -131,3 +131,26 @@ All hierarchical planning entities, months, targets, and seed scenarios reside i
    - `items`: Hierarchical products with `businessUnit`, `category`, `brand`, `product`, `customerGroup`, `customer`, `pastActuals`, and `definitions` (`actualFcst`, `opportunity`, `risk`)
    - `scenarios`: Seed scenarios with initial status and timestamps
 3. All KPIs, chart time series, stacked bars, waterfall steps, treemap hierarchy, table rows, and filter options are derived directly from `masterData.json`, ensuring consistent totals across every view.
+
+---
+
+## 🛠 Troubleshooting
+
+### Empty screen / no data checklist
+
+| # | Check | Fix |
+|---|-------|-----|
+| 1 | **Back-end health** | `curl http://localhost:5001/api/health` → should return `{"status":"ok"}`. If it fails, start the back-end: `cd backend && npm run dev`. |
+| 2 | **API URL env var** | The front-end reads `VITE_API_URL` (defaults to `http://localhost:5001/api`). If the back-end runs on a different port, create `frontend/.env.local` with `VITE_API_URL=http://localhost:<port>/api`. |
+| 3 | **Ports in use** | If port 5001 or 3000 is taken, change them in `backend/src/index.ts` and `frontend/vite.config.ts`, then update `VITE_API_URL`. |
+| 4 | **Stale browser state / logged-out session** | Open DevTools → Application → Local Storage → clear all keys for `localhost:3000`, then hard-refresh (`Ctrl+Shift+R`). Alternatively click **Log out** in the app header and log back in (`amy.chen` / `password123`). |
+| 5 | **CORS error in console** | Ensure `VITE_API_URL` does not have a trailing slash, and the back-end `cors` config in `backend/src/index.ts` lists `http://localhost:3000`. |
+| 6 | **Charts show "Something went wrong"** | Click the **Retry** button on each chart card. If errors persist, check the browser Network tab for 4xx/5xx responses and restart the back-end. |
+
+### Quick start (both servers at once)
+
+```bash
+# From the repo root:
+npm install          # installs concurrently
+npm run dev          # starts backend (port 5001) + frontend (port 3000) together
+```

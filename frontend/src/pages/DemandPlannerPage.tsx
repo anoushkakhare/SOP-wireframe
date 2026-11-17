@@ -195,7 +195,12 @@ export const DemandPlannerPage: React.FC = () => {
           <div className="w-full">
             {fullscreenChartId === 'chart-line' && (
               <FullscreenChartFrame title={cl.forecastTrend} onClose={closeFullscreen}>
-                <ForecastLineChart data={chartData.forecastLine.data?.points} isLoading={chartData.forecastLine.isLoading} />
+                <ForecastLineChart
+                  data={chartData.forecastLine.data?.points}
+                  isLoading={chartData.forecastLine.isLoading}
+                  isError={chartData.forecastLine.isError}
+                  onRetry={chartData.forecastLine.refetch}
+                />
               </FullscreenChartFrame>
             )}
             {fullscreenChartId === 'chart-stacked' && (
@@ -211,17 +216,30 @@ export const DemandPlannerPage: React.FC = () => {
                   onDrillDown={handleDrillDown}
                   onDrillUp={handleDrillUp}
                   isLoading={chartData.stackedBar.isLoading}
+                  isError={chartData.stackedBar.isError}
+                  onRetry={chartData.stackedBar.refetch}
                 />
               </FullscreenChartFrame>
             )}
             {fullscreenChartId === 'chart-waterfall' && (
               <FullscreenChartFrame title={cl.forecastBridge} onClose={closeFullscreen}>
-                <WaterfallChart data={chartData.waterfall.data?.steps} isLoading={chartData.waterfall.isLoading} />
+                <WaterfallChart
+                  data={chartData.waterfall.data?.steps}
+                  isLoading={chartData.waterfall.isLoading}
+                  isError={chartData.waterfall.isError}
+                  onRetry={chartData.waterfall.refetch}
+                />
               </FullscreenChartFrame>
             )}
             {fullscreenChartId === 'chart-treemap' && (
               <FullscreenChartFrame title={cl.productMix} onClose={closeFullscreen}>
-                <TreemapChart data={chartData.treemap.data?.data} level={productLevel} isLoading={chartData.treemap.isLoading} />
+                <TreemapChart
+                  data={chartData.treemap.data?.data}
+                  level={productLevel}
+                  isLoading={chartData.treemap.isLoading}
+                  isError={chartData.treemap.isError}
+                  onRetry={chartData.treemap.refetch}
+                />
               </FullscreenChartFrame>
             )}
           </div>
@@ -230,7 +248,12 @@ export const DemandPlannerPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Forecast trend */}
             <ChartCard title={cl.forecastTrend} onToggleFullscreen={() => openFullscreen('chart-line')}>
-              <ForecastLineChart data={chartData.forecastLine.data?.points} isLoading={chartData.forecastLine.isLoading} />
+              <ForecastLineChart
+                data={chartData.forecastLine.data?.points}
+                isLoading={chartData.forecastLine.isLoading}
+                isError={chartData.forecastLine.isError}
+                onRetry={chartData.forecastLine.refetch}
+              />
             </ChartCard>
 
             {/* Forecast by brand/product × CG */}
@@ -246,17 +269,30 @@ export const DemandPlannerPage: React.FC = () => {
                 onDrillDown={handleDrillDown}
                 onDrillUp={handleDrillUp}
                 isLoading={chartData.stackedBar.isLoading}
+                isError={chartData.stackedBar.isError}
+                onRetry={chartData.stackedBar.refetch}
               />
             </ChartCard>
 
             {/* Forecast bridge (waterfall) */}
             <ChartCard title={cl.forecastBridge} onToggleFullscreen={() => openFullscreen('chart-waterfall')}>
-              <WaterfallChart data={chartData.waterfall.data?.steps} isLoading={chartData.waterfall.isLoading} />
+              <WaterfallChart
+                data={chartData.waterfall.data?.steps}
+                isLoading={chartData.waterfall.isLoading}
+                isError={chartData.waterfall.isError}
+                onRetry={chartData.waterfall.refetch}
+              />
             </ChartCard>
 
             {/* Product mix (treemap) */}
             <ChartCard title={cl.productMix} onToggleFullscreen={() => openFullscreen('chart-treemap')}>
-              <TreemapChart data={chartData.treemap.data?.data} level={productLevel} isLoading={chartData.treemap.isLoading} />
+              <TreemapChart
+                data={chartData.treemap.data?.data}
+                level={productLevel}
+                isLoading={chartData.treemap.isLoading}
+                isError={chartData.treemap.isError}
+                onRetry={chartData.treemap.refetch}
+              />
             </ChartCard>
           </div>
         )}

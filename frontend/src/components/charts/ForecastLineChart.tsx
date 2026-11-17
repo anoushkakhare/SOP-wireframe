@@ -51,10 +51,12 @@ export const ForecastLineChart: React.FC<ForecastLineChartProps> = ({
     );
   }
 
+  if (isError) {
+    return <ChartEmptyState isError statusCode={statusCode} onRetry={onRetry} />;
+  }
+
   if (!data || data.length === 0) {
-    return (
-      <ChartEmptyState isError={isError} statusCode={statusCode} onRetry={onRetry} />
-    );
+    return <ChartEmptyState />;
   }
 
   const chartData = data.map((d) => ({
