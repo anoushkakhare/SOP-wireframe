@@ -18,8 +18,8 @@ export interface SignStyle {
   hex:    string;   // Literal hex for Recharts / SVG use
 }
 
-export function getSignColor(value: number, isNeutral = false): SignStyle {
-  if (isNeutral || value === 0 || isNaN(value)) {
+export function getSignColor(value: number | null | undefined, isNeutral = false): SignStyle {
+  if (value === null || value === undefined || isNeutral || value === 0 || isNaN(value)) {
     return {
       text:   'text-text-primary',
       bg:     'bg-surface',

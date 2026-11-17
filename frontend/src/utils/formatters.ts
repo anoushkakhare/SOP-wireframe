@@ -10,9 +10,10 @@ export interface FormatOptions {
 }
 
 export function formatCompactNumber(
-  value: number,
+  value: number | null | undefined,
   options: FormatOptions = {}
 ): string {
+  if (value === null || value === undefined) return '–';
   const { format = 'number', isNeutral = false, withSign = !isNeutral, decimals, measure } = options;
   const isCurrency = format === 'currency' || measure === 'value';
 

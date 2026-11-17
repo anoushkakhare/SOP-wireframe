@@ -83,10 +83,11 @@ export interface FilterState {
 export interface KpiItem {
   key: string;
   label: string;
-  value: number;
+  value: number | null;
   format: 'currency' | 'percent' | 'number';
   growthType?: 'positive' | 'negative' | 'neutral';
   isNeutral?: boolean;
+  roValue?: number;
 }
 
 export interface ForecastLinePoint {

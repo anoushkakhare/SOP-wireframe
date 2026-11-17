@@ -1,4 +1,4 @@
-import { aggregate } from '../utils/aggregate';
+import { aggregate, getPeriodsForGrain, normalizeGrain } from '../utils/aggregate';
 import masterData from '../data/masterData.json';
 import { KpiItem, Uom } from '../types';
 
@@ -17,6 +17,7 @@ export class KpiRepository {
     activity?: string;
   }): Promise<KpiItem[]> {
     const meas = params.measure || params.uom || 'units';
+    const normGrain = normalizeGrain(params.timeGrain);
 
     const groups = aggregate({
       scope: params.scope,
@@ -52,6 +53,82 @@ export class KpiRepository {
       totalForecast -= delta;
     }
 
+    // Baseline: MRF baseline sum for the range
+    const mrfGroups = aggregate({
+      scope: params.scope,
+      apg: params.apg,
+      level: params.productLevel || 3,
+      timeGrain: params.timeGrain,
+      measure: meas,
+      from: params.from,
+      to: params.to,
+      planningCycle: 'MRF',
+      activity: params.activity,
+    });
+    const baseline = Math.round(mrfGroups.reduce((s, g) => s + g.totalForecast, 0));
+
+    // Actuals: actual periods in range ("–" if none)
+    const { activePeriods, allPeriods } = getPeriodsForGrain(params.timeGrain, params.from, params.to);
+    const actualPeriods = activePeriods.filter(p => p.isActual);
+    let totalActuals: number | null = null;
+    if (actualPeriods.length > 0) {
+      totalActuals = Math.round(
+        groups.reduce((s, g) => {
+          let sum = 0;
+          for (const p of actualPeriods) {
+            sum += (g.periodActuals[p.label] || 0);
+          }
+          return s + sum;
+        }, 0)
+      );
+    }
+
+    // Growth vs previous {period}
+    // "Growth vs previous {period}" follows timeGrain: growth of the last full period in range vs the one before
+    const grainLabelName = normGrain === 'half' ? 'half' : normGrain;
+    const prevPeriodTitle = `Growth vs previous ${grainLabelName}`;
+
+    let growthPrev = 0;
+    let growthPrevRo = 0;
+    if (activePeriods.length >= 2) {
+      const currP = activePeriods[activePeriods.length - 1];
+      const prevP = activePeriods[activePeriods.length - 2];
+      const currVal = groups.reduce((s, g) => s + (g.periodForecast[currP.label] || 0), 0);
+      const prevVal = groups.reduce((s, g) => s + (g.periodForecast[prevP.label] || 0), 0);
+      const currOpp = groups.reduce((s, g) => s + (g.periodOpportunity[currP.label] || 0), 0);
+      const currRisk = groups.reduce((s, g) => s + (g.periodRisk[currP.label] || 0), 0);
+
+      if (prevVal > 0) {
+        growthPrev = +(((currVal - prevVal) / prevVal) * 100).toFixed(1);
+        growthPrevRo = +((((currVal + currOpp + currRisk) - prevVal) / prevVal) * 100).toFixed(1);
+      }
+    } else if (activePeriods.length === 1) {
+      const currP = activePeriods[0];
+      const currIdx = allPeriods.findIndex(p => p.label === currP.label);
+      if (currIdx > 0) {
+        const prevP = allPeriods[currIdx - 1];
+        const prevGroups = aggregate({
+          scope: params.scope,
+          apg: params.apg,
+          level: params.productLevel || 3,
+          timeGrain: params.timeGrain,
+          measure: meas,
+          from: prevP.label,
+          to: prevP.label,
+          planningCycle: params.planningCycle,
+          activity: params.activity,
+        });
+        const currVal = groups.reduce((s, g) => s + (g.periodForecast[currP.label] || 0), 0);
+        const prevVal = prevGroups.reduce((s, g) => s + (g.periodForecast[prevP.label] || 0), 0);
+        const currOpp = groups.reduce((s, g) => s + (g.periodOpportunity[currP.label] || 0), 0);
+        const currRisk = groups.reduce((s, g) => s + (g.periodRisk[currP.label] || 0), 0);
+        if (prevVal > 0) {
+          growthPrev = +(((currVal - prevVal) / prevVal) * 100).toFixed(1);
+          growthPrevRo = +((((currVal + currOpp + currRisk) - prevVal) / prevVal) * 100).toFixed(1);
+        }
+      }
+    }
+
     // Dynamic YoY growth vs same period last year
     const calcGrowth = (curr: number, prev: number, fallback: number) => {
       if (prev > 0) {
@@ -79,14 +156,15 @@ export class KpiRepository {
 
     return [
       { key: 'total_forecast', label: 'Total forecast', value: totalForecast, format: numFormat, isNeutral: true },
-      { key: 'forecast_adj', label: 'Forecast adjustment', value: forecastAdjustment, format: numFormat, growthType: 'positive' },
-      { key: 'risk', label: 'Risk', value: totalRisk, format: numFormat, growthType: 'negative' },
+      { key: 'baseline', label: 'Baseline', value: baseline, format: numFormat, isNeutral: true },
+      { key: 'actuals', label: 'Actuals', value: totalActuals, format: numFormat, isNeutral: true },
+      { key: 'forecast_adj', label: 'Forecast adjustment', value: forecastAdjustment, format: numFormat, growthType: forecastAdjustment >= 0 ? 'positive' : 'negative' },
       { key: 'opportunity', label: 'Opportunity', value: totalOpportunity, format: numFormat, growthType: 'positive' },
-      { key: 'fy_growth', label: 'FY growth', value: growthFy, format: 'percent', growthType: growthFy >= 0 ? 'positive' : 'negative' },
+      { key: 'risk', label: 'Risk', value: totalRisk, format: numFormat, growthType: 'negative' },
+      { key: 'growth_prev', label: prevPeriodTitle, value: growthPrev, format: 'percent', growthType: growthPrev >= 0 ? 'positive' : 'negative', roValue: growthPrevRo },
+      { key: 'fy_growth', label: 'FY growth', value: growthFy, format: 'percent', growthType: growthFy >= 0 ? 'positive' : 'negative', roValue: growthFyRo },
       { key: 'ytd_growth', label: 'YTD growth', value: growthYtd, format: 'percent', growthType: growthYtd >= 0 ? 'positive' : 'negative' },
-      { key: 'ytg_growth', label: 'YTG growth', value: growthYtg, format: 'percent', growthType: growthYtg >= 0 ? 'positive' : 'negative' },
-      { key: 'fy_growth_ro', label: 'FY growth (R&O)', value: growthFyRo, format: 'percent', growthType: growthFyRo >= 0 ? 'positive' : 'negative' },
-      { key: 'ytg_growth_ro', label: 'YTG growth (R&O)', value: growthYtgRo, format: 'percent', growthType: growthYtgRo >= 0 ? 'positive' : 'negative' },
+      { key: 'ytg_growth', label: 'YTG growth', value: growthYtg, format: 'percent', growthType: growthYtg >= 0 ? 'positive' : 'negative', roValue: growthYtgRo },
     ];
   }
 }

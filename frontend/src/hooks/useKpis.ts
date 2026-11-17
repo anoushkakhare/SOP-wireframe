@@ -58,35 +58,45 @@ export function useKpis() {
   }
 
   const kpis: KpiItem[] = (query.data || []).map((item) => {
-    if (item.key === 'total_forecast' && totalForecastDelta !== 0) {
+    if (item.key === 'total_forecast' && totalForecastDelta !== 0 && item.value !== null) {
       return { ...item, value: item.value + totalForecastDelta };
     }
-    if (item.key === 'forecast_adj' && totalForecastDelta !== 0) {
+    if (item.key === 'forecast_adj' && totalForecastDelta !== 0 && item.value !== null) {
       return { ...item, value: item.value + totalForecastDelta };
     }
-    if (item.key === 'opportunity' && totalOpportunityDelta !== 0) {
+    if (item.key === 'opportunity' && totalOpportunityDelta !== 0 && item.value !== null) {
       return { ...item, value: item.value + totalOpportunityDelta };
     }
-    if (item.key === 'risk' && totalRiskDelta !== 0) {
+    if (item.key === 'risk' && totalRiskDelta !== 0 && item.value !== null) {
       return { ...item, value: item.value + totalRiskDelta };
     }
-    if (item.key === 'fy_growth_ro' || item.key === 'ytg_growth_ro') {
+    if (item.key === 'fy_growth' || item.key === 'ytg_growth' || item.key === 'growth_prev') {
       const roDelta = totalOpportunityDelta + totalRiskDelta;
-      if (roDelta !== 0 || totalForecastDelta !== 0) {
-        const tf = query.data?.find((k) => k.key === 'total_forecast')?.value ?? 0;
-        const opp = query.data?.find((k) => k.key === 'opportunity')?.value ?? 0;
-        const rsk = query.data?.find((k) => k.key === 'risk')?.value ?? 0;
-        const curr0 = tf + opp + rsk;
-        if (curr0 > 0 && 1 + item.value / 100 > 0) {
-          const prev = curr0 / (1 + item.value / 100);
-          const newCurr = curr0 + totalForecastDelta + roDelta;
-          const newGrowth = +(((newCurr - prev) / prev) * 100).toFixed(1);
-          return {
-            ...item,
-            value: newGrowth,
-            growthType: newGrowth >= 0 ? 'positive' : 'negative',
-          };
+      if (item.value !== null && (roDelta !== 0 || totalForecastDelta !== 0)) {
+        const updated = { ...item };
+        if (item.roValue !== undefined && item.roValue !== null) {
+          const tf = query.data?.find((k) => k.key === 'total_forecast')?.value ?? 0;
+          const opp = query.data?.find((k) => k.key === 'opportunity')?.value ?? 0;
+          const rsk = query.data?.find((k) => k.key === 'risk')?.value ?? 0;
+          const curr0 = tf + opp + rsk;
+          if (curr0 > 0 && 1 + item.roValue / 100 > 0) {
+            const prev = curr0 / (1 + item.roValue / 100);
+            const newCurr = curr0 + totalForecastDelta + roDelta;
+            const newGrowth = +(((newCurr - prev) / prev) * 100).toFixed(1);
+            updated.roValue = newGrowth;
+          }
         }
+        if (totalForecastDelta !== 0) {
+          const tf = query.data?.find((k) => k.key === 'total_forecast')?.value ?? 0;
+          if (tf > 0 && 1 + item.value / 100 > 0) {
+            const prev = tf / (1 + item.value / 100);
+            const newCurr = tf + totalForecastDelta;
+            const newGrowth = +(((newCurr - prev) / prev) * 100).toFixed(1);
+            updated.value = newGrowth;
+            updated.growthType = newGrowth >= 0 ? 'positive' : 'negative';
+          }
+        }
+        return updated;
       }
     }
     return item;
