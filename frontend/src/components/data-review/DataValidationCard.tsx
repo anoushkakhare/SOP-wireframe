@@ -19,12 +19,25 @@ import { MappingGapRow, NullValueRow } from '../../types';
 
 interface DataValidationCardProps {
   orderNumber?: number;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const DataValidationCard: React.FC<DataValidationCardProps> = ({
   orderNumber = 4,
+  isCollapsed: controlledCollapsed,
+  onToggleCollapse,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
+
+  const handleCardToggle = () => {
+    if (onToggleCollapse) {
+      onToggleCollapse();
+    } else {
+      setInternalCollapsed(!internalCollapsed);
+    }
+  };
   const [activeTab, setActiveTab] = useState<'mapping' | 'nulls' | 'missing'>('mapping');
 
   // Fix mapping gap modal state
@@ -102,7 +115,7 @@ export const DataValidationCard: React.FC<DataValidationCardProps> = ({
       {/* Header */}
       <button
         type="button"
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={handleCardToggle}
         className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50/60 transition-colors cursor-pointer border-b border-gray-100"
         aria-expanded={!isCollapsed}
       >

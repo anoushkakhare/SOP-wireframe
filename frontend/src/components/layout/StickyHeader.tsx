@@ -4,6 +4,7 @@ import { RoleBadge } from '../header/RoleBadge';
 import { LabeledSelect } from '../header/LabeledSelect';
 import { HeaderActions } from '../header/HeaderActions';
 import { ReadinessChip } from '../header/ReadinessChip';
+import { DataReviewNav } from '../header/DataReviewNav';
 import { CalendarPopover } from '../header/CalendarPopover';
 import { ComparePopover } from '../header/ComparePopover';
 import { Uom, ProductLevelNum, TimeGrain } from '../../types';
@@ -168,7 +169,8 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
         {selects_desktop}
 
         {/* Right side: Readiness chip, calendar icon, compare popover, and dashboard-only actions */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0 min-w-0">
+          {isDataReview && <DataReviewNav />}
           <ReadinessChip />
           <CalendarPopover />
           {!isDataReview && <ComparePopover />}

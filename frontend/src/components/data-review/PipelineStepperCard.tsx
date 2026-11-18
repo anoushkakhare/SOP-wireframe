@@ -20,6 +20,8 @@ interface PipelineStepperCardProps {
   orderNumber?: number;
   isHistoryOpen?: boolean;
   onToggleHistory?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const PipelineStepperCard: React.FC<PipelineStepperCardProps> = ({
@@ -28,8 +30,19 @@ export const PipelineStepperCard: React.FC<PipelineStepperCardProps> = ({
   orderNumber = 1,
   isHistoryOpen = false,
   onToggleHistory,
+  isCollapsed: controlledCollapsed,
+  onToggleCollapse,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
+
+  const handleCardToggle = () => {
+    if (onToggleCollapse) {
+      onToggleCollapse();
+    } else {
+      setInternalCollapsed(!internalCollapsed);
+    }
+  };
   const { loadFeed, isLoadFeedPending } = useDataReviewMutations();
   const [loadingFeedId, setLoadingFeedId] = useState<string | null>(null);
 
@@ -108,7 +121,7 @@ export const PipelineStepperCard: React.FC<PipelineStepperCardProps> = ({
       {/* Card Header (clickable to collapse) */}
       <button
         type="button"
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={handleCardToggle}
         className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50/60 transition-colors cursor-pointer border-b border-gray-100"
         aria-expanded={!isCollapsed}
       >

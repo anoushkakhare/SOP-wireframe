@@ -89,10 +89,25 @@ export const CUSTOMER_HIERARCHY_DATA = [
 
 interface DataReviewCardProps {
   orderNumber?: number;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export const DataReviewCard: React.FC<DataReviewCardProps> = ({ orderNumber = 3 }) => {
-  const [isCardCollapsed, setIsCardCollapsed] = useState(false);
+export const DataReviewCard: React.FC<DataReviewCardProps> = ({
+  orderNumber = 3,
+  isCollapsed: controlledCollapsed,
+  onToggleCollapse,
+}) => {
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isCardCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
+
+  const handleCardToggle = () => {
+    if (onToggleCollapse) {
+      onToggleCollapse();
+    } else {
+      setInternalCollapsed(!internalCollapsed);
+    }
+  };
 
   // 1. Top tabs: Master data | Transactional data
   const [mainTab, setMainTab] = useState<'master' | 'transactional'>('master');
@@ -356,7 +371,7 @@ export const DataReviewCard: React.FC<DataReviewCardProps> = ({ orderNumber = 3 
       {/* ── Section Card Header ── */}
       <button
         type="button"
-        onClick={() => setIsCardCollapsed(!isCardCollapsed)}
+        onClick={handleCardToggle}
         className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50/60 transition-colors cursor-pointer border-b border-gray-100 select-none"
         aria-expanded={!isCardCollapsed}
       >
