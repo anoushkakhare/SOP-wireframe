@@ -212,6 +212,7 @@ export const DemandPlannerPage: React.FC = () => {
     <AppShell
       roleTitle={user?.roleTitle || labels.header.avatarRole}
       userName={user?.name}
+      isDashboard={true}
       metaOptions={metaQuery.data || null}
       hierarchyNodes={hierarchyNodes}
       productLevel={productLevel}
@@ -249,7 +250,7 @@ export const DemandPlannerPage: React.FC = () => {
       onConfirmDiscard={handleConfirmDiscard}
     >
       {/* 1. KPI row */}
-      <section aria-label="Key performance indicators">
+      <section aria-label="Key performance indicators" id="section-kpi">
         <KpiCardRow
           hierarchyNodes={hierarchyNodes}
           kpis={kpis}
@@ -257,11 +258,12 @@ export const DemandPlannerPage: React.FC = () => {
           isError={isKpisError}
           error={kpisError as Error}
           onRetry={refetchKpis}
+          stickySelectionCards={true}
         />
       </section>
 
       {/* 2. Charts */}
-      <section aria-label="Forecast visualisations">
+      <section aria-label="Forecast visualisations" id="section-charts">
         {fullscreenChartId ? (
           <div className="w-full">
             {fullscreenChartId === 'chart-line' && (

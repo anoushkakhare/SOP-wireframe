@@ -20,6 +20,7 @@ interface KpiCardRowProps {
   isError?: boolean;
   error?: Error | null;
   onRetry?: () => void;
+  stickySelectionCards?: boolean;
 }
 
 type ModalType = 'product' | 'customer' | 'time' | null;
@@ -31,6 +32,7 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({
   isError = false,
   error,
   onRetry,
+  stickySelectionCards = false,
 }) => {
   const [modalType, setModalType] = useState<ModalType>(null);
 
@@ -126,8 +128,9 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({
   return (
     <div className="w-full space-y-2 select-none">
       {/* ─── Row A: Selection (4 compact cards ~64px, wraps 2x2 on mobile) ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        {/* 1. Product card */}
+      <div className={stickySelectionCards ? 'dashboard-sticky-filter-row' : ''}>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+          {/* 1. Product card */}
         <div className="h-16 bg-surface border border-border rounded-card px-3 py-2 flex flex-col justify-between shadow-card hover:shadow-md transition-shadow overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-wider font-semibold text-text-secondary truncate">
@@ -211,6 +214,7 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({
           </div>
         </div>
       </div>
+    </div>
 
       {/* ─── Row B: Numbers (10 cards, scrolls horizontally) ─── */}
       {isLoading ? (

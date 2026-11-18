@@ -22,6 +22,7 @@ interface AppShellProps {
   children: React.ReactNode;
   roleTitle?: string;
   userName?: string;
+  isDashboard?: boolean;
   metaOptions?: MetaOptions | null;
   hierarchyNodes?: HierarchyNode[];
   productLevel?: ProductLevelNum;
@@ -68,6 +69,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   children,
   roleTitle = 'Demand Planner',
   userName,
+  isDashboard = false,
   metaOptions = null,
   hierarchyNodes = [],
   productLevel = 1,
@@ -107,7 +109,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   const { dialogs: d } = labels;
 
   return (
-    <div className="min-h-screen bg-bg-page flex flex-col font-sans text-text-primary">
+    <div className={`min-h-screen bg-bg-page flex flex-col font-sans text-text-primary ${isDashboard ? 'dashboard-page' : ''}`}>
       <StickyHeader
         roleTitle={roleTitle}
         userName={userName}
@@ -134,7 +136,7 @@ export const AppShell: React.FC<AppShellProps> = ({
 
       <div className="flex flex-1 min-h-[calc(100vh-56px)] pb-14 md:pb-0 overflow-hidden">
         <LeftIconRail />
-        <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
+        <main className={`flex-1 min-w-0 flex flex-col ${isDashboard ? 'overflow-visible' : 'overflow-hidden'}`}>
           <ScrollRegion hasBottomDock={isTableActive}>
             {children}
           </ScrollRegion>
