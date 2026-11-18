@@ -171,11 +171,6 @@ export function getPeriodsForGrain(grainName?: string, from?: string, to?: strin
   if (toIdx < 0) toIdx = allPeriods.length - 1;
   if (fromIdx > toIdx) [fromIdx, toIdx] = [toIdx, fromIdx];
 
-  // Cap at 104 periods
-  if (toIdx - fromIdx + 1 > 104) {
-    toIdx = fromIdx + 103;
-  }
-
   const activePeriods = allPeriods.slice(fromIdx, toIdx + 1);
   const firstForecastIdx = activePeriods.findIndex(p => !p.isActual);
   const currentPeriodIndex = firstForecastIdx >= 0 ? firstForecastIdx : activePeriods.length;

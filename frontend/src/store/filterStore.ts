@@ -5,7 +5,6 @@ import {
   getGrainPeriods,
   getDefaultRangeForGrain,
 } from '../utils/dateRange';
-import { useUiStore } from './uiStore';
 
 const defMonth = getDefaultRangeForGrain('month');
 
@@ -20,8 +19,6 @@ const initialFilters: FilterState = {
   customers: [],
   businessUnits: [],
 };
-
-let wasCapped = false;
 
 interface FilterStoreState {
   appliedFilters: FilterState;
@@ -51,19 +48,8 @@ export const useFilterStore = create<FilterStoreState>((set, get) => ({
     let [startIdx, endIdx] = range;
     const periods = getGrainPeriods(grain);
 
-    startIdx = Math.max(0, Math.min(periods.length - 1, startIdx));
-    endIdx = Math.max(startIdx, Math.min(periods.length - 1, endIdx));
-
-    // Cap at 104 periods
-    if (endIdx - startIdx + 1 > 104) {
-      endIdx = startIdx + 103;
-      if (!wasCapped) {
-        wasCapped = true;
-        useUiStore.getState().addToast('Time range capped at 104 periods', 'info', 'range-cap');
-      }
-    } else {
-      wasCapped = false;
-    }
+    startIdx = Math.max(0, Math.min(periods.length - 2, startIdx));
+    endIdx = Math.max(startIdx + 1, Math.min(periods.length - 1, endIdx));
 
     const clampedRange: [number, number] = [startIdx, endIdx];
     set((state) => ({

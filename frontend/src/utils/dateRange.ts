@@ -55,33 +55,29 @@ export function getDefaultRangeForGrain(grain?: TimeGrain | string): {
 } {
   const g = normalizeGrain(grain);
   const periods = getGrainPeriods(g);
+  const total = periods.length;
 
-  let from = periods[0];
-  let to = periods[periods.length - 1];
+  // Middle position with 20-25% gap
+  const maxAllowedGap = Math.max(1, total - 2);
+  const desiredGap = Math.min(maxAllowedGap, Math.max(1, Math.round(total * 0.22)));
+  const mid = Math.floor(total / 2);
 
-  if (g === 'year') {
-    from = 'FY2025';
-    to = 'FY2026';
-  } else if (g === 'half') {
-    from = 'H1 2026';
-    to = 'H2 2026';
-  } else if (g === 'quarter') {
-    from = 'Q1 2026';
-    to = 'Q4 2026';
-  } else if (g === 'month') {
-    from = 'Jan 2026';
-    to = 'Dec 2026';
-  } else if (g === 'week') {
-    from = 'W40 2026';
-    to = 'W53 2026';
+  let startIdx = Math.max(0, mid - Math.floor(desiredGap / 2));
+  let endIdx = Math.min(total - 1, startIdx + desiredGap);
+
+  if (endIdx - startIdx < 1) {
+    endIdx = Math.min(total - 1, startIdx + 1);
+  }
+  if (endIdx >= total) {
+    endIdx = total - 1;
+    startIdx = Math.max(0, endIdx - desiredGap);
   }
 
-  let startIdx = periods.indexOf(from);
-  let endIdx = periods.indexOf(to);
-  if (startIdx < 0) startIdx = 0;
-  if (endIdx < 0) endIdx = periods.length - 1;
-
-  return { from, to, range: [startIdx, endIdx] };
+  return {
+    from: periods[startIdx],
+    to: periods[endIdx],
+    range: [startIdx, endIdx],
+  };
 }
 
 export function monthIndexToDateString(index: number, grain?: TimeGrain | string): string {
