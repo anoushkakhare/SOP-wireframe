@@ -18,11 +18,13 @@ import { useDataReviewMutations } from '../../hooks/useDataReview';
 interface SignoffCardProps {
   readiness: DataReviewReadinessResponse | undefined;
   isLoading?: boolean;
+  orderNumber?: number;
 }
 
 export const SignoffCard: React.FC<SignoffCardProps> = ({
   readiness,
   isLoading,
+  orderNumber = 6,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { user } = useAuthStore();
@@ -81,7 +83,7 @@ export const SignoffCard: React.FC<SignoffCardProps> = ({
       >
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center font-bold text-sm">
-            7
+            {orderNumber}
           </div>
           <div>
             <h2 className="text-base font-bold text-gray-900">Sign-off</h2>

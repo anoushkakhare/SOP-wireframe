@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AppShell } from '../components/layout/AppShell';
 import { PipelineStepperCard } from '../components/data-review/PipelineStepperCard';
 import { HistoryTableCard } from '../components/data-review/HistoryTableCard';
@@ -18,6 +18,7 @@ import { useAuthStore } from '../store/authStore';
 export const DataReviewPage: React.FC = () => {
   const { user, layoutManifest } = useAuthStore();
   const roleTitle = layoutManifest?.roleTitle || user?.roleTitle || 'Demand Planner';
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // Persist current page as last used
   useEffect(() => {
@@ -27,6 +28,67 @@ export const DataReviewPage: React.FC = () => {
   const { data: pipeline = [], isLoading: isPipelineLoading } = useDataReviewPipeline();
   const { data: history = [], isLoading: isHistoryLoading } = useDataReviewHistory();
   const { data: readiness, isLoading: isReadinessLoading } = useDataReviewReadiness();
+
+  // Top-level sections to render in order (history panel is part of section 1)
+  const sections = [
+    {
+      key: 'pipeline',
+      render: (index: number) => (
+        <div key="pipeline-section">
+          {/* Section 1: Integration pipeline & schedule */}
+          <PipelineStepperCard
+            feeds={pipeline}
+            isLoading={isPipelineLoading}
+            orderNumber={index}
+            isHistoryOpen={isHistoryOpen}
+            onToggleHistory={() => setIsHistoryOpen(prev => !prev)}
+          />
+
+          {/* Section 1 sub-panel: Integration status & history (hidden by default, smoothly expandable) */}
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              isHistoryOpen ? 'max-h-[2000px] opacity-100 mb-5' : 'max-h-0 opacity-0 mb-0 pointer-events-none'
+            }`}
+            aria-hidden={!isHistoryOpen}
+          >
+            <HistoryTableCard
+              history={history}
+              isLoading={isHistoryLoading}
+              isExpanded={isHistoryOpen}
+              onToggleExpand={() => setIsHistoryOpen(prev => !prev)}
+            />
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'data-review',
+      render: (index: number) => <DataReviewCard key="data-review" orderNumber={index} />,
+    },
+    {
+      key: 'data-validation',
+      render: (index: number) => <DataValidationCard key="data-validation" orderNumber={index} />,
+    },
+    {
+      key: 'innovation',
+      render: (index: number) => <InnovationCard key="innovation" orderNumber={index} />,
+    },
+    {
+      key: 'special-packs',
+      render: (index: number) => <SpecialPacksCard key="special-packs" orderNumber={index} />,
+    },
+    {
+      key: 'signoff',
+      render: (index: number) => (
+        <SignoffCard
+          key="signoff"
+          orderNumber={index}
+          readiness={readiness}
+          isLoading={isReadinessLoading}
+        />
+      ),
+    },
+  ];
 
   return (
     <AppShell roleTitle={roleTitle} userName={user?.name}>
@@ -55,26 +117,8 @@ export const DataReviewPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 1. Integration pipeline & schedule */}
-        <PipelineStepperCard feeds={pipeline} isLoading={isPipelineLoading} />
-
-        {/* 2. Integration status & history */}
-        <HistoryTableCard history={history} isLoading={isHistoryLoading} />
-
-        {/* 3. Data review visual card */}
-        <DataReviewCard orderNumber={3} />
-
-        {/* 4. Data validation card */}
-        <DataValidationCard orderNumber={4} />
-
-        {/* 5. Innovation card */}
-        <InnovationCard orderNumber={5} />
-
-        {/* 6. Special packs card */}
-        <SpecialPacksCard orderNumber={6} />
-
-        {/* 7. Sign-off */}
-        <SignoffCard readiness={readiness} isLoading={isReadinessLoading} />
+        {/* Dynamically numbered sections */}
+        {sections.map((section, idx) => section.render(idx + 1))}
       </div>
     </AppShell>
   );
