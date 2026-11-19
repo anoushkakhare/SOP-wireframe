@@ -252,11 +252,11 @@ export const KpiNumbersRow: React.FC<KpiNumbersRowProps> = ({
     <div className="w-full select-none">
       {/* ─── Row B: Numbers (8 cards, scrolls horizontally) ─── */}
       {isLoading ? (
-        <div className="w-full flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+        <div className="w-full flex items-stretch gap-2 overflow-x-auto pb-1 no-scrollbar">
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="flex-1 min-w-[130px] sm:min-w-[145px] max-w-[200px] bg-surface border border-border rounded-card p-2.5 flex flex-col justify-between animate-pulse shrink-0" style={{ minHeight: '114px' }}
+              className="bg-surface border border-border rounded-card p-2.5 flex flex-col justify-between animate-pulse" style={{ width: '160px', height: '140px', flex: '0 0 160px', boxSizing: 'border-box' }}
             >
               <div className="h-3 bg-primary-100 rounded w-2/3" />
               <div className="h-6 bg-primary-100 rounded w-4/5 mx-auto" />
@@ -288,7 +288,7 @@ export const KpiNumbersRow: React.FC<KpiNumbersRowProps> = ({
           {labels.generic.noData}
         </div>
       ) : (
-        <div className="w-full flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar scroll-smooth">
+        <div className="w-full flex items-stretch gap-2 overflow-x-auto pb-1 no-scrollbar scroll-smooth">
           {kpis.map((kpi) => (
             <KpiCard key={kpi.key} kpi={kpi} />
           ))}
