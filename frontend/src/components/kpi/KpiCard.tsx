@@ -27,17 +27,15 @@ const TOOLTIP_MAP: Record<string, string> = {
  * ONE source of truth for card dimensions and font sizes.
  * Change CARD_H / CARD_W here to resize all cards at once.
  */
-const CARD_H = 140;   // px — fixed height for every card
-const CARD_W = 160;   // px — fixed width  (flex: 0 0 CARD_W, no grow/shrink)
+const CARD_H = 120;   // px — fixed height for every card (grid fills width; no fixed width)
 
 const TOKEN = {
-  // Applied via style={} so the values are truly shared
+  // Cards get their width from the grid; only height is fixed here.
   cardStyle: {
-    width: `${CARD_W}px`,
     height: `${CARD_H}px`,
-    flex: `0 0 ${CARD_W}px`,
     boxSizing: 'border-box' as const,
     overflow: 'hidden',
+    minWidth: 0,        // allow grid cell to shrink below content width
   },
   cardBase:
     'bg-surface border border-border rounded-card p-2.5 flex flex-col shadow-card select-none hover:shadow-md transition-shadow',
