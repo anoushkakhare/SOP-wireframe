@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AppShell } from '../components/layout/AppShell';
-import { KpiCardRow } from '../components/kpi/KpiCardRow';
+import { SelectionKpiRow, KpiNumbersRow } from '../components/kpi/KpiCardRow';
 import { ChartCard } from '../components/charts/ChartCard';
 import { FullscreenChartFrame } from '../components/charts/FullscreenChartFrame';
 import { ForecastLineChart } from '../components/charts/ForecastLineChart';
@@ -254,11 +254,11 @@ export const DemandPlannerPage: React.FC = () => {
       isDiscardModalOpen={isDiscardConfirmModalOpen}
       onCloseDiscardModal={() => setDiscardConfirmModalOpen(false)}
       onConfirmDiscard={handleConfirmDiscard}
+      selectionRow={<SelectionKpiRow hierarchyNodes={hierarchyNodes} />}
     >
-      {/* 1. KPI row */}
+      {/* 1. Numbers row */}
       <section aria-label="Key performance indicators">
-        <KpiCardRow
-          hierarchyNodes={hierarchyNodes}
+        <KpiNumbersRow
           kpis={kpis}
           isLoading={isKpisLoading}
           isError={isKpisError}

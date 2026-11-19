@@ -87,7 +87,7 @@ export const BottomDock: React.FC<BottomDockProps> = ({
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-30 bg-surface border-t border-border-strong shadow-dock flex flex-col h-[380px] max-h-[50vh] transition-all animate-in slide-in-from-bottom duration-200">
+    <div className="fixed bottom-14 md:bottom-0 left-0 md:left-[72px] right-0 z-30 bg-surface border-t border-border-strong shadow-dock flex flex-col h-[380px] max-h-[50vh] transition-all animate-in slide-in-from-bottom duration-200">
       {/* Top control bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-primary-50 border-b border-border">
         <div className="flex-1 mr-4">

@@ -20,6 +20,7 @@ import { labels } from '../../constants/labels';
 
 interface AppShellProps {
   children: React.ReactNode;
+  selectionRow?: React.ReactNode;
   roleTitle?: string;
   userName?: string;
   metaOptions?: MetaOptions | null;
@@ -66,6 +67,7 @@ interface AppShellProps {
 
 export const AppShell: React.FC<AppShellProps> = ({
   children,
+  selectionRow,
   roleTitle = 'Demand Planner',
   userName,
   metaOptions = null,
@@ -108,37 +110,41 @@ export const AppShell: React.FC<AppShellProps> = ({
 
   return (
     <div className="min-h-screen bg-bg-page flex flex-col font-sans text-text-primary">
-      <StickyHeader
-        roleTitle={roleTitle}
-        userName={userName}
-        productLevel={productLevel}
-        allowedLevels={allowedLevels}
-        customerView={customerView}
-        measure={measure}
-        measureOptions={metaOptions?.measures || metaOptions?.uoms}
-        timeGrain={timeGrain}
-        timeGrainOptions={metaOptions?.timeGrains}
-        onProductLevelChange={onProductLevelChange}
-        onCustomerViewChange={onCustomerViewChange}
-        onMeasureChange={onMeasureChange}
-        onTimeGrainChange={onTimeGrainChange}
-        onResetHeaderOnly={onResetHeaderOnly}
-        onSaveScenario={() => onCloseSaveModal()}
-        onCommitScenario={() => onCloseCommitModal()}
-        onToggleTable={onToggleTable}
-        onOpenFilter={() => onCloseFilter()}
-        onOpenScenarios={() => onCloseScenario()}
-        isTableActive={isTableActive}
-        activeFilterCount={activeFilterCount}
-      />
+      <LeftIconRail />
 
-      <div className="flex flex-1 min-h-[calc(100vh-56px)] pb-14 md:pb-0 overflow-hidden">
-        <LeftIconRail />
-        <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
-          <ScrollRegion hasBottomDock={isTableActive}>
-            {children}
-          </ScrollRegion>
-        </main>
+      <div className="md:ml-[72px] flex flex-col flex-1 min-w-0">
+        <StickyHeader
+          roleTitle={roleTitle}
+          userName={userName}
+          productLevel={productLevel}
+          allowedLevels={allowedLevels}
+          customerView={customerView}
+          measure={measure}
+          measureOptions={metaOptions?.measures || metaOptions?.uoms}
+          timeGrain={timeGrain}
+          timeGrainOptions={metaOptions?.timeGrains}
+          onProductLevelChange={onProductLevelChange}
+          onCustomerViewChange={onCustomerViewChange}
+          onMeasureChange={onMeasureChange}
+          onTimeGrainChange={onTimeGrainChange}
+          onResetHeaderOnly={onResetHeaderOnly}
+          onSaveScenario={() => onCloseSaveModal()}
+          onCommitScenario={() => onCloseCommitModal()}
+          onToggleTable={onToggleTable}
+          onOpenFilter={() => onCloseFilter()}
+          onOpenScenarios={() => onCloseScenario()}
+          isTableActive={isTableActive}
+          activeFilterCount={activeFilterCount}
+          selectionRow={selectionRow}
+        />
+
+        <div className="flex flex-1 min-h-[calc(100vh-56px)] pb-14 md:pb-0 overflow-hidden">
+          <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
+            <ScrollRegion hasBottomDock={isTableActive}>
+              {children}
+            </ScrollRegion>
+          </main>
+        </div>
       </div>
 
       <FilterDrawer
