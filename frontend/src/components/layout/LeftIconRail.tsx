@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Database } from 'lucide-react';
+import { LayoutDashboard, Database, Lock } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import {
+  SECTIONS,
+  statusDotColor,
+  useDataReviewNavStore,
+  useSectionStatus,
+  scrollToSection,
+} from '../../pages/dataReview/sections';
 
 export const NAV_RAIL_WIDTH = 72;
 
@@ -18,6 +25,11 @@ export const LeftIconRail: React.FC = () => {
   const navigate = useNavigate();
   const { layoutManifest } = useAuthStore();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [hoveredSectionId, setHoveredSectionId] = useState<string | null>(null);
+
+  const isDataReview = location.pathname.startsWith('/data-review');
+  const activeSectionId = useDataReviewNavStore((s) => s.activeSectionId);
+  const { statuses } = useSectionStatus();
 
   const defaultPages: NavPageItem[] = [
     {
@@ -111,55 +123,149 @@ export const LeftIconRail: React.FC = () => {
             const fullPageName = getFullPageName(page.label, page.id);
 
             return (
-              <div
-                key={page.id}
-                className="relative flex items-center justify-center w-full px-1.5"
-                onMouseEnter={() => setHoveredId(page.id)}
-                onMouseLeave={() => setHoveredId(null)}
-              >
-                <button
-                  type="button"
-                  onClick={() => handleNavigate(page.path)}
-                  className={`w-full min-h-[60px] py-1 rounded-lg flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer relative focus-visible:ring-2 focus-visible:ring-[#0F0E9A] focus:outline-none ${
-                    isActive
-                      ? 'bg-[#F3F3FB] text-[#0F0E9A]'
-                      : 'text-[#5A6078] hover:bg-[#F3F3FB]'
-                  }`}
-                  aria-label={fullPageName}
-                  aria-current={isActive ? 'page' : undefined}
+              <React.Fragment key={page.id}>
+                <div
+                  className="relative flex items-center justify-center w-full px-1.5"
+                  onMouseEnter={() => setHoveredId(page.id)}
+                  onMouseLeave={() => setHoveredId(null)}
                 >
-                  {/* Left active indicator bar: 3px primary */}
-                  {isActive && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#0F0E9A] rounded-r" />
-                  )}
-                  {renderIcon(page.icon, isActive)}
-                  <span
-                    className="text-[10.5px] font-medium leading-[1.15] text-center px-1 whitespace-normal line-clamp-2 w-full [overflow-wrap:normal] hyphens-none"
-                    style={{
-                      fontSize: '10.5px',
-                      fontWeight: 500,
-                      lineHeight: 1.15,
-                      paddingLeft: '4px',
-                      paddingRight: '4px',
-                      whiteSpace: 'normal',
-                      overflowWrap: 'normal',
-                      hyphens: 'none',
-                      textAlign: 'center',
-                    }}
+                  <button
+                    type="button"
+                    onClick={() => handleNavigate(page.path)}
+                    className={`w-full min-h-[60px] py-1 rounded-lg flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer relative focus-visible:ring-2 focus-visible:ring-[#0F0E9A] focus:outline-none ${
+                      isActive
+                        ? 'bg-[#F3F3FB] text-[#0F0E9A]'
+                        : 'text-[#5A6078] hover:bg-[#F3F3FB]'
+                    }`}
+                    aria-label={fullPageName}
+                    aria-current={isActive ? 'page' : undefined}
                   >
-                    {displayLabel}
-                  </span>
-                </button>
+                    {/* Left active indicator bar: 3px primary */}
+                    {isActive && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#0F0E9A] rounded-r" />
+                    )}
+                    {renderIcon(page.icon, isActive)}
+                    <span
+                      className="text-[10.5px] font-medium leading-[1.15] text-center px-1 whitespace-normal line-clamp-2 w-full [overflow-wrap:normal] hyphens-none"
+                      style={{
+                        fontSize: '10.5px',
+                        fontWeight: 500,
+                        lineHeight: 1.15,
+                        paddingLeft: '4px',
+                        paddingRight: '4px',
+                        whiteSpace: 'normal',
+                        overflowWrap: 'normal',
+                        hyphens: 'none',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {displayLabel}
+                    </span>
+                  </button>
 
-                {/* Label on Hover: floating tooltip to the right */}
-                {hoveredId === page.id && (
-                  <div className="absolute left-[76px] top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap z-50 pointer-events-none animate-in fade-in slide-in-from-left-1 duration-150">
-                    {fullPageName}
-                    {/* Tooltip arrow */}
-                    <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
+                  {/* Label on Hover: floating tooltip to the right */}
+                  {hoveredId === page.id && (
+                    <div className="absolute left-[76px] top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap z-50 pointer-events-none animate-in fade-in slide-in-from-left-1 duration-150">
+                      {fullPageName}
+                      {/* Tooltip arrow */}
+                      <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Nested 6 sections on /data-review under Data review item */}
+                {page.id === 'data-review' && isDataReview && (
+                  <div className="w-full flex flex-col items-center">
+                    {/* Thin divider above */}
+                    <div className="w-8 h-px bg-[#E0E3EC] my-1" />
+
+                    {/* 6 sections */}
+                    <div className="w-full flex flex-col items-center gap-1">
+                      {SECTIONS.map((section) => {
+                        const isSectionActive = activeSectionId === section.id;
+                        const secStatus = statuses[section.id] || { status: 'not_started', detail: '' };
+                        const SectionIcon = section.icon;
+                        const isLocked = section.id === 'signoff' && secStatus.isLocked;
+
+                        return (
+                          <div
+                            key={section.id}
+                            className="relative flex items-center justify-center w-full px-1.5"
+                            onMouseEnter={() => setHoveredSectionId(section.id)}
+                            onMouseLeave={() => setHoveredSectionId(null)}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => scrollToSection(section.id)}
+                              aria-label={`${section.n}. ${section.label}`}
+                              aria-current={isSectionActive ? 'true' : undefined}
+                              className={`w-full h-[48px] py-1 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer relative focus-visible:ring-2 focus-visible:ring-[#0F0E9A] focus:outline-none ${
+                                isSectionActive
+                                  ? 'bg-[#F3F3FB] text-[#0F0E9A]'
+                                  : 'text-[#5A6078] hover:bg-[#F3F3FB] hover:text-[#0F0E9A]'
+                              }`}
+                            >
+                              {/* Left active indicator bar: same highlight style as rail's active item */}
+                              {isSectionActive && (
+                                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-[#0F0E9A] rounded-r" />
+                              )}
+
+                              {/* Icon with small status dot */}
+                              <div className="relative flex items-center justify-center">
+                                <SectionIcon
+                                  className={`w-4 h-4 transition-colors shrink-0 ${
+                                    isSectionActive ? 'text-[#0F0E9A]' : 'text-[#5A6078]'
+                                  }`}
+                                />
+                                <span
+                                  className={`absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ring-1 ring-white ${statusDotColor(
+                                    secStatus.status
+                                  )}`}
+                                  title={secStatus.detail}
+                                />
+                              </div>
+
+                              {/* 10.5px short label, 2 lines max, no ellipsis */}
+                              <span
+                                className="text-[10.5px] font-medium leading-[1.1] text-center px-0.5 w-full [overflow-wrap:normal] hyphens-none"
+                                style={{
+                                  fontSize: '10.5px',
+                                  fontWeight: 500,
+                                  lineHeight: 1.1,
+                                  textAlign: 'center',
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical',
+                                  overflow: 'hidden',
+                                  textOverflow: 'clip',
+                                }}
+                              >
+                                {section.short}
+                              </span>
+                            </button>
+
+                            {/* Tooltip on hover */}
+                            {hoveredSectionId === section.id && (
+                              <div className="absolute left-[76px] top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap z-50 pointer-events-none animate-in fade-in slide-in-from-left-1 duration-150">
+                                <div className="flex items-center gap-1.5">
+                                  <span>
+                                    {section.n}. {section.label}
+                                  </span>
+                                  {isLocked && <Lock className="w-3 h-3 text-amber-300" />}
+                                </div>
+                                <div className="text-[11px] text-gray-300 font-normal">
+                                  {isLocked ? 'Complete sections 1-5 first' : secStatus.detail}
+                                </div>
+                                <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
-              </div>
+              </React.Fragment>
             );
           })}
         </div>

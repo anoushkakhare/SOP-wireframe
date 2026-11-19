@@ -6,6 +6,7 @@ import { HeaderActions } from '../header/HeaderActions';
 import { ReadinessChip } from '../header/ReadinessChip';
 import { CalendarPopover } from '../header/CalendarPopover';
 import { ComparePopover } from '../header/ComparePopover';
+import { DataReviewNav } from '../header/DataReviewNav';
 import { Uom, ProductLevelNum, TimeGrain } from '../../types';
 import { CustomerViewOption } from '../../store/viewStore';
 import { SlidersHorizontal, X, RotateCcw } from 'lucide-react';
@@ -151,7 +152,9 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
       )}
     </div>
   ) : (
-    <div className="flex-1" />
+    <div className="flex-1 flex items-center justify-center min-w-0 px-2">
+      <DataReviewNav />
+    </div>
   );
 
   return (
