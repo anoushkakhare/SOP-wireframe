@@ -4,9 +4,6 @@ A responsive full-stack Sales & Operations Planning (S&OP) web application built
 
 ---
 
-<img width="2940" height="1912" alt="image" src="https://github.com/user-attachments/assets/a7cde25b-c46b-42e7-802f-2adee087c8db" />
-
-
 ## 🌟 Key Features
 
 1. **Role-Driven UI**:
