@@ -24,8 +24,10 @@ import { PlanningTable } from '../components/table/PlanningTable';
 import { Save, ChevronLeft } from 'lucide-react';
 import { KpiItem, PlanningTableRow, Scenario, StackedBarItem } from '../types';
 import { labels } from '../constants/labels';
+import { useAuthStore } from '../store/authStore';
 
 export const DevGalleryPage: React.FC = () => {
+  const { user } = useAuthStore();
   const [selectVal, setSelectVal] = useState('brand');
   const [timeRange, setTimeRange] = useState<[number, number]>([12, 23]);
   const [startDate, setStartDate] = useState('Jan 2026');
@@ -99,8 +101,8 @@ export const DevGalleryPage: React.FC = () => {
     name: 'Festive Season Upside',
     status: 'saved',
     lastModified: new Date(Date.now() - 120000).toISOString(),
-    userId: 'usr_1',
-    userName: 'Priya Sharma',
+    userId: user?.id || 'usr_1',
+    userName: user?.name || '',
   };
 
   const sampleRows: PlanningTableRow[] = [
@@ -140,7 +142,7 @@ export const DevGalleryPage: React.FC = () => {
           1. Header Components
         </h2>
         <div className="flex flex-wrap items-center gap-6 p-4 bg-primary-700 rounded-card shadow-sm">
-          <RoleBadge roleTitle="Demand Planner" userName="Priya Sharma" />
+          <RoleBadge roleTitle={user?.roleTitle || labels.header.avatarRole} userName={user?.name} />
           <LabeledSelect
             label={labels.header.selects.productView}
             value={selectVal}

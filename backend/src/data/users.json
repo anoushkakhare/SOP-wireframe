@@ -1,16 +1,16 @@
 [
   {
     "id": "usr_dp_1",
-    "name": "Priya Sharma",
+    "name": "Nishtha Agarwal",
     "role": "demand_planner",
     "roleTitle": "Demand Planner",
-    "email": "priya.sharma@demandplanner.com"
+    "email": "nishtha.agarwal@demandplanner.com"
   },
   {
     "id": "usr_lead_1",
-    "name": "Rahul Mehta",
+    "name": "Pranshu Raghuvansh",
     "role": "leadership",
     "roleTitle": "Executive Leadership",
-    "email": "rahul.mehta@demandplanner.com"
+    "email": "pranshu.raghuvansh@demandplanner.com"
   }
 ]
