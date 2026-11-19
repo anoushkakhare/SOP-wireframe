@@ -93,7 +93,7 @@ export const LoginPage: React.FC = () => {
             </label>
             <div className="space-y-2">
               {roleOption('demand_planner', UserCheck, 'Demand Planner', 'Full planning, edits & scenarios')}
-              {roleOption('leadership', Shield, 'Executive Leadership', 'High-level executive read-only view')}
+              {roleOption('leadership', Shield, 'Executive', 'High-level executive read-only view')}
             </div>
           </div>
 
