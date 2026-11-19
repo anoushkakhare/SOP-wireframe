@@ -21,14 +21,16 @@ function rand(min, max) {
 
 const TODAY = '2026-11-17';
 
-// ─── ISO Weeks Jan 2025 – Dec 2026 ───────────────────────────────────────────
+// ─── ISO Weeks Jan 2025 – Dec 2027 ───────────────────────────────────────────
 // A week belongs to the month containing its Thursday; no split weeks.
+const DATA_RANGE = { start: '2025-01', end: '2027-12' };
+const endYear = parseInt(DATA_RANGE.end.split('-')[0], 10);
 const WEEKS = [];
 let d = new Date(Date.UTC(2024, 11, 30)); // Mon Dec 30 2024
 while (true) {
   const thu = new Date(d.getTime() + 3 * 86400000);
   const yr = thu.getUTCFullYear();
-  if (yr > 2026) break;
+  if (yr > endYear) break;
   const end = new Date(d.getTime() + 6 * 86400000); // Sunday
   const jan4 = new Date(Date.UTC(yr, 0, 4));
   const jan4Day = (jan4.getUTCDay() + 6) % 7;
@@ -459,20 +461,73 @@ for (const cat of SKELETON) {
             const weeklyForecast = {};
             const weeklyOpportunity = {};
             const weeklyRisk = {};
+            const weeklyForecastByCycle = {
+              'Current cycle': {},
+              'MRF': {},
+              'Prior cycle snapshot': {},
+            };
 
             // Also maintain rolled-up monthly facts for compatibility
             const pastActuals = {};
+            const pastForecast = {};
             const actualFcst = {};
             const opportunity = {};
             const risk = {};
+
+            // Determine category and FG-specific cycle multipliers to show realistic diversification
+            // across all comparison options (growth in 1 category + 1 FG, stability/neutral in another, contraction in others)
+            let mrfMult = 0.88;
+            let priorMult = 0.96;
+            let pastForecastRatio = 1.06; // past forecast > actual means actual was lower (red)
+
+            if (cat.categoryId === 'cat_home' || cat.category === 'Home Care') {
+              // Increase entire category: Home Care (Surf Excel, Rin, Vim)
+              mrfMult = 1.15; // +15% vs Current cycle (Green)
+              priorMult = 1.08; // +8% vs Current cycle (Green)
+              pastForecastRatio = 0.89; // actual exceeded past forecast by +12.4% (Green)
+            } else if (fg.fgId === 'fg_ponds_cr') {
+              // Increase specific FG in Beauty & Wellbeing: Pond's Cream Range
+              mrfMult = 1.18; // +18% vs Current cycle (Green)
+              priorMult = 1.12; // +12% vs Current cycle (Green)
+              pastForecastRatio = 0.86; // actual exceeded past forecast by +16.3% (Green)
+            } else if (fg.fgId === 'fg_lux_bw') {
+              // Also increase FG in Personal Care: Lux Body Wash Range
+              mrfMult = 1.10; // +10% vs Current cycle (Green)
+              priorMult = 1.06; // +6% vs Current cycle (Green)
+              pastForecastRatio = 0.91; // actual exceeded past forecast by +9.9% (Green)
+            } else if (cat.categoryId === 'cat_food') {
+              // Foods: near neutral
+              mrfMult = 1.01; // +1% (Neutral grey / subtle green)
+              priorMult = 0.99; // -1% (Neutral grey)
+              pastForecastRatio = 1.00; // actual closely matched forecast (Neutral)
+            } else if (cat.categoryId === 'cat_pc') {
+              // Personal Care: contraction
+              mrfMult = 0.84; // -16% (Red)
+              priorMult = 0.93; // -7% (Red)
+              pastForecastRatio = 1.10; // actual fell short of forecast (Red)
+            } else {
+              // Other Beauty & Wellbeing
+              mrfMult = 0.86; // -14% (Red)
+              priorMult = 0.95; // -5% (Red)
+              pastForecastRatio = 1.08; // actual fell short of forecast (Red)
+            }
 
             WEEKS.forEach((w, wIdx) => {
               const seasonal = 1 + 0.15 * Math.sin((wIdx / 52) * 2 * Math.PI);
               const v = Math.round(weeklyBaseUnits * seasonal * (0.9 + rand(0, 20) / 100));
 
+              let fcstCurrent = v;
+              let fcstMRF = Math.round(v * mrfMult);
+              let fcstPrior = Math.round(v * priorMult);
+
               if (w.isActual) {
                 weeklyActuals[w.wLabel] = v;
-                weeklyForecast[w.wLabel] = v;
+                // Seeded forecast values for past periods per cycle so Actuals vs Forecast works
+                fcstCurrent = Math.round(v * pastForecastRatio * (0.98 + rand(0, 4) / 100));
+                fcstMRF = Math.round(fcstCurrent * mrfMult);
+                fcstPrior = Math.round(fcstCurrent * priorMult);
+
+                weeklyForecast[w.wLabel] = fcstCurrent;
                 weeklyOpportunity[w.wLabel] = 0;
                 weeklyRisk[w.wLabel] = 0;
               } else {
@@ -482,10 +537,15 @@ for (const cat of SKELETON) {
                 weeklyRisk[w.wLabel] = -Math.round(v * (0.03 + rand(0, 8) / 100));
               }
 
+              weeklyForecastByCycle['Current cycle'][w.wLabel] = fcstCurrent;
+              weeklyForecastByCycle['MRF'][w.wLabel] = fcstMRF;
+              weeklyForecastByCycle['Prior cycle snapshot'][w.wLabel] = fcstPrior;
+
               // Rollup into month label
               const m = w.mLabel;
               if (w.isActual) {
                 pastActuals[m] = (pastActuals[m] || 0) + v;
+                pastForecast[m] = (pastForecast[m] || 0) + fcstCurrent;
                 actualFcst[m] = (actualFcst[m] || 0) + v;
               } else {
                 actualFcst[m] = (actualFcst[m] || 0) + v;
@@ -511,9 +571,11 @@ for (const cat of SKELETON) {
               price: pack.price,
               weeklyActuals,
               weeklyForecast,
+              weeklyForecastByCycle,
               weeklyOpportunity,
               weeklyRisk,
               pastActuals,
+              pastForecast,
               definitions: { opportunity, actualFcst, risk },
             });
           }
@@ -560,7 +622,7 @@ const output = {
       status: "saved",
       lastModified: "2026-11-12T07:31:00.000Z",
       userId: "usr_dp_1",
-      userName: "Priya Sharma"
+      userName: "Nishtha Agarwal"
     },
     {
       id: "scen_2",
@@ -568,7 +630,7 @@ const output = {
       status: "saved",
       lastModified: "2026-11-11T09:30:00.000Z",
       userId: "usr_dp_1",
-      userName: "Priya Sharma"
+      userName: "Nishtha Agarwal"
     },
     {
       id: "scen_3",
@@ -576,7 +638,7 @@ const output = {
       status: "committed",
       lastModified: "2026-07-15T14:30:00.000Z",
       userId: "usr_dp_1",
-      userName: "Priya Sharma"
+      userName: "Nishtha Agarwal"
     },
     {
       id: "scen_4",
@@ -584,7 +646,7 @@ const output = {
       status: "saved",
       lastModified: "2026-07-18T10:15:00.000Z",
       userId: "usr_dp_1",
-      userName: "Priya Sharma"
+      userName: "Nishtha Agarwal"
     }
   ]
 };

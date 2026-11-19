@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AppShell } from '../components/layout/AppShell';
-import { KpiCardRow } from '../components/kpi/KpiCardRow';
+import { SelectionKpiRow, KpiNumbersRow } from '../components/kpi/KpiCardRow';
 import { ChartCard } from '../components/charts/ChartCard';
 import { FullscreenChartFrame } from '../components/charts/FullscreenChartFrame';
 import { ForecastLineChart } from '../components/charts/ForecastLineChart';
@@ -26,11 +26,16 @@ import { useFullscreen } from '../hooks/useFullscreen';
 import { metaService } from '../services/metaService';
 import { labels } from '../constants/labels';
 import { allowedLevels } from '../utils/allowedLevels';
+import { setDataRange } from '../utils/dateRange';
 import { LEVELS, LEVEL_MAP } from '../constants/hierarchy';
 import { ProductLevelNum } from '../types';
 
 export const DemandPlannerPage: React.FC = () => {
   const { user } = useAuthStore();
+
+  React.useEffect(() => {
+    localStorage.setItem('unilever_last_page', '/dashboard');
+  }, []);
   const {
     productLevel,
     scope,
@@ -86,6 +91,12 @@ export const DemandPlannerPage: React.FC = () => {
     queryKey: ['meta-options'],
     queryFn: () => metaService.getOptions(),
   });
+
+  React.useEffect(() => {
+    if (metaQuery.data?.dataRange) {
+      setDataRange(metaQuery.data.dataRange);
+    }
+  }, [metaQuery.data?.dataRange]);
 
   const hierarchyQuery = useQuery({
     queryKey: ['hierarchy'],
@@ -243,11 +254,11 @@ export const DemandPlannerPage: React.FC = () => {
       isDiscardModalOpen={isDiscardConfirmModalOpen}
       onCloseDiscardModal={() => setDiscardConfirmModalOpen(false)}
       onConfirmDiscard={handleConfirmDiscard}
+      selectionRow={<SelectionKpiRow hierarchyNodes={hierarchyNodes} />}
     >
-      {/* 1. KPI row */}
+      {/* 1. Numbers row */}
       <section aria-label="Key performance indicators">
-        <KpiCardRow
-          hierarchyNodes={hierarchyNodes}
+        <KpiNumbersRow
           kpis={kpis}
           isLoading={isKpisLoading}
           isError={isKpisError}

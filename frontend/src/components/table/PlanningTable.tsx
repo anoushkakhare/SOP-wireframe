@@ -47,10 +47,50 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
   onCellRevert,
   isLoading = false,
 }) => {
-  const { measure } = useViewStore();
+  const { measure, compare } = useViewStore();
+  const isComparing = compare.on && Boolean(compare.b);
+  const nameA = 'Current cycle';
+  const nameB = compare.b;
+
   const activeLevel = productLevelNum || (level === 'product' ? 5 : 3);
   const activeLevels = LEVELS.filter((l) => l.id <= activeLevel);
   const { rows: rowLabels } = labels.table;
+
+  const renderSplitCell = (
+    valA: number,
+    valB: number,
+    periodLabel: string,
+    rowSpan?: number
+  ) => {
+    const delta = valB - valA;
+    const isPos = delta >= 0;
+    const pct = valA !== 0 ? ((delta / Math.abs(valA)) * 100).toFixed(1) : '0.0';
+    const formattedA = formatCompactNumber(valA, { isNeutral: true, measure });
+    const formattedB = formatCompactNumber(valB, { isNeutral: true, measure });
+    const formattedDelta = `${isPos ? '+' : ''}${formatCompactNumber(delta, { measure })} (${isPos ? '+' : ''}${pct}%)`;
+    const ariaLabel = `${periodLabel}: ${nameA} is ${formattedA}, ${nameB} is ${formattedB}, delta is ${formattedDelta}`;
+    const title = `A (${nameA}): ${formattedA}\nB (${nameB}): ${formattedB}\nΔ (B - A): ${formattedDelta}`;
+
+    return (
+      <td
+        key={periodLabel}
+        rowSpan={rowSpan}
+        aria-label={ariaLabel}
+        title={title}
+        style={{
+          background: 'linear-gradient(135deg, transparent calc(50% - 1px), #CBD5E1 calc(50% - 0.5px), #CBD5E1 calc(50% + 0.5px), transparent calc(50% + 1px))',
+        }}
+        className="relative p-1 border-r border-border min-w-[90px] h-[34px] cursor-help select-none hover:bg-amber-50/40 transition-colors align-middle"
+      >
+        <div className="absolute top-1 left-1.5 text-[10px] font-bold text-primary-700 leading-none tabular-nums">
+          {formattedA}
+        </div>
+        <div className="absolute bottom-1 right-1.5 text-[10px] font-bold text-[#D97706] leading-none tabular-nums">
+          {formattedB}
+        </div>
+      </td>
+    );
+  };
 
   const toMeasure = (baseUnits: number, upc: number, prc: number) => {
     if (measure === 'cases') return Math.round(baseUnits / upc);
@@ -93,6 +133,27 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
 
   return (
     <div className="w-full overflow-x-auto border-t border-border-strong select-text bg-surface">
+      {isComparing && (
+        <div className="bg-amber-50/90 border-b border-amber-200 px-4 py-1.5 flex items-center justify-between text-xs text-amber-950 font-medium">
+          <div className="flex items-center gap-3">
+            <span className="font-semibold uppercase tracking-wider text-[10px] px-1.5 py-0.5 rounded bg-amber-200 text-amber-900">
+              Compare Mode (View-Only)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-primary-700"></span>
+              <span><strong>A (Top-Left):</strong> {nameA}</span>
+            </span>
+            <span className="text-amber-400 font-bold">⧸</span>
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-[#D97706]"></span>
+              <span><strong>B (Bottom-Right):</strong> {nameB}</span>
+            </span>
+          </div>
+          <div className="text-[11px] text-amber-800">
+            Hover any split cell to view Δ (B - A)
+          </div>
+        </div>
+      )}
       <table className="w-full text-left border-collapse text-xs">
         {/* ── Header ── primary-700 bg, white text */}
         <thead>
@@ -114,9 +175,18 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
             </th>
             <th
               style={{ left: `${activeLevels.length * 110 + 100}px` }}
-              className="sticky z-20 bg-primary-700 py-2.5 px-3 w-[90px] min-w-[90px] max-w-[90px] border-r border-primary-900 text-center whitespace-nowrap shadow-[2px_0_4px_rgba(0,0,0,0.15)]"
+              className="sticky z-20 bg-primary-700 py-2 px-2 w-[100px] min-w-[100px] max-w-[100px] border-r border-primary-900 text-center whitespace-nowrap shadow-[2px_0_4px_rgba(0,0,0,0.15)]"
             >
-              Definition
+              {isComparing ? (
+                <div className="flex flex-col items-center justify-center leading-tight">
+                  <span className="text-[10px] text-white font-bold">A ⧸ B Legend</span>
+                  <span className="text-[8px] text-amber-300 font-normal truncate max-w-[95px]" title={`A: ${nameA} / B: ${nameB}`}>
+                    A:Top ⧸ B:Btm
+                  </span>
+                </div>
+              ) : (
+                'Definition'
+              )}
             </th>
 
             {/* Month / Week columns */}
@@ -191,6 +261,10 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                     if (isPast) {
                       // Past actual – merged, light grey bg
                       const pastVal = row.pastActuals?.[m] ?? 0;
+                      if (isComparing) {
+                        const pastValB = row.pastActualsB?.[m] ?? pastVal;
+                        return renderSplitCell(pastVal, pastValB, `${m} (Actuals)`, 3);
+                      }
                       return (
                         <td
                           key={m}
@@ -201,6 +275,12 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                           {formatCompactNumber(pastVal, { isNeutral: true, measure })}
                         </td>
                       );
+                    }
+
+                    if (isComparing) {
+                      const valA = row.definitions.opportunity[m] ?? 0;
+                      const valB = row.definitionsB?.opportunity?.[m] ?? 0;
+                      return renderSplitCell(valA, valB, `${m} Opportunity`);
                     }
 
                     const fu = row.forecastUnit || row.product || row.forecastGroup || row.brand || row.id;
@@ -265,6 +345,12 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                     const isPast = mIdx < currentMonthIndex;
                     if (isPast) return null; // covered by rowSpan={3}
 
+                    if (isComparing) {
+                      const valA = row.definitions.actualFcst[m] ?? 0;
+                      const valB = row.definitionsB?.actualFcst?.[m] ?? 0;
+                      return renderSplitCell(valA, valB, `${m} Forecast`);
+                    }
+
                     const fu = row.forecastUnit || row.product || row.forecastGroup || row.brand || row.id;
                     const apg = row.apg || 'All';
                     const draftKey = makeDraftKey(fu, apg, m);
@@ -326,6 +412,12 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                   {period.map((m, mIdx) => {
                     const isPast = mIdx < currentMonthIndex;
                     if (isPast) return null; // covered by rowSpan={3}
+
+                    if (isComparing) {
+                      const valA = row.definitions.risk[m] ?? 0;
+                      const valB = row.definitionsB?.risk?.[m] ?? 0;
+                      return renderSplitCell(valA, valB, `${m} Risk`);
+                    }
 
                     const fu = row.forecastUnit || row.product || row.forecastGroup || row.brand || row.id;
                     const apg = row.apg || 'All';

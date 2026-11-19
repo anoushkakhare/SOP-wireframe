@@ -3,6 +3,7 @@
  * One function ensures KPIs, charts, treemap and table always match.
  */
 import masterData from '../data/masterData.json';
+import { DATA_RANGE } from '../config';
 
 export type MasterItem = typeof masterData.items[number];
 
@@ -90,7 +91,14 @@ export function normalizeMeasure(measure?: string): 'cases' | 'units' | 'value' 
 
 /** Normalize period label for matching */
 export function normalizePeriodLabel(l: string): string {
-  return l.replace(/\b2025\b/g, '25').replace(/\b2026\b/g, '26').trim();
+  return l
+    .replace(/\bFY2025\b/g, 'FY25')
+    .replace(/\bFY2026\b/g, 'FY26')
+    .replace(/\bFY2027\b/g, 'FY27')
+    .replace(/\b2025\b/g, '25')
+    .replace(/\b2026\b/g, '26')
+    .replace(/\b2027\b/g, '27')
+    .trim();
 }
 
 const MO_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -200,7 +208,9 @@ export function getPeriodsForGrain(grainName?: string, from?: string, to?: strin
   const allPeriods: PeriodInfo[] = Array.from(map.values()).map(p => {
     const prior = p.label.endsWith('26')
       ? p.label.replace(/26$/, '25')
-      : undefined;
+      : p.label.endsWith('27')
+        ? p.label.replace(/27$/, '26')
+        : undefined;
     return {
       label: p.label,
       start: p.start,
@@ -218,7 +228,7 @@ export function getPeriodsForGrain(grainName?: string, from?: string, to?: strin
 
   if (grain === 'year') {
     defaultFrom = 'FY25';
-    defaultTo = 'FY26';
+    defaultTo = 'FY27';
   } else if (grain === 'half') {
     defaultFrom = 'H1 26';
     defaultTo = 'H2 26';
@@ -242,14 +252,40 @@ export function getPeriodsForGrain(grainName?: string, from?: string, to?: strin
   const normFrom = from ? normalizePeriodLabel(from) : defaultFrom;
   const normTo = to ? normalizePeriodLabel(to) : defaultTo;
 
+  const startYear = parseInt(DATA_RANGE.start.split('-')[0], 10);
+  const endYear = parseInt(DATA_RANGE.end.split('-')[0], 10);
+
+  const parseYear = (str: string) => {
+    const m = str.match(/\b(19\d{2}|20\d{2})\b/) || str.match(/FY(\d{2,4})/) || str.match(/\b(\d{2})\b/);
+    if (!m) return null;
+    let yr = parseInt(m[1], 10);
+    return yr < 100 ? yr + 2000 : yr;
+  };
+
   let fromIdx = allPeriods.findIndex(p => p.label === normFrom);
   let toIdx = allPeriods.findIndex(p => p.label === normTo);
 
-  if (fromIdx < 0) fromIdx = allPeriods.findIndex(p => p.label === defaultFrom);
-  if (toIdx < 0) toIdx = allPeriods.findIndex(p => p.label === defaultTo);
+  if (fromIdx < 0) {
+    const y = from ? parseYear(from) : null;
+    if (y !== null && y < startYear) fromIdx = 0;
+    else if (y !== null && y > endYear) fromIdx = allPeriods.length - 1;
+    else fromIdx = allPeriods.findIndex(p => p.label === defaultFrom);
+  }
+  if (toIdx < 0) {
+    const y = to ? parseYear(to) : null;
+    if (y !== null && y > endYear) toIdx = allPeriods.length - 1;
+    else if (y !== null && y < startYear) toIdx = 0;
+    else toIdx = allPeriods.findIndex(p => p.label === defaultTo);
+  }
+
   if (fromIdx < 0) fromIdx = 0;
   if (toIdx < 0) toIdx = allPeriods.length - 1;
   if (fromIdx > toIdx) [fromIdx, toIdx] = [toIdx, fromIdx];
+
+  // 104-period clamp
+  if (toIdx - fromIdx + 1 > 104) {
+    toIdx = fromIdx + 103;
+  }
 
   const activePeriods = allPeriods.slice(fromIdx, toIdx + 1);
   const firstForecastIdx = activePeriods.findIndex(p => !p.isActual);
@@ -274,6 +310,8 @@ export interface AggregateParams {
   to?: string;
   planningCycle?: string;
   activity?: string;
+  pureForecast?: boolean;
+  pastPeriodsOnly?: boolean;
 }
 
 export interface AggregatedGroup {
@@ -284,6 +322,7 @@ export interface AggregatedGroup {
   items: MasterItem[];
   periodForecast: Record<string, number>;
   periodActuals: Record<string, number>;
+  periodPlanForecast: Record<string, number>;
   periodOpportunity: Record<string, number>;
   periodRisk: Record<string, number>;
   monthlyForecast: Record<string, number>;
@@ -366,6 +405,7 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
         items: [],
         periodForecast: {},
         periodActuals: {},
+        periodPlanForecast: {},
         periodOpportunity: {},
         periodRisk: {},
         monthlyForecast: {},
@@ -389,15 +429,25 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
     const unitsPerCase = it.unitsPerCase || 12;
     const price = it.price || 100;
 
+    const isActualsCycle = normCycle.includes('actual');
+    const cycleKey = normCycle.includes('mrf')
+      ? 'MRF'
+      : normCycle.includes('prior')
+        ? 'Prior cycle snapshot'
+        : 'Current cycle';
+
+    const hasCycleData = Boolean(it.weeklyForecastByCycle?.[cycleKey]);
     let cycleFactor = 1.0;
-    if (normCycle.includes('prior')) {
-      const str = it.fuId || it.id || 'seed';
-      let h = 0;
-      for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
-      const noise = (((Math.abs(h) % 1000) / 1000) - 0.5) * 0.04;
-      cycleFactor = 0.97 + noise;
-    } else if (normCycle.includes('mrf')) {
-      cycleFactor = 0.88;
+    if (!hasCycleData) {
+      if (normCycle.includes('prior')) {
+        const str = it.fuId || it.id || 'seed';
+        let h = 0;
+        for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+        const noise = (((Math.abs(h) % 1000) / 1000) - 0.5) * 0.04;
+        cycleFactor = 0.97 + noise;
+      } else if (normCycle.includes('mrf')) {
+        cycleFactor = 0.88;
+      }
     }
 
     let activityFactor = 1.0;
@@ -420,16 +470,45 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
       let pUnits = 0;
       let pOpp = 0;
       let pRisk = 0;
+      let pPlanUnits = 0;
+      let pActUnits = 0;
 
       for (const { week: w, weight } of pWeights) {
-        if (p.isActual) {
-          const u = it.weeklyActuals?.[w.wLabel] ?? (it.weeklyForecast?.[w.wLabel] || 0);
-          pUnits += u * weight;
+        if (params.pastPeriodsOnly && !w.isActual) {
+          continue;
+        }
+
+        const uAct = (it.weeklyActuals?.[w.wLabel] ?? 0) * weight;
+        const rawFcst = it.weeklyForecastByCycle?.[cycleKey]?.[w.wLabel] ?? it.weeklyForecast?.[w.wLabel] ?? 0;
+        const uFcst = rawFcst * weight;
+
+        if (w.isActual) {
+          pActUnits += uAct;
+        }
+        pPlanUnits += uFcst;
+
+        if (params.pureForecast) {
+          if (isActualsCycle) {
+            pUnits += w.isActual ? uAct : 0;
+          } else {
+            pUnits += uFcst;
+            if (!w.isActual) {
+              pOpp += (it.weeklyOpportunity?.[w.wLabel] || 0) * weight;
+              pRisk += (it.weeklyRisk?.[w.wLabel] || 0) * weight;
+            }
+          }
         } else {
-          const u = it.weeklyForecast?.[w.wLabel] || 0;
-          pUnits += u * weight;
-          pOpp += (it.weeklyOpportunity?.[w.wLabel] || 0) * weight;
-          pRisk += (it.weeklyRisk?.[w.wLabel] || 0) * weight;
+          if (w.isActual) {
+            const u = isActualsCycle
+              ? (it.weeklyActuals?.[w.wLabel] ?? 0)
+              : (it.weeklyActuals?.[w.wLabel] ?? it.weeklyForecast?.[w.wLabel] ?? 0);
+            pUnits += u * weight;
+          } else {
+            const u = it.weeklyForecastByCycle?.[cycleKey]?.[w.wLabel] ?? it.weeklyForecast?.[w.wLabel] ?? 0;
+            pUnits += u * weight;
+            pOpp += (it.weeklyOpportunity?.[w.wLabel] || 0) * weight;
+            pRisk += (it.weeklyRisk?.[w.wLabel] || 0) * weight;
+          }
         }
       }
 
@@ -437,23 +516,41 @@ export function aggregate(params: AggregateParams = {}): AggregatedGroup[] {
         pUnits = pUnits * factor;
         pOpp = pOpp * factor;
         pRisk = pRisk * factor;
+        pPlanUnits = pPlanUnits * factor;
       }
 
       const val = convert(pUnits);
       const opp = convert(pOpp);
       const rsk = convert(pRisk);
+      const planVal = convert(pPlanUnits);
+      const actVal = convert(pActUnits);
 
-      if (p.isActual) {
-        g.periodActuals[p.label] = (g.periodActuals[p.label] || 0) + val;
-        g.periodForecast[p.label] = (g.periodForecast[p.label] || 0) + val;
-        g.ytdForecast += val;
-      } else {
+      g.periodPlanForecast[p.label] = (g.periodPlanForecast[p.label] || 0) + planVal;
+      g.periodActuals[p.label] = (g.periodActuals[p.label] || 0) + actVal;
+
+      if (params.pureForecast) {
         g.periodForecast[p.label] = (g.periodForecast[p.label] || 0) + val;
         g.periodOpportunity[p.label] = (g.periodOpportunity[p.label] || 0) + opp;
         g.periodRisk[p.label] = (g.periodRisk[p.label] || 0) + rsk;
         g.totalOpportunity += opp;
         g.totalRisk += rsk;
-        g.ytgForecast += val;
+        if (p.isActual) {
+          g.ytdForecast += val;
+        } else {
+          g.ytgForecast += val;
+        }
+      } else {
+        if (p.isActual) {
+          g.periodForecast[p.label] = (g.periodForecast[p.label] || 0) + val;
+          g.ytdForecast += val;
+        } else {
+          g.periodForecast[p.label] = (g.periodForecast[p.label] || 0) + val;
+          g.periodOpportunity[p.label] = (g.periodOpportunity[p.label] || 0) + opp;
+          g.periodRisk[p.label] = (g.periodRisk[p.label] || 0) + rsk;
+          g.totalOpportunity += opp;
+          g.totalRisk += rsk;
+          g.ytgForecast += val;
+        }
       }
       g.totalForecast += val;
       const apgKey = APG_DISPLAY_NAMES[it.apg] || it.apg;

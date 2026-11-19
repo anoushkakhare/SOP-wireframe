@@ -13,6 +13,7 @@ function extractParams(req: AuthenticatedRequest): DataQueryParams {
     from: req.query.from as string | undefined,
     to: req.query.to as string | undefined,
     planningCycle: req.query.planningCycle as string | undefined,
+    compareTo: req.query.compareTo as string | undefined,
     activity: req.query.activity as string | undefined,
   };
 }

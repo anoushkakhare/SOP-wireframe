@@ -11,6 +11,7 @@ export class TableService {
     from?: string;
     to?: string;
     planningCycle?: string;
+    compareTo?: string;
     activity?: string;
     filters?: any;
   }): Promise<TableResponse> {

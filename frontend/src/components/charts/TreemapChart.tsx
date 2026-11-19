@@ -40,6 +40,25 @@ export function pickTextColor(bgHex: string): string {
   return cWhite >= cDark ? '#FFFFFF' : '#0F172A';
 }
 
+export function getDivergingColor(pctChange: number): string {
+  const clamped = Math.max(-20, Math.min(20, pctChange));
+  if (clamped < 0) {
+    // -20% -> 0% : Red (#DC2626 rgb(220, 38, 38)) to Neutral Grey (#94A3B8 rgb(148, 163, 184))
+    const ratio = (clamped + 20) / 20; // 0 at -20, 1 at 0
+    const r = Math.round(220 + (148 - 220) * ratio);
+    const g = Math.round(38 + (163 - 38) * ratio);
+    const b = Math.round(38 + (184 - 38) * ratio);
+    return `rgb(${r}, ${g}, ${b})`;
+  } else {
+    // 0% -> +20% : Neutral Grey (#94A3B8 rgb(148, 163, 184)) to Green (#16A34A rgb(22, 163, 74))
+    const ratio = clamped / 20; // 0 at 0, 1 at +20
+    const r = Math.round(148 + (22 - 148) * ratio);
+    const g = Math.round(163 + (163 - 163) * ratio);
+    const b = Math.round(184 + (74 - 184) * ratio);
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+}
+
 interface CustomizedContentProps {
   depth?: number;
   x?: number;
@@ -56,6 +75,11 @@ interface CustomizedContentProps {
   onTileClick?: (id: string) => void;
   parentIndexMap?: Map<string, number>;
   measure?: string;
+  isComparing?: boolean;
+  pctChange?: number;
+  valueA?: number;
+  valueB?: number;
+  delta?: number;
 }
 
 const CustomizedContent: React.FC<CustomizedContentProps> = (props) => {
@@ -75,6 +99,7 @@ const CustomizedContent: React.FC<CustomizedContentProps> = (props) => {
     onTileClick,
     parentIndexMap,
     measure,
+    isComparing,
   } = props;
 
   // Skip virtual root node at depth 0 completely (avoids ghost background text)
@@ -84,7 +109,7 @@ const CustomizedContent: React.FC<CustomizedContentProps> = (props) => {
   if (depth === 1 && children && children.length > 0) {
     const parentIdx = parentIndexMap?.get(id) ?? parentIndexMap?.get(name) ?? index;
     const paletteIndex = parentIdx % TREEMAP_PALETTE.length;
-    const headerColor = TREEMAP_PALETTE[paletteIndex].header;
+    const headerColor = isComparing ? '#1E293B' : TREEMAP_PALETTE[paletteIndex].header;
     const formattedTotal = formatCompactNumber(value || 0, { isNeutral: true, measure });
     const headerWidth = width;
 
@@ -163,7 +188,8 @@ const CustomizedContent: React.FC<CustomizedContentProps> = (props) => {
   if (tileWidth <= 0 || tileHeight <= 0) return null;
 
   const paletteIndex = parentIdx % TREEMAP_PALETTE.length;
-  const tileColor = TREEMAP_PALETTE[paletteIndex].tile;
+  const tilePctChange = (props as any).pctChange ?? 0;
+  const tileColor = isComparing ? getDivergingColor(tilePctChange) : TREEMAP_PALETTE[paletteIndex].tile;
   const textColor = pickTextColor(tileColor);
 
   // Label visibility: hide label when tile is smaller than 40x24px (tooltip only)
@@ -276,7 +302,7 @@ const CustomizedContent: React.FC<CustomizedContentProps> = (props) => {
 
 interface TreemapChartProps {
   data?: TreemapNode[];
-  level: ProductLevel;
+  level?: ProductLevel;
   productLevelNum?: number;
   isLoading?: boolean;
   isError?: boolean;
@@ -296,7 +322,8 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
   onDrillDown,
 }) => {
   const { charts } = labels;
-  const { measure, productLevel } = useViewStore();
+  const { measure, productLevel, compare } = useViewStore();
+  const isComparing = compare.on && Boolean(compare.b);
 
   // Deterministic parent index map (assigned by parent index cycling)
   const parentIndexMap = useMemo(() => {
@@ -340,66 +367,127 @@ export const TreemapChart: React.FC<TreemapChartProps> = ({
   }
 
   return (
-    <div className="w-full h-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <Treemap
-          data={data}
-          dataKey="value"
-          aspectRatio={4 / 3}
-          stroke="#FFFFFF"
-          type="flat"
-          isAnimationActive={false}
-          content={
-            <CustomizedContent
-              drillOn={drillOn}
-              onTileClick={onDrillDown}
-              parentIndexMap={parentIndexMap}
-              measure={measure}
-            />
-          }
-        >
-          <Tooltip
-            content={({ active, payload }) => {
-              if (active && payload && payload.length) {
-                const node = payload[0].payload;
-                // Never show faint hover tooltip for parent groups
-                if (node.depth === 1 && node.children && node.children.length > 0) {
-                  return null;
+    <div className="w-full h-full flex flex-col justify-between">
+      <div className="flex-1 w-full min-h-0">
+        <ResponsiveContainer width="100%" height="100%">
+          <Treemap
+            data={data}
+            dataKey="value"
+            aspectRatio={4 / 3}
+            stroke="#FFFFFF"
+            type="flat"
+            isAnimationActive={false}
+            content={
+              <CustomizedContent
+                drillOn={drillOn}
+                onTileClick={onDrillDown}
+                parentIndexMap={parentIndexMap}
+                measure={measure}
+                isComparing={isComparing}
+              />
+            }
+          >
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const node = payload[0].payload;
+                  // Never show faint hover tooltip for parent groups
+                  if (node.depth === 1 && node.children && node.children.length > 0) {
+                    return null;
+                  }
+
+                  // Path using LEVELS labels
+                  const path = LEVELS.slice(0, productLevel).map((l) => l.label).join(' › ');
+
+                  if (isComparing) {
+                    const valA = node.valueA ?? 0;
+                    const valB = node.valueB ?? node.value ?? 0;
+                    const delta = node.delta ?? (valB - valA);
+                    const pct = node.pctChange ?? (valA > 0 ? ((valB - valA) / valA) * 100 : 0);
+                    const isDeltaPos = delta >= 0;
+
+                    return (
+                      <div className="bg-surface border border-border p-2.5 text-xs shadow-md rounded-card space-y-1.5 z-50 min-w-[210px]">
+                        <div className="text-[11px] text-text-secondary font-medium">{path}</div>
+                        <div className="font-semibold text-text-primary border-b border-border pb-1 flex items-center justify-between gap-2">
+                          <span>{node.name}</span>
+                          <span className="text-[10px] px-1 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-semibold">
+                            Compare
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <span className="text-text-secondary">Current cycle (A):</span>
+                          <span className="font-semibold tabular-nums text-text-primary">
+                            {formatCompactNumber(valA, { isNeutral: true, measure })}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-4">
+                          <span className="text-text-secondary">{compare.b} (B):</span>
+                          <span className="font-semibold tabular-nums text-text-primary">
+                            {formatCompactNumber(valB, { isNeutral: true, measure })}
+                          </span>
+                        </div>
+                        <div className={`pt-1 border-t border-border flex justify-between gap-4 font-bold ${
+                          isDeltaPos ? 'text-positive' : 'text-negative'
+                        }`}>
+                          <span>Delta (B - A):</span>
+                          <span className="tabular-nums">
+                            {isDeltaPos ? '+' : ''}{formatCompactNumber(delta, { measure })} ({isDeltaPos ? '+' : ''}{pct.toFixed(1)}%)
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  const parentVal = node.parentTotal || node.root?.value || totalValue;
+                  const xPct = parentVal > 0 ? ((node.value || 0) / parentVal) * 100 : 100;
+                  const yPct = totalValue > 0 ? ((node.value || 0) / totalValue) * 100 : 0;
+                  const pctString =
+                    productLevel === 1
+                      ? `${yPct.toFixed(1)}% of total`
+                      : `${xPct.toFixed(1)}% of parent · ${yPct.toFixed(1)}% of total`;
+
+                  return (
+                    <div className="bg-surface border border-border p-2.5 text-xs shadow-md rounded-card space-y-1">
+                      <div className="text-[11px] text-text-secondary font-medium">{path}</div>
+                      <div className="font-semibold text-text-primary border-b border-border pb-1">
+                        {node.name}
+                      </div>
+                      <div className="flex justify-between gap-4 font-semibold text-text-primary">
+                        <span>Value:</span>
+                        <span className="tabular-nums font-mono">
+                          {formatCompactNumber(node.value || 0, { isNeutral: true, measure })}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-text-secondary tabular-nums">
+                        {pctString}
+                      </div>
+                    </div>
+                  );
                 }
+                return null;
+              }}
+            />
+          </Treemap>
+        </ResponsiveContainer>
+      </div>
 
-                // Path using LEVELS labels
-                const path = LEVELS.slice(0, productLevel).map((l) => l.label).join(' › ');
-                const parentVal = node.parentTotal || node.root?.value || totalValue;
-                const xPct = parentVal > 0 ? ((node.value || 0) / parentVal) * 100 : 100;
-                const yPct = totalValue > 0 ? ((node.value || 0) / totalValue) * 100 : 0;
-                const pctString =
-                  productLevel === 1
-                    ? `${yPct.toFixed(1)}% of total`
-                    : `${xPct.toFixed(1)}% of parent · ${yPct.toFixed(1)}% of total`;
-
-                return (
-                  <div className="bg-surface border border-border p-2.5 text-xs shadow-md rounded-card space-y-1">
-                    <div className="text-[11px] text-text-secondary font-medium">{path}</div>
-                    <div className="font-semibold text-text-primary border-b border-border pb-1">
-                      {node.name}
-                    </div>
-                    <div className="flex justify-between gap-4 font-semibold text-text-primary">
-                      <span>Value:</span>
-                      <span className="tabular-nums font-mono">
-                        {formatCompactNumber(node.value || 0, { isNeutral: true, measure })}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-text-secondary tabular-nums">
-                      {pctString}
-                    </div>
-                  </div>
-                );
-              }
-              return null;
+      {/* Diverging scale gradient legend in compare mode */}
+      {isComparing && (
+        <div className="flex items-center justify-center gap-3 pt-2 pb-0.5 text-xs text-text-secondary select-none shrink-0">
+          <span className="font-bold text-[#DC2626] text-xs">-20%</span>
+          <div
+            className="w-48 h-2.5 rounded-full border border-border shadow-inner"
+            style={{
+              background: 'linear-gradient(to right, #DC2626, #94A3B8, #16A34A)',
             }}
           />
-        </Treemap>
-      </ResponsiveContainer>
+          <span className="font-bold text-[#16A34A] text-xs">+20%</span>
+          <span className="text-[11px] text-text-secondary ml-1">
+            (% change vs Current cycle)
+          </span>
+        </div>
+      )}
     </div>
   );
 };

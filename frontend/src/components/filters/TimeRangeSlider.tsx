@@ -4,6 +4,7 @@ import {
   dateStringToMonthIndex,
   getGrainPeriods,
   normalizeGrain,
+  YEARS,
 } from '../../utils/dateRange';
 import { labels } from '../../constants/labels';
 import { TimeGrain } from '../../types';
@@ -167,7 +168,10 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
     if (!isDraggingStart || !trackRef.current) return;
     const rect = trackRef.current.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const newStart = Math.max(0, Math.min(endIdx - 1, Math.round(pct * maxIdx)));
+    let newStart = Math.max(0, Math.min(endIdx - 1, Math.round(pct * maxIdx)));
+    if (endIdx - newStart + 1 > 104) {
+      newStart = endIdx - 103;
+    }
 
     if (newStart !== startIdx) {
       onChangeRange([newStart, endIdx]);
@@ -200,7 +204,10 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
     if (!isDraggingEnd || !trackRef.current) return;
     const rect = trackRef.current.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const newEnd = Math.max(startIdx + 1, Math.min(maxIdx, Math.round(pct * maxIdx)));
+    let newEnd = Math.max(startIdx + 1, Math.min(maxIdx, Math.round(pct * maxIdx)));
+    if (newEnd - startIdx + 1 > 104) {
+      newEnd = startIdx + 103;
+    }
 
     if (newEnd !== endIdx) {
       onChangeRange([startIdx, newEnd]);
@@ -226,7 +233,10 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
     else return;
     e.preventDefault();
 
-    const newStart = Math.max(0, Math.min(endIdx - 1, target));
+    let newStart = Math.max(0, Math.min(endIdx - 1, target));
+    if (endIdx - newStart + 1 > 104) {
+      newStart = endIdx - 103;
+    }
     if (newStart !== startIdx) {
       onChangeRange([newStart, endIdx]);
       onChangeStartDate(periods[newStart]);
@@ -242,7 +252,10 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
     else return;
     e.preventDefault();
 
-    const newEnd = Math.max(startIdx + 1, Math.min(maxIdx, target));
+    let newEnd = Math.max(startIdx + 1, Math.min(maxIdx, target));
+    if (newEnd - startIdx + 1 > 104) {
+      newEnd = startIdx + 103;
+    }
     if (newEnd !== endIdx) {
       onChangeRange([startIdx, newEnd]);
       onChangeEndDate(periods[newEnd]);
@@ -258,18 +271,24 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
     const clickedIdx = Math.round(pct * maxIdx);
 
     if (clickedIdx < startIdx) {
-      onChangeRange([clickedIdx, endIdx]);
-      onChangeStartDate(periods[clickedIdx]);
+      let newStart = clickedIdx;
+      if (endIdx - newStart + 1 > 104) newStart = endIdx - 103;
+      onChangeRange([newStart, endIdx]);
+      onChangeStartDate(periods[newStart]);
     } else if (clickedIdx > endIdx) {
-      onChangeRange([startIdx, clickedIdx]);
-      onChangeEndDate(periods[clickedIdx]);
+      let newEnd = clickedIdx;
+      if (newEnd - startIdx + 1 > 104) newEnd = startIdx + 103;
+      onChangeRange([startIdx, newEnd]);
+      onChangeEndDate(periods[newEnd]);
     } else {
       if (clickedIdx - startIdx <= endIdx - clickedIdx) {
-        const newStart = Math.min(endIdx - 1, clickedIdx);
+        let newStart = Math.min(endIdx - 1, clickedIdx);
+        if (endIdx - newStart + 1 > 104) newStart = endIdx - 103;
         onChangeRange([newStart, endIdx]);
         onChangeStartDate(periods[newStart]);
       } else {
-        const newEnd = Math.max(startIdx + 1, clickedIdx);
+        let newEnd = Math.max(startIdx + 1, clickedIdx);
+        if (newEnd - startIdx + 1 > 104) newEnd = startIdx + 103;
         onChangeRange([startIdx, newEnd]);
         onChangeEndDate(periods[newEnd]);
       }
@@ -282,6 +301,9 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
     let newEnd = endIdx;
     if (idx >= newEnd) {
       newEnd = Math.min(maxIdx, idx + 1);
+    }
+    if (newEnd - idx + 1 > 104) {
+      newEnd = idx + 103;
     }
 
     onChangeRange([idx, newEnd]);
@@ -296,6 +318,9 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
     let newStart = startIdx;
     if (idx <= newStart) {
       newStart = Math.max(0, idx - 1);
+    }
+    if (idx - newStart + 1 > 104) {
+      newStart = idx - 103;
     }
 
     onChangeRange([newStart, idx]);
@@ -448,9 +473,9 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
 
         {/* Ticks */}
         <div className="flex justify-between text-[10px] font-medium text-text-secondary pt-1 px-1">
-          <span>{periods[0]}</span>
-          <span>{periods[Math.floor(periods.length / 2)]}</span>
-          <span>{periods[periods.length - 1]}</span>
+          {YEARS.map((y) => (
+            <span key={y}>{y}</span>
+          ))}
         </div>
       </div>
     </div>

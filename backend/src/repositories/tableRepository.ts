@@ -16,9 +16,34 @@ export class TableRepository {
     from?: string;
     to?: string;
     planningCycle?: string;
+    compareTo?: string;
     activity?: string;
     filters?: any;
   }): Promise<TableResponse> {
+    if (params.compareTo) {
+      const cycleA = params.planningCycle || 'Current cycle';
+      const cycleB = params.compareTo;
+      const [tableA, tableB] = await Promise.all([
+        this.getTable({ ...params, compareTo: undefined, planningCycle: cycleA }),
+        this.getTable({ ...params, compareTo: undefined, planningCycle: cycleB }),
+      ]);
+
+      const bMap = new Map(tableB.rows.map(r => [r.id, r]));
+
+      tableA.rows.forEach(r => {
+        const matchingB = bMap.get(r.id);
+        if (matchingB) {
+          r.definitionsB = matchingB.definitions;
+          r.pastActualsB = matchingB.pastActuals;
+        }
+      });
+
+      return {
+        ...tableA,
+        compareTo: cycleB,
+        cycleA,
+      };
+    }
     const level = params.productLevel || 3;
     const { activePeriods, currentPeriodIndex } = getPeriodsForGrain(
       params.timeGrain,

@@ -9,6 +9,11 @@ import { APG_OPTIONS } from '../constants/hierarchy';
 
 export type CustomerViewOption = 'apg';
 
+export interface CompareState {
+  on: boolean;
+  b: string;
+}
+
 export interface DrillState {
   level: ProductLevelNum;
   scope: string[];
@@ -22,6 +27,7 @@ interface ViewState {
   timeGrain: TimeGrain;
   apg: string[];            // selected APG values (empty = all)
   drillHistory: DrillState[];
+  compare: CompareState;
 
   setProductLevel: (level: ProductLevelNum) => void;
   setScope: (ids: string[]) => void;
@@ -29,6 +35,7 @@ interface ViewState {
   setMeasure: (m: Uom) => void;
   setTimeGrain: (grain: TimeGrain) => void;
   setApg: (apg: string[]) => void;
+  setCompare: (compare: CompareState | boolean, b?: string) => void;
   drillDown: (nodeId: string, childLevel?: ProductLevelNum) => void;
   drillUp: (parentScopeOrNodes?: string[] | HierarchyNode[], parentLevel?: ProductLevelNum) => void;
   resetHeaderOnly: () => void;
@@ -51,6 +58,7 @@ export const useViewStore = create<ViewState>()(
       timeGrain: DEFAULT.timeGrain,
       apg: [],
       drillHistory: [],
+      compare: { on: false, b: '' },
 
       setProductLevel: (level) => set({ productLevel: level }),
       setScope: (ids) => set({ scope: ids }),
@@ -58,6 +66,13 @@ export const useViewStore = create<ViewState>()(
       setMeasure: (m) => set({ measure: m }),
       setTimeGrain: (grain) => set({ timeGrain: grain }),
       setApg: (apg) => set({ apg }),
+      setCompare: (compare, b) =>
+        set((state) => {
+          if (typeof compare === 'boolean') {
+            return { compare: { on: compare, b: b ?? (compare ? state.compare.b : '') } };
+          }
+          return { compare };
+        }),
 
       drillDown: (nodeId, childLevel) =>
         set((state) => ({
@@ -100,8 +115,8 @@ export const useViewStore = create<ViewState>()(
         }),
     }),
     {
-      name: 'view-store-v3',
-      version: 3,
+      name: 'view-store-v4',
+      version: 4,
     }
   )
 );

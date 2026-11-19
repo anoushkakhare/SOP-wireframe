@@ -24,6 +24,14 @@ export interface WidgetManifest {
   props?: Record<string, any>;
 }
 
+export interface PageManifest {
+  id: string;
+  label: string;
+  path: string;
+  icon: string;
+  enabled: boolean;
+}
+
 export interface LayoutManifest {
   role: Role;
   roleTitle: string;
@@ -34,6 +42,7 @@ export interface LayoutManifest {
     showUom: boolean;
     actions: ('save' | 'commit' | 'table' | 'filter' | 'scenarios')[];
   };
+  pages?: PageManifest[];
 }
 
 export interface LoginResponse {
@@ -49,7 +58,13 @@ export interface HierarchyNode {
   parentId: string | null;
 }
 
+export interface DataRange {
+  start: string;
+  end: string;
+}
+
 export interface MetaOptions {
+  dataRange?: DataRange;
   productLevels: Array<{ value: ProductLevel; label: string }>;
   customerLevels: Array<{ value: CustomerLevel; label: string }>;
   uoms: Array<{ value: Uom; label: string }>;
@@ -87,6 +102,10 @@ export interface KpiItem {
   growthType?: 'positive' | 'negative' | 'neutral';
   isNeutral?: boolean;
   roValue?: number;
+  compareValue?: number | null;
+  delta?: number | null;
+  pctChange?: number | null;
+  compareTo?: string;
 }
 
 export interface ForecastLinePoint {
@@ -94,10 +113,17 @@ export interface ForecastLinePoint {
   forecast: number;
   worstCase: number;
   bestCase: number;
+  seriesA?: number;
+  seriesB?: number | null;
+  delta?: number | null;
+  aName?: string;
+  bName?: string;
 }
 
 export interface ForecastLineResponse {
   points: ForecastLinePoint[];
+  compareTo?: string;
+  cycleA?: string;
 }
 
 export interface StackedBarItem {
@@ -106,6 +132,11 @@ export interface StackedBarItem {
   hasDrillDown: boolean;
   segments: Record<string, number>;
   total: number;
+  seriesA?: number;
+  seriesB?: number;
+  delta?: number;
+  segmentsA?: Record<string, number>;
+  segmentsB?: Record<string, number>;
 }
 
 export interface StackedBarResponse {
@@ -113,6 +144,13 @@ export interface StackedBarResponse {
   parent?: string;
   items: StackedBarItem[];
   availableCustomerGroups: string[];
+  compareTo?: string;
+  cycleA?: string;
+}
+
+export interface WaterfallDriver {
+  name: string;
+  value: number;
 }
 
 export interface WaterfallStep {
@@ -121,16 +159,23 @@ export interface WaterfallStep {
   type: 'total' | 'increase' | 'decrease';
   start?: number;
   end?: number;
+  topDrivers?: WaterfallDriver[];
 }
 
 export interface WaterfallResponse {
   steps: WaterfallStep[];
+  compareTo?: string;
+  cycleA?: string;
 }
 
 export interface TreemapNode {
   id?: string;
   name: string;
   value?: number;
+  valueA?: number;
+  valueB?: number;
+  delta?: number;
+  pctChange?: number;
   brand?: string;
   parentId?: string | null;
   parentName?: string;
@@ -141,6 +186,8 @@ export interface TreemapNode {
 export interface TreemapResponse {
   level: ProductLevel;
   data: TreemapNode[];
+  compareTo?: string;
+  cycleA?: string;
 }
 
 export type ScenarioStatus = 'saved' | 'committed';
@@ -180,6 +227,12 @@ export interface PlanningTableRow {
   };
   pastActuals: Record<string, number>;
   diffs?: Record<string, Record<string, number>>;
+  definitionsB?: {
+    opportunity: Record<string, number>;
+    actualFcst: Record<string, number>;
+    risk: Record<string, number>;
+  };
+  pastActualsB?: Record<string, number>;
 }
 
 export interface TableResponse {
@@ -188,6 +241,8 @@ export interface TableResponse {
   level: ProductLevel;
   productLevelNum?: number;
   rows: PlanningTableRow[];
+  compareTo?: string;
+  cycleA?: string;
 }
 
 export interface TableEdit {
@@ -209,5 +264,162 @@ export interface DataQueryParams {
   from?: string;
   to?: string;
   planningCycle?: string;
+  compareTo?: string;
   activity?: string;
 }
+
+export type FeedType = 'master' | 'transactional';
+export type FeedStatus = 'loaded' | 'delayed' | 'pending' | 'failed';
+
+export interface DataReviewFeed {
+  id: string;
+  name: string;
+  type: FeedType;
+  expectedDate: string;
+  status: FeedStatus;
+  loadedAt: string | null;
+  rowCount: number | null;
+  source: string;
+  delayHours?: number;
+}
+
+export interface DataReviewHistoryItem {
+  id: string;
+  feedId: string;
+  feedName: string;
+  type: FeedType;
+  cycle: string;
+  expectedDate: string;
+  loadedAt: string | null;
+  status: FeedStatus;
+  delayHours: number;
+  rowCount: number | null;
+  source: string;
+}
+
+export interface ReadinessCheckItem {
+  id: string;
+  label: string;
+  status: 'passed' | 'failed' | 'pending';
+  checked: boolean;
+  isManual: boolean;
+  details?: string;
+}
+
+export interface DataReviewReadinessResponse {
+  totalSteps: number;
+  completedSteps: number;
+  signedOff: boolean;
+  signoff: {
+    signedBy: string;
+    signedAt: string;
+    cycle: string;
+  } | null;
+  checklist: ReadinessCheckItem[];
+  blockingItems: string[];
+}
+
+export interface SignoffRequest {
+  signedBy?: string;
+  signedAt?: string;
+  cycle?: string;
+}
+
+export interface TransactionReviewItem {
+  period: string;
+  group: string;
+  value: number;
+  rowCount: number;
+  isAnomaly?: 'gap' | 'spike';
+}
+
+export interface TransactionReviewQueryParams {
+  measure?: 'cases' | 'units' | 'value';
+  groupBy?: 'category' | 'sop' | 'brand';
+  from?: string;
+  to?: string;
+}
+
+export interface TransactionReviewResponse {
+  items: TransactionReviewItem[];
+  periods: string[];
+  groups: string[];
+  measure: 'cases' | 'units' | 'value';
+  groupBy: 'category' | 'sop' | 'brand';
+  summary: {
+    totalValue: number;
+    totalRows: number;
+    gapCount: number;
+    spikeCount: number;
+  };
+}
+
+export interface MappingGapRow {
+  id: string;
+  transactionCode: string;
+  description: string;
+  period: string;
+  value: number;
+  suggestedMaster: string;
+  fixed: boolean;
+  fixedType?: 'master' | 'transaction';
+}
+
+export interface NullValueRow {
+  id: string;
+  column: string;
+  row: string;
+  expected: string;
+  fixed: boolean;
+  replacedWith?: 'zero' | 'mean' | 'median' | 'mode' | null;
+}
+
+export interface MissingItemRow {
+  id: string;
+  feedId: string;
+  feedName: string;
+  description: string;
+}
+
+export interface DataValidationData {
+  mappingGaps: {
+    count: number;
+    rows: MappingGapRow[];
+  };
+  nullValues: {
+    count: number;
+    rows: NullValueRow[];
+  };
+  missingItems: {
+    count: number;
+    rows: MissingItemRow[];
+  };
+}
+
+export interface InnovationProduct {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  sopGroup: string;
+  brand: string;
+  sourceForecastUnits: string[];
+  launchMonth: string;
+  upliftPct: number;
+}
+
+export interface ComboPackComponent {
+  id: string;
+  name: string;
+  code: string;
+  quantity: number;
+}
+
+export interface ComboPack {
+  id: string;
+  name: string;
+  code: string;
+  components: ComboPackComponent[];
+}
+
+

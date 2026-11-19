@@ -15,6 +15,7 @@ export interface DataParams {
   from?: string;
   to?: string;
   planningCycle?: string;
+  compareTo?: string;
   activity?: string;
 }
 
@@ -28,6 +29,7 @@ function toQs(params: DataParams): string {
   if (params.from) p.set('from', params.from);
   if (params.to) p.set('to', params.to);
   if (params.planningCycle) p.set('planningCycle', params.planningCycle);
+  if (params.compareTo) p.set('compareTo', params.compareTo);
   if (params.activity) p.set('activity', params.activity);
   const s = p.toString();
   return s ? `?${s}` : '';

@@ -5,32 +5,32 @@ import { KpiCard } from './KpiCard';
 import { SelectionDetailsModal } from './SelectionDetailsModal';
 import { KpiItem, HierarchyNode } from '../../types';
 import { labels } from '../../constants/labels';
-import { LEVEL_MAP } from '../../constants/hierarchy';
 import { useViewStore } from '../../store/viewStore';
 import { useFilterStore } from '../../store/filterStore';
 import { countDescendants } from '../../utils/countDescendants';
 import { metaService } from '../../services/metaService';
-import { getGrainPeriods } from '../../utils/dateRange';
 import { HierarchyNetwork } from '../hierarchy/HierarchyNetwork';
 
-interface KpiCardRowProps {
-  kpis?: KpiItem[];
+export interface SelectionKpiRowProps {
   hierarchyNodes?: HierarchyNode[];
+}
+
+export interface KpiNumbersRowProps {
+  kpis?: KpiItem[];
   isLoading?: boolean;
   isError?: boolean;
   error?: Error | null;
   onRetry?: () => void;
 }
 
+export interface KpiCardRowProps extends KpiNumbersRowProps {
+  hierarchyNodes?: HierarchyNode[];
+}
+
 type ModalType = 'product' | 'customer' | 'time' | null;
 
-export const KpiCardRow: React.FC<KpiCardRowProps> = ({
-  kpis = [],
+export const SelectionKpiRow: React.FC<SelectionKpiRowProps> = ({
   hierarchyNodes: propNodes,
-  isLoading = false,
-  isError = false,
-  error,
-  onRetry,
 }) => {
   const [modalType, setModalType] = useState<ModalType>(null);
 
@@ -124,11 +124,11 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({
   };
 
   return (
-    <div className="w-full space-y-2 select-none">
-      {/* ─── Row A: Selection (4 compact cards ~64px, wraps 2x2 on mobile) ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+    <>
+      {/* ─── Row A: Selection (4 compact cards ~56px on mobile, ~64px desktop) ─── */}
+      <div className="flex md:grid md:grid-cols-4 gap-2 overflow-x-auto md:overflow-visible no-scrollbar pb-1 md:pb-0">
         {/* 1. Product card */}
-        <div className="h-16 bg-surface border border-border rounded-card px-3 py-2 flex flex-col justify-between shadow-card hover:shadow-md transition-shadow overflow-hidden">
+        <div className="h-14 md:h-16 min-w-[150px] md:min-w-0 flex-1 shrink-0 md:shrink bg-surface border border-border rounded-card px-3 py-1.5 md:py-2 flex flex-col justify-between shadow-card hover:shadow-md transition-shadow overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-wider font-semibold text-text-secondary truncate">
               Product
@@ -154,7 +154,7 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({
         </div>
 
         {/* 2. Customer card */}
-        <div className="h-16 bg-surface border border-border rounded-card px-3 py-2 flex flex-col justify-between shadow-card hover:shadow-md transition-shadow overflow-hidden">
+        <div className="h-14 md:h-16 min-w-[150px] md:min-w-0 flex-1 shrink-0 md:shrink bg-surface border border-border rounded-card px-3 py-1.5 md:py-2 flex flex-col justify-between shadow-card hover:shadow-md transition-shadow overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-wider font-semibold text-text-secondary truncate">
               Customer
@@ -176,7 +176,7 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({
         </div>
 
         {/* 3. Time card */}
-        <div className="h-16 bg-surface border border-border rounded-card px-3 py-2 flex flex-col justify-between shadow-card hover:shadow-md transition-shadow overflow-hidden">
+        <div className="h-14 md:h-16 min-w-[150px] md:min-w-0 flex-1 shrink-0 md:shrink bg-surface border border-border rounded-card px-3 py-1.5 md:py-2 flex flex-col justify-between shadow-card hover:shadow-md transition-shadow overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-wider font-semibold text-text-secondary truncate">
               Time
@@ -198,7 +198,7 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({
         </div>
 
         {/* 4. Cycle card (no link) */}
-        <div className="h-16 bg-surface border border-border rounded-card px-3 py-2 flex flex-col justify-between shadow-card hover:shadow-md transition-shadow overflow-hidden">
+        <div className="h-14 md:h-16 min-w-[150px] md:min-w-0 flex-1 shrink-0 md:shrink bg-surface border border-border rounded-card px-3 py-1.5 md:py-2 flex flex-col justify-between shadow-card hover:shadow-md transition-shadow overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-[10px] uppercase tracking-wider font-semibold text-text-secondary truncate">
               Cycle
@@ -212,6 +212,44 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({
         </div>
       </div>
 
+      {/* ─── SelectionDetailsModal (Swappable slot modal) ─── */}
+      <SelectionDetailsModal
+        isOpen={modalType !== null}
+        onClose={() => setModalType(null)}
+        title={
+          modalType === 'product'
+            ? 'Product hierarchy'
+            : modalType === 'customer'
+              ? 'Customer hierarchy'
+              : modalType === 'time'
+                ? 'Time periods'
+                : ''
+        }
+        subtitle={
+          modalType === 'product'
+            ? productDesc.summary
+            : modalType === 'customer'
+              ? customerText
+              : modalType === 'time'
+                ? timeText
+                : undefined
+        }
+      >
+        {renderModalBody()}
+      </SelectionDetailsModal>
+    </>
+  );
+};
+
+export const KpiNumbersRow: React.FC<KpiNumbersRowProps> = ({
+  kpis = [],
+  isLoading = false,
+  isError = false,
+  error,
+  onRetry,
+}) => {
+  return (
+    <div className="w-full select-none">
       {/* ─── Row B: Numbers (10 cards, scrolls horizontally) ─── */}
       {isLoading ? (
         <div className="w-full flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
@@ -256,32 +294,18 @@ export const KpiCardRow: React.FC<KpiCardRowProps> = ({
           ))}
         </div>
       )}
+    </div>
+  );
+};
 
-      {/* ─── SelectionDetailsModal (Swappable slot modal) ─── */}
-      <SelectionDetailsModal
-        isOpen={modalType !== null}
-        onClose={() => setModalType(null)}
-        title={
-          modalType === 'product'
-            ? 'Product hierarchy'
-            : modalType === 'customer'
-              ? 'Customer hierarchy'
-              : modalType === 'time'
-                ? 'Time periods'
-                : ''
-        }
-        subtitle={
-          modalType === 'product'
-            ? productDesc.summary
-            : modalType === 'customer'
-              ? customerText
-              : modalType === 'time'
-                ? timeText
-                : undefined
-        }
-      >
-        {renderModalBody()}
-      </SelectionDetailsModal>
+export const KpiCardRow: React.FC<KpiCardRowProps> = ({
+  hierarchyNodes,
+  ...numberProps
+}) => {
+  return (
+    <div className="w-full space-y-2 select-none">
+      <SelectionKpiRow hierarchyNodes={hierarchyNodes} />
+      <KpiNumbersRow {...numberProps} />
     </div>
   );
 };

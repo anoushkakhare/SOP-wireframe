@@ -8,6 +8,7 @@ import {
   Tooltip,
   CartesianGrid,
   Legend,
+  LabelList,
 } from 'recharts';
 import { StackedBarItem, ProductLevel } from '../../types';
 import { formatCompactNumber } from '../../utils/formatters';
@@ -94,7 +95,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
   onRetry,
 }) => {
   const { charts } = labels;
-  const { productLevel, scope, apg, measure, timeGrain } = useViewStore();
+  const { productLevel, scope, apg, measure, timeGrain, compare } = useViewStore();
   const measureLabel = measure === 'value' ? 'Value (₹)' : measure === 'cases' ? 'Cases' : 'Units';
 
   const [zoomRange, setZoomRange] = useState<[number, number]>([0, 100]);
@@ -142,27 +143,56 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
     );
   }
 
+  const isComparing = compare.on && Boolean(compare.b);
+  const nameA = 'Current cycle';
+  const nameB = compare.b;
+
   const chartData = data.map((item) => {
     const normSegments: Record<string, number> = {};
     for (const [k, v] of Object.entries(item.segments || {})) {
       const normKey = APG_NORM_MAP[k] || k;
       normSegments[normKey] = (normSegments[normKey] || 0) + v;
     }
+
+    const normSegmentsA: Record<string, number> = {};
+    for (const [k, v] of Object.entries(item.segmentsA || item.segments || {})) {
+      const normKey = APG_NORM_MAP[k] || k;
+      normSegmentsA[normKey] = (normSegmentsA[normKey] || 0) + v;
+    }
+
+    const normSegmentsB: Record<string, number> = {};
+    for (const [k, v] of Object.entries(item.segmentsB || {})) {
+      const normKey = APG_NORM_MAP[k] || k;
+      normSegmentsB[normKey] = (normSegmentsB[normKey] || 0) + v;
+    }
+
+    const seriesA = item.seriesA !== undefined ? item.seriesA : item.total;
+    const seriesB = item.seriesB !== undefined ? item.seriesB : 0;
+    const delta = item.delta !== undefined ? item.delta : seriesB - seriesA;
+
     return {
       id: item.id,
       category: item.category,
       hasDrillDown: item.hasDrillDown,
       ...normSegments,
       _total: item.total,
+      seriesA,
+      seriesB,
+      delta,
+      segmentsA: normSegmentsA,
+      segmentsB: normSegmentsB,
     };
   });
 
-  const maxTotal = Math.max(...data.map((d) => d.total || 0), 1);
+  const maxTotal = Math.max(
+    ...data.map((d) => Math.max(d.total || 0, d.seriesB || 0)),
+    1
+  );
   const isZoomed = zoomRange[0] > 0 || zoomRange[1] < 100;
   const yMin = Math.round((maxTotal * zoomRange[0]) / 100);
   const yMax = Math.max(yMin + 1, Math.round((maxTotal * zoomRange[1]) / 100));
 
-  const minPlotWidth = data.length * 56;
+  const minPlotWidth = data.length * (isComparing ? 80 : 56);
 
   return (
     <div className="w-full h-full flex flex-row relative min-h-0">
@@ -192,7 +222,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
-              margin={{ top: 8, right: 15, left: 0, bottom: 25 }}
+              margin={{ top: 16, right: 15, left: 0, bottom: 25 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
               <XAxis
@@ -215,6 +245,76 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
               <Tooltip
                 content={({ active, payload, label }) => {
                   if (active && payload && payload.length) {
+                    const item = payload[0].payload;
+
+                    if (isComparing) {
+                      const totA = item.seriesA;
+                      const totB = item.seriesB;
+                      const delta = item.delta;
+                      const isDeltaPos = delta >= 0;
+                      const pct = totA > 0 ? ((delta / totA) * 100).toFixed(1) : null;
+
+                      return (
+                        <div className="bg-surface border border-border p-2.5 text-xs shadow-md rounded-card space-y-2 z-50 max-w-xs">
+                          <div className="font-semibold text-text-primary border-b border-border pb-1 flex items-center justify-between gap-2">
+                            <span>{label}</span>
+                            <span className="text-[10px] px-1 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-semibold">
+                              Clustered Compare
+                            </span>
+                          </div>
+
+                          <div className={`text-xs font-bold ${isDeltaPos ? 'text-positive' : 'text-negative'} flex items-center justify-between`}>
+                            <span>Delta (B - A):</span>
+                            <span>{isDeltaPos ? '+' : ''}{formatCompactNumber(delta, { measure })} {pct ? `(${isDeltaPos ? '+' : ''}${pct}%)` : ''}</span>
+                          </div>
+
+                          {/* Series A (Indigo) with APG split */}
+                          <div className="bg-primary-50/50 p-1.5 rounded border border-primary-100 space-y-1">
+                            <div className="flex justify-between font-bold text-primary-900 border-b border-primary-200/50 pb-0.5">
+                              <span className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-primary-700 inline-block" />
+                                {nameA} (A):
+                              </span>
+                              <span>{formatCompactNumber(totA, { isNeutral: true, measure })}</span>
+                            </div>
+                            <div className="space-y-0.5 text-[11px] text-text-secondary">
+                              {CUSTOMER_GROUPS.map((cg) => {
+                                const val = item.segmentsA?.[cg] ?? 0;
+                                return (
+                                  <div key={cg} className="flex justify-between">
+                                    <span>{cg}:</span>
+                                    <span className="tabular-nums font-medium text-text-primary">{formatCompactNumber(val, { isNeutral: true, measure })}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Series B (Amber) with APG split */}
+                          <div className="bg-amber-50/50 p-1.5 rounded border border-amber-200 space-y-1">
+                            <div className="flex justify-between font-bold text-amber-900 border-b border-amber-200/50 pb-0.5">
+                              <span className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-[#D97706] inline-block" />
+                                {nameB} (B):
+                              </span>
+                              <span>{formatCompactNumber(totB, { isNeutral: true, measure })}</span>
+                            </div>
+                            <div className="space-y-0.5 text-[11px] text-text-secondary">
+                              {CUSTOMER_GROUPS.map((cg) => {
+                                const val = item.segmentsB?.[cg] ?? 0;
+                                return (
+                                  <div key={cg} className="flex justify-between">
+                                    <span>{cg}:</span>
+                                    <span className="tabular-nums font-medium text-text-primary">{formatCompactNumber(val, { isNeutral: true, measure })}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     const total = payload.reduce((acc, p) => acc + (Number(p.value) || 0), 0);
                     return (
                       <div className="bg-surface border border-border p-2.5 text-xs shadow-md rounded-card space-y-1.5 z-50">
@@ -242,25 +342,67 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
                 formatter={(value) => <span className="text-text-secondary text-xs">{value}</span>}
               />
 
-              {CUSTOMER_GROUPS.map((cg) => (
-                <Bar
-                  key={cg}
-                  dataKey={cg}
-                  name={cg}
-                  stackId="cg-stack"
-                  fill={CG_COLORS[cg] || CG_FALLBACK}
-                  stroke="none"
-                  maxBarSize={48}
-                  cursor={drillOn ? 'pointer' : 'default'}
-                  activeBar={drillOn ? { stroke: '#0F0E9A', strokeWidth: 1.5, fillOpacity: 0.85 } : false}
-                  onClick={(entry: any) => {
-                    if (drillOn && onDrillDown) {
-                      const idOrCategory = entry?.id || entry?.payload?.id || entry?.category || entry?.payload?.category;
-                      if (idOrCategory) onDrillDown(idOrCategory);
-                    }
-                  }}
-                />
-              ))}
+              {isComparing ? (
+                <>
+                  <Bar
+                    dataKey="seriesA"
+                    name={nameA}
+                    fill="#0F0E9A"
+                    stroke="none"
+                    maxBarSize={36}
+                  />
+                  <Bar
+                    dataKey="seriesB"
+                    name={nameB}
+                    fill="#D97706"
+                    stroke="none"
+                    maxBarSize={36}
+                  >
+                    <LabelList
+                      dataKey="delta"
+                      position="top"
+                      content={(props: any) => {
+                        const { x, y, width, value } = props;
+                        if (value === undefined || value === null) return null;
+                        const isPos = value >= 0;
+                        const formatted = `${isPos ? '+' : ''}${formatCompactNumber(value, { measure })}`;
+                        return (
+                          <text
+                            x={x + width / 2}
+                            y={y - 5}
+                            fill={isPos ? '#16A34A' : '#DC2626'}
+                            fontSize={10}
+                            fontWeight={700}
+                            textAnchor="middle"
+                          >
+                            {formatted}
+                          </text>
+                        );
+                      }}
+                    />
+                  </Bar>
+                </>
+              ) : (
+                CUSTOMER_GROUPS.map((cg) => (
+                  <Bar
+                    key={cg}
+                    dataKey={cg}
+                    name={cg}
+                    stackId="cg-stack"
+                    fill={CG_COLORS[cg] || CG_FALLBACK}
+                    stroke="none"
+                    maxBarSize={48}
+                    cursor={drillOn ? 'pointer' : 'default'}
+                    activeBar={drillOn ? { stroke: '#0F0E9A', strokeWidth: 1.5, fillOpacity: 0.85 } : false}
+                    onClick={(entry: any) => {
+                      if (drillOn && onDrillDown) {
+                        const idOrCategory = entry?.id || entry?.payload?.id || entry?.category || entry?.payload?.category;
+                        if (idOrCategory) onDrillDown(idOrCategory);
+                      }
+                    }}
+                  />
+                ))
+              )}
             </BarChart>
           </ResponsiveContainer>
         </div>

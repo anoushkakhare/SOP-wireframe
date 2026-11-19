@@ -8,13 +8,14 @@ import { KpiItem } from '../types';
 import { toMeasureUnits, editMatchesFilters } from '../utils/editsOverlay';
 
 export function useKpis() {
-  const { productLevel, scope, apg, measure, timeGrain } = useViewStore();
+  const { productLevel, scope, apg, measure, timeGrain, compare } = useViewStore();
   const { appliedFilters } = useFilterStore();
   const { activeScenario } = useScenarioStore();
   const { draftEdits, savedEdits } = useTableStore();
 
   const scopeStr = scope.join(',') || undefined;
   const apgStr = apg.join(',') || undefined;
+  const compareTo = compare.on && compare.b ? compare.b : undefined;
 
   const queryParams = {
     productLevel,
@@ -27,6 +28,7 @@ export function useKpis() {
     to: appliedFilters.endDate,
     scenarioId: activeScenario?.id,
     planningCycle: appliedFilters.planningCycle,
+    compareTo,
     activity: appliedFilters.activity,
   };
 

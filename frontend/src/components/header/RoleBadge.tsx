@@ -11,7 +11,7 @@ interface RoleBadgeProps {
  * "Role based access" subtitle removed per spec.
  */
 export const RoleBadge: React.FC<RoleBadgeProps> = ({ roleTitle, userName }) => {
-  const initial = userName ? userName.charAt(0).toUpperCase() : '?';
+  const initial = userName?.trim() ? userName.trim().charAt(0).toUpperCase() : '?';
 
   return (
     <div className="flex items-center gap-2.5">

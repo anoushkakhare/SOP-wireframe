@@ -10,7 +10,7 @@
     "build:frontend": "cd frontend && npm run build",
     "build": "npm run build:backend && npm run build:frontend",
     "test:frontend": "cd frontend && npm test",
-    "test:backend": "cd backend && ./node_modules/.bin/tsx src/repositories/chartRepository.test.ts && ./node_modules/.bin/tsx src/utils/aggregateRollup.test.ts",
+    "test:backend": "cd backend && ./node_modules/.bin/tsx src/repositories/chartRepository.test.ts && ./node_modules/.bin/tsx src/utils/aggregateRollup.test.ts && ./node_modules/.bin/tsx src/repositories/dataReviewRepository.test.ts && ./node_modules/.bin/tsx src/repositories/compareMode.test.ts",
     "test": "npm run test:backend && npm run test:frontend",
     "smoke": "node scripts/smoke.mjs"
   },

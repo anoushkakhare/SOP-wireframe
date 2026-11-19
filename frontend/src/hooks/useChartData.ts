@@ -11,7 +11,7 @@ import {
 } from '../utils/editsOverlay';
 
 export function useChartData() {
-  const { productLevel, scope, apg, measure, timeGrain } = useViewStore();
+  const { productLevel, scope, apg, measure, timeGrain, compare } = useViewStore();
   const { appliedFilters } = useFilterStore();
   const { draftEdits, savedEdits } = useTableStore();
 
@@ -21,6 +21,7 @@ export function useChartData() {
   const apgStr = apg.join(',') || undefined;
   const from = appliedFilters.startDate;
   const to = appliedFilters.endDate;
+  const compareTo = compare.on && compare.b ? compare.b : undefined;
 
   const params = {
     productLevel,
@@ -31,6 +32,7 @@ export function useChartData() {
     from,
     to,
     planningCycle: appliedFilters.planningCycle,
+    compareTo,
     activity: appliedFilters.activity,
   };
 
@@ -43,6 +45,7 @@ export function useChartData() {
     from,
     to,
     appliedFilters.planningCycle,
+    compareTo,
     appliedFilters.activity,
   ];
 
@@ -90,6 +93,7 @@ export function useChartData() {
   // 1. Forecast Line overlay
   const forecastLineData = forecastLineQuery.data
     ? {
+        ...forecastLineQuery.data,
         points: forecastLineQuery.data.points.map((p) => {
           let periodFcst = 0;
           let periodOpp = 0;
@@ -120,6 +124,7 @@ export function useChartData() {
             forecast,
             bestCase,
             worstCase,
+            seriesA: p.seriesA !== undefined ? p.seriesA + periodFcst : undefined,
           };
         }),
       }
@@ -128,6 +133,7 @@ export function useChartData() {
   // 2. Waterfall overlay
   const waterfallData = waterfallQuery.data
     ? {
+        ...waterfallQuery.data,
         steps: waterfallQuery.data.steps.map((s) => {
           if (s.name === 'Final forecast' && totalForecastDelta !== 0) {
             return { ...s, value: s.value + totalForecastDelta };
