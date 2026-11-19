@@ -79,15 +79,15 @@ export const KpiCard: React.FC<KpiCardProps> = ({ kpi }) => {
         style={{ minHeight: TOKEN.minH }}
       >
         {/* Title row */}
-        <div className="flex items-center justify-between gap-1">
+        <div className="flex items-start justify-between gap-1">
+          {/* min-h-[2.4em] reserves space for two lines so values stay aligned */}
           <span
-            className="font-medium text-text-secondary leading-tight truncate"
+            className="font-medium text-text-secondary leading-tight min-h-[2.4em]"
             style={{ fontSize: TOKEN.lblSize }}
-            title={kpi.label}
           >
             {kpi.label}
           </span>
-          <div className="relative group/tooltip shrink-0">
+          <div className="relative group/tooltip shrink-0 mt-0.5">
             <Info className="w-3 h-3 text-text-disabled hover:text-text-secondary cursor-pointer" />
             <div className="absolute top-full mt-1.5 right-0 hidden group-hover/tooltip:block z-50 pointer-events-none">
               <div className="bg-text-primary text-white text-[11px] font-normal py-1.5 px-2.5 rounded-card shadow-lg w-48 leading-snug">
@@ -99,9 +99,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({ kpi }) => {
 
         {/* Stacked Opportunity / Risk rows with thin horizontal divider */}
         <div className="flex flex-col gap-0.5 my-0.5">
-          {/* Opportunity row */}
+          {/* Opportunity row — no arrow icon */}
           <div className="flex items-center gap-1 min-w-0">
-            <TrendingUp className="w-3.5 h-3.5 shrink-0 text-positive" aria-label="positive" />
             <span
               className="font-bold tracking-tight tabular-nums text-positive truncate"
               style={{ fontSize: TOKEN.valSmSize }}
@@ -120,9 +119,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({ kpi }) => {
           {/* Thin horizontal divider */}
           <div className="border-t border-border w-full" />
 
-          {/* Risk row */}
+          {/* Risk row — no arrow icon */}
           <div className="flex items-center gap-1 min-w-0">
-            <TrendingDown className="w-3.5 h-3.5 shrink-0 text-negative" aria-label="negative" />
             <span
               className="font-bold tracking-tight tabular-nums text-negative truncate"
               style={{ fontSize: TOKEN.valSmSize }}
@@ -217,15 +215,15 @@ export const KpiCard: React.FC<KpiCardProps> = ({ kpi }) => {
       style={{ minHeight: TOKEN.minH }}
     >
       {/* Title */}
-      <div className="flex items-center justify-between gap-1">
+      <div className="flex items-start justify-between gap-1">
+        {/* min-h-[2.4em] reserves two-line height so values stay aligned across all cards */}
         <span
-          className="font-medium text-text-secondary leading-tight truncate"
+          className="font-medium text-text-secondary leading-tight min-h-[2.4em]"
           style={{ fontSize: TOKEN.lblSize }}
-          title={kpi.label}
         >
           {kpi.label}
         </span>
-        <div className="relative group/tooltip shrink-0">
+        <div className="relative group/tooltip shrink-0 mt-0.5">
           <Info className="w-3 h-3 text-text-disabled hover:text-text-secondary cursor-pointer" />
           <div className="absolute top-full mt-1.5 right-0 hidden group-hover/tooltip:block z-50 pointer-events-none">
             <div className="bg-text-primary text-white text-[11px] font-normal py-1.5 px-2.5 rounded-card shadow-lg w-48 leading-snug">
