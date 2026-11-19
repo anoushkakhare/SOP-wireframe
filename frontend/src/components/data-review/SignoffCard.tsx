@@ -14,17 +14,33 @@ import {
 import { DataReviewReadinessResponse } from '../../types';
 import { useAuthStore } from '../../store/authStore';
 import { useDataReviewMutations } from '../../hooks/useDataReview';
+import { DATA_REVIEW_TOTAL_STEPS } from '../../constants/dataReviewSections';
 
 interface SignoffCardProps {
   readiness: DataReviewReadinessResponse | undefined;
   isLoading?: boolean;
+  orderNumber?: number;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const SignoffCard: React.FC<SignoffCardProps> = ({
   readiness,
   isLoading,
+  orderNumber = 6,
+  isCollapsed: controlledCollapsed,
+  onToggleCollapse,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
+
+  const handleCardToggle = () => {
+    if (onToggleCollapse) {
+      onToggleCollapse();
+    } else {
+      setInternalCollapsed(!internalCollapsed);
+    }
+  };
   const { user } = useAuthStore();
   const { updateReadiness, isUpdateReadinessPending, signoff, isSignoffPending, reopen, isReopenPending } =
     useDataReviewMutations();
@@ -75,13 +91,13 @@ export const SignoffCard: React.FC<SignoffCardProps> = ({
       {/* Header */}
       <button
         type="button"
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={handleCardToggle}
         className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50/60 transition-colors cursor-pointer border-b border-gray-100"
         aria-expanded={!isCollapsed}
       >
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center font-bold text-sm">
-            7
+            {orderNumber}
           </div>
           <div>
             <h2 className="text-base font-bold text-gray-900">Sign-off</h2>
@@ -128,7 +144,7 @@ export const SignoffCard: React.FC<SignoffCardProps> = ({
                       {formatSignoffDate(readiness?.signoff?.signedAt)}
                     </h3>
                     <p className="text-xs text-emerald-700 mt-0.5">
-                      Cycle: {readiness?.signoff?.cycle || 'Current'} • All 7 readiness steps completed
+                      Cycle: {readiness?.signoff?.cycle || 'Current'} • All {DATA_REVIEW_TOTAL_STEPS} readiness steps completed
                       and validated.
                     </p>
                   </div>

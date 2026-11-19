@@ -25,12 +25,25 @@ import { HierarchyNode, InnovationProduct } from '../../types';
 
 interface InnovationCardProps {
   orderNumber?: number;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const InnovationCard: React.FC<InnovationCardProps> = ({
   orderNumber = 5,
+  isCollapsed: controlledCollapsed,
+  onToggleCollapse,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
+
+  const handleCardToggle = () => {
+    if (onToggleCollapse) {
+      onToggleCollapse();
+    } else {
+      setInternalCollapsed(!internalCollapsed);
+    }
+  };
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isTreePopoverOpen, setIsTreePopoverOpen] = useState(false);
 
@@ -211,7 +224,7 @@ export const InnovationCard: React.FC<InnovationCardProps> = ({
       {/* Header */}
       <button
         type="button"
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={handleCardToggle}
         className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50/60 transition-colors cursor-pointer border-b border-gray-100"
         aria-expanded={!isCollapsed}
       >

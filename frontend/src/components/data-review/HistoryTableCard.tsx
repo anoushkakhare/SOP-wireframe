@@ -8,19 +8,34 @@ import {
   Clock,
   XCircle,
   RefreshCw,
+  History,
 } from 'lucide-react';
 import { DataReviewHistoryItem, FeedStatus } from '../../types';
 
 interface HistoryTableCardProps {
   history: DataReviewHistoryItem[];
   isLoading?: boolean;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export const HistoryTableCard: React.FC<HistoryTableCardProps> = ({
   history,
   isLoading,
+  isExpanded,
+  onToggleExpand,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isCollapsed = isExpanded !== undefined ? !isExpanded : internalCollapsed;
+
+  const handleToggle = () => {
+    if (onToggleExpand) {
+      onToggleExpand();
+    } else {
+      setInternalCollapsed(!internalCollapsed);
+    }
+  };
+
   const [statusFilter, setStatusFilter] = useState<'all' | FeedStatus>('all');
 
   const filteredHistory = history.filter(item => {
@@ -86,13 +101,13 @@ export const HistoryTableCard: React.FC<HistoryTableCardProps> = ({
       {/* Header */}
       <button
         type="button"
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={handleToggle}
         className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50/60 transition-colors cursor-pointer border-b border-gray-100"
         aria-expanded={!isCollapsed}
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center font-bold text-sm">
-            2
+          <div className="w-8 h-8 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center">
+            <History className="w-4 h-4" />
           </div>
           <div>
             <h2 className="text-base font-bold text-gray-900">

@@ -9,6 +9,7 @@ import {
   Database,
   ArrowRight,
   RefreshCw,
+  History,
 } from 'lucide-react';
 import { DataReviewFeed } from '../../types';
 import { useDataReviewMutations } from '../../hooks/useDataReview';
@@ -16,13 +17,32 @@ import { useDataReviewMutations } from '../../hooks/useDataReview';
 interface PipelineStepperCardProps {
   feeds: DataReviewFeed[];
   isLoading?: boolean;
+  orderNumber?: number;
+  isHistoryOpen?: boolean;
+  onToggleHistory?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const PipelineStepperCard: React.FC<PipelineStepperCardProps> = ({
   feeds,
   isLoading,
+  orderNumber = 1,
+  isHistoryOpen = false,
+  onToggleHistory,
+  isCollapsed: controlledCollapsed,
+  onToggleCollapse,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
+
+  const handleCardToggle = () => {
+    if (onToggleCollapse) {
+      onToggleCollapse();
+    } else {
+      setInternalCollapsed(!internalCollapsed);
+    }
+  };
   const { loadFeed, isLoadFeedPending } = useDataReviewMutations();
   const [loadingFeedId, setLoadingFeedId] = useState<string | null>(null);
 
@@ -101,13 +121,13 @@ export const PipelineStepperCard: React.FC<PipelineStepperCardProps> = ({
       {/* Card Header (clickable to collapse) */}
       <button
         type="button"
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={handleCardToggle}
         className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50/60 transition-colors cursor-pointer border-b border-gray-100"
         aria-expanded={!isCollapsed}
       >
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary-50 text-primary-700 flex items-center justify-center font-bold text-sm">
-            1
+            {orderNumber}
           </div>
           <div>
             <h2 className="text-base font-bold text-gray-900">
@@ -120,6 +140,21 @@ export const PipelineStepperCard: React.FC<PipelineStepperCardProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
+          {onToggleHistory && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleHistory();
+              }}
+              aria-expanded={isHistoryOpen}
+              className="text-xs font-semibold text-primary-700 hover:text-primary-800 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded px-2.5 py-1 transition-colors cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
+            >
+              <History className="w-3.5 h-3.5" />
+              {isHistoryOpen ? 'Hide History' : 'View History'}
+            </button>
+          )}
+
           <span
             className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
               loadedCount === feeds.length

@@ -27,12 +27,25 @@ import { ComboPack, ComboPackComponent, HierarchyNode } from '../../types';
 
 interface SpecialPacksCardProps {
   orderNumber?: number;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const SpecialPacksCard: React.FC<SpecialPacksCardProps> = ({
   orderNumber = 6,
+  isCollapsed: controlledCollapsed,
+  onToggleCollapse,
 }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
+
+  const handleCardToggle = () => {
+    if (onToggleCollapse) {
+      onToggleCollapse();
+    } else {
+      setInternalCollapsed(!internalCollapsed);
+    }
+  };
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Form state inside drawer
@@ -194,7 +207,7 @@ export const SpecialPacksCard: React.FC<SpecialPacksCardProps> = ({
       {/* Header */}
       <button
         type="button"
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={handleCardToggle}
         className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-gray-50/60 transition-colors cursor-pointer border-b border-gray-100"
         aria-expanded={!isCollapsed}
       >
