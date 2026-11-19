@@ -48,14 +48,20 @@ export const LeftIconRail: React.FC = () => {
   };
 
   const getDisplayLabel = (label: string, id: string) => {
-    if (id === 'dashboard' || label.toLowerCase().includes('dashboard')) return 'Dashboard';
+    if (id === 'dashboard' || label.toLowerCase().includes('dashboard') || label.toLowerCase().includes('summary')) return 'Summary';
+    if (id === 'data-review' || label.toLowerCase().includes('review')) return 'Data review';
+    return label;
+  };
+
+  const getFullPageName = (label: string, id: string) => {
+    if (id === 'dashboard' || label.toLowerCase().includes('dashboard') || label.toLowerCase().includes('summary')) return 'Summary dashboard';
     if (id === 'data-review' || label.toLowerCase().includes('review')) return 'Data review';
     return label;
   };
 
   const renderIcon = (iconName: string, isActive: boolean) => {
-    const iconClass = `w-[22px] h-[22px] transition-colors ${
-      isActive ? 'text-white' : 'text-white/80'
+    const iconClass = `w-[22px] h-[22px] transition-colors shrink-0 ${
+      isActive ? 'text-[#0F0E9A]' : 'text-[#5A6078]'
     }`;
     switch (iconName) {
       case 'dashboard':
@@ -70,15 +76,28 @@ export const LeftIconRail: React.FC = () => {
     <>
       {/* Desktop Left Icon Rail: 72px */}
       <aside
-        className="hidden md:flex flex-col items-center fixed top-0 bottom-0 left-0 w-[72px] min-w-[72px] bg-primary-700 border-r border-[rgba(255,255,255,0.12)] select-none z-20"
+        className="hidden md:flex flex-col items-center fixed top-0 bottom-0 left-0 w-[72px] min-w-[72px] bg-[#FFFFFF] border-r border-[#E0E3EC] select-none z-20"
         aria-label="Sidebar Navigation"
       >
-        {/* Unilever Logo: height equals header bar (56px), centred, max-h 44px, 12px padding */}
-        <div className="flex items-center justify-center h-[56px] w-full p-3 shrink-0">
-          <img
-            src="/unilever-logo.png"
-            alt="Unilever"
-            className="max-h-[44px] max-w-[48px] w-auto h-auto object-contain brightness-0 invert"
+        {/* Unilever Logo: height equals header bar (56px), centred, 12px padding */}
+        <div className="flex items-center justify-center h-[56px] w-full p-3 shrink-0 border-b border-[#E0E3EC]">
+          <div
+            role="img"
+            aria-label="Unilever"
+            className="w-[40px] h-[44px] max-h-[44px] max-w-[48px]"
+            style={{
+              backgroundColor: '#0F0E9A',
+              WebkitMask: 'url(/unilever-logo.png) center/contain no-repeat',
+              WebkitMaskImage: 'url(/unilever-logo.png)',
+              WebkitMaskPosition: 'center',
+              WebkitMaskSize: 'contain',
+              WebkitMaskRepeat: 'no-repeat',
+              mask: 'url(/unilever-logo.png) center/contain no-repeat',
+              maskImage: 'url(/unilever-logo.png)',
+              maskPosition: 'center',
+              maskSize: 'contain',
+              maskRepeat: 'no-repeat',
+            }}
           />
         </div>
 
@@ -89,6 +108,7 @@ export const LeftIconRail: React.FC = () => {
               location.pathname.startsWith(page.path) ||
               (page.path === '/dashboard' && location.pathname === '/');
             const displayLabel = getDisplayLabel(page.label, page.id);
+            const fullPageName = getFullPageName(page.label, page.id);
 
             return (
               <div
@@ -100,20 +120,33 @@ export const LeftIconRail: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleNavigate(page.path)}
-                  className={`w-full h-[60px] rounded-lg flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer relative focus-visible:ring-2 focus-visible:ring-white focus:outline-none ${
+                  className={`w-full min-h-[60px] py-1 rounded-lg flex flex-col items-center justify-center gap-1 transition-colors cursor-pointer relative focus-visible:ring-2 focus-visible:ring-[#0F0E9A] focus:outline-none ${
                     isActive
-                      ? 'bg-[rgba(255,255,255,0.18)] text-white'
-                      : 'hover:bg-[rgba(255,255,255,0.12)] text-white/80 hover:text-white'
+                      ? 'bg-[#F3F3FB] text-[#0F0E9A]'
+                      : 'text-[#5A6078] hover:bg-[#F3F3FB]'
                   }`}
-                  aria-label={page.label}
+                  aria-label={fullPageName}
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  {/* Left active indicator bar: 3px white */}
+                  {/* Left active indicator bar: 3px primary */}
                   {isActive && (
-                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-white rounded-r" />
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-[#0F0E9A] rounded-r" />
                   )}
                   {renderIcon(page.icon, isActive)}
-                  <span className="text-[11px] font-medium leading-tight text-center px-1 truncate w-full">
+                  <span
+                    className="text-[10.5px] font-medium leading-[1.15] text-center px-1 whitespace-normal line-clamp-2 w-full [overflow-wrap:normal] hyphens-none"
+                    style={{
+                      fontSize: '10.5px',
+                      fontWeight: 500,
+                      lineHeight: 1.15,
+                      paddingLeft: '4px',
+                      paddingRight: '4px',
+                      whiteSpace: 'normal',
+                      overflowWrap: 'normal',
+                      hyphens: 'none',
+                      textAlign: 'center',
+                    }}
+                  >
                     {displayLabel}
                   </span>
                 </button>
@@ -121,7 +154,7 @@ export const LeftIconRail: React.FC = () => {
                 {/* Label on Hover: floating tooltip to the right */}
                 {hoveredId === page.id && (
                   <div className="absolute left-[76px] top-1/2 -translate-y-1/2 px-2.5 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-md shadow-lg whitespace-nowrap z-50 pointer-events-none animate-in fade-in slide-in-from-left-1 duration-150">
-                    {page.label}
+                    {fullPageName}
                     {/* Tooltip arrow */}
                     <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
                   </div>
@@ -134,7 +167,7 @@ export const LeftIconRail: React.FC = () => {
 
       {/* Mobile Bottom Tab Bar */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 h-14 pb-[env(safe-area-inset-bottom)] bg-primary-700 border-t border-[rgba(255,255,255,0.12)] flex items-center justify-around z-40 px-2"
+        className="md:hidden fixed bottom-0 left-0 right-0 h-14 pb-[env(safe-area-inset-bottom)] bg-[#FFFFFF] border-t border-[#E0E3EC] flex items-center justify-around z-40 px-2"
         aria-label="Mobile Navigation"
       >
         {pages.map(page => {
@@ -142,6 +175,7 @@ export const LeftIconRail: React.FC = () => {
             location.pathname === page.path ||
             (page.path === '/dashboard' && location.pathname === '/');
           const displayLabel = getDisplayLabel(page.label, page.id);
+          const fullPageName = getFullPageName(page.label, page.id);
 
           return (
             <button
@@ -149,9 +183,9 @@ export const LeftIconRail: React.FC = () => {
               type="button"
               onClick={() => handleNavigate(page.path)}
               className={`flex flex-col items-center justify-center flex-1 py-1 transition-colors ${
-                isActive ? 'text-white font-semibold' : 'text-white/80 hover:text-white'
+                isActive ? 'text-[#0F0E9A] font-semibold' : 'text-[#5A6078] hover:bg-[#F3F3FB]'
               }`}
-              aria-label={page.label}
+              aria-label={fullPageName}
               aria-current={isActive ? 'page' : undefined}
             >
               {renderIcon(page.icon, isActive)}
