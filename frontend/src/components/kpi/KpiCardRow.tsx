@@ -250,13 +250,13 @@ export const KpiNumbersRow: React.FC<KpiNumbersRowProps> = ({
 }) => {
   return (
     <div className="w-full select-none">
-      {/* ─── Row B: Numbers (10 cards, scrolls horizontally) ─── */}
+      {/* ─── Row B: Numbers (8 cards, scrolls horizontally) ─── */}
       {isLoading ? (
         <div className="w-full flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {Array.from({ length: 10 }).map((_, i) => (
+          {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="flex-1 min-w-[130px] sm:min-w-[145px] max-w-[200px] h-[86px] bg-surface border border-border rounded-card p-2.5 flex flex-col justify-between animate-pulse shrink-0"
+              className="flex-1 min-w-[130px] sm:min-w-[145px] max-w-[200px] bg-surface border border-border rounded-card p-2.5 flex flex-col justify-between animate-pulse shrink-0" style={{ minHeight: '114px' }}
             >
               <div className="h-3 bg-primary-100 rounded w-2/3" />
               <div className="h-6 bg-primary-100 rounded w-4/5 mx-auto" />
