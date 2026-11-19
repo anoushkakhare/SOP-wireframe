@@ -1,11 +1,32 @@
-import { TimeGrain } from '../types';
+import { TimeGrain, DataRange } from '../types';
 
 export const MONTHS = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-export const YEARS = Array.from({ length: 2027 - 1900 + 1 }, (_, i) => 1900 + i);
+export const DATA_RANGE: DataRange = {
+  start: '2025-01',
+  end: '2027-12',
+};
+
+let currentDataRange: DataRange = { ...DATA_RANGE };
+
+export function getDataRange(): DataRange {
+  return currentDataRange;
+}
+
+export function computeYears(range: DataRange = currentDataRange): number[] {
+  const startYear = parseInt(range.start.split('-')[0], 10);
+  const endYear = parseInt(range.end.split('-')[0], 10);
+  const years: number[] = [];
+  for (let y = startYear; y <= endYear; y++) {
+    years.push(y);
+  }
+  return years;
+}
+
+export const YEARS: number[] = computeYears();
 
 export function getWeeksInYear(year: number): number {
   const d = new Date(year, 11, 31);
@@ -14,16 +35,29 @@ export function getWeeksInYear(year: number): number {
   return day === 4 || (day === 3 && isLeap) ? 53 : 52;
 }
 
-const GRAIN_PERIODS: Record<string, string[]> = {
-  year: YEARS.map((y) => `FY${y}`),
-  half: YEARS.flatMap((y) => [`H1 ${y}`, `H2 ${y}`]),
-  quarter: YEARS.flatMap((y) => [`Q1 ${y}`, `Q2 ${y}`, `Q3 ${y}`, `Q4 ${y}`]),
-  month: YEARS.flatMap((y) => MONTHS.map((m) => `${m} ${y}`)),
-  week: YEARS.flatMap((y) => {
-    const count = getWeeksInYear(y);
-    return Array.from({ length: count }, (_, i) => `W${String(i + 1).padStart(2, '0')} ${y}`);
-  }),
-};
+function buildGrainPeriods(years: number[]): Record<string, string[]> {
+  return {
+    year: years.map((y) => `FY${y}`),
+    half: years.flatMap((y) => [`H1 ${y}`, `H2 ${y}`]),
+    quarter: years.flatMap((y) => [`Q1 ${y}`, `Q2 ${y}`, `Q3 ${y}`, `Q4 ${y}`]),
+    month: years.flatMap((y) => MONTHS.map((m) => `${m} ${y}`)),
+    week: years.flatMap((y) => {
+      const count = getWeeksInYear(y);
+      return Array.from({ length: count }, (_, i) => `W${String(i + 1).padStart(2, '0')} ${y}`);
+    }),
+  };
+}
+
+let GRAIN_PERIODS: Record<string, string[]> = buildGrainPeriods(YEARS);
+
+export function setDataRange(range: DataRange) {
+  if (range && range.start && range.end) {
+    currentDataRange = { ...range };
+    YEARS.length = 0;
+    YEARS.push(...computeYears(currentDataRange));
+    GRAIN_PERIODS = buildGrainPeriods(YEARS);
+  }
+}
 
 export function normalizeGrain(grain?: string): string {
   if (!grain) return 'month';
@@ -55,22 +89,37 @@ export function getDefaultRangeForGrain(grain?: TimeGrain | string): {
 } {
   const g = normalizeGrain(grain);
   const periods = getGrainPeriods(g);
-  const total = periods.length;
+  const currentYear = YEARS.includes(2026) ? 2026 : YEARS[0];
 
-  // Middle position with 20-25% gap
-  const maxAllowedGap = Math.max(1, total - 2);
-  const desiredGap = Math.min(maxAllowedGap, Math.max(1, Math.round(total * 0.22)));
-  const mid = Math.floor(total / 2);
+  let from = periods[0];
+  let to = periods[periods.length - 1];
 
-  let startIdx = Math.max(0, mid - Math.floor(desiredGap / 2));
-  let endIdx = Math.min(total - 1, startIdx + desiredGap);
-
-  if (endIdx - startIdx < 1) {
-    endIdx = Math.min(total - 1, startIdx + 1);
+  if (g === 'year') {
+    from = `FY${YEARS[0]}`;
+    to = `FY${YEARS[YEARS.length - 1]}`;
+  } else if (g === 'half') {
+    from = `H1 ${currentYear}`;
+    to = `H2 ${currentYear}`;
+  } else if (g === 'quarter') {
+    from = `Q1 ${currentYear}`;
+    to = `Q4 ${currentYear}`;
+  } else if (g === 'month') {
+    from = `Jan ${currentYear}`;
+    to = `Dec ${currentYear}`;
+  } else if (g === 'week') {
+    from = `W40 ${currentYear}`;
+    to = `W${getWeeksInYear(currentYear)} ${currentYear}`;
   }
-  if (endIdx >= total) {
-    endIdx = total - 1;
-    startIdx = Math.max(0, endIdx - desiredGap);
+
+  let startIdx = periods.indexOf(from);
+  let endIdx = periods.indexOf(to);
+  if (startIdx < 0) startIdx = 0;
+  if (endIdx < 0) endIdx = periods.length - 1;
+  if (startIdx > endIdx) [startIdx, endIdx] = [endIdx, startIdx];
+
+  // 104-period clamp
+  if (endIdx - startIdx + 1 > 104) {
+    endIdx = startIdx + 103;
   }
 
   return {
@@ -86,8 +135,10 @@ export function monthIndexToDateString(index: number, grain?: TimeGrain | string
     const clamped = Math.max(0, Math.min(periods.length - 1, index));
     return periods[clamped];
   }
-  const clamped = Math.max(0, Math.min(35, index));
-  const year = 2025 + Math.floor(clamped / 12);
+  const startYear = parseInt(currentDataRange.start.split('-')[0], 10);
+  const maxMonths = YEARS.length * 12 - 1;
+  const clamped = Math.max(0, Math.min(maxMonths, index));
+  const year = startYear + Math.floor(clamped / 12);
   const month = MONTHS[clamped % 12];
   return `${month} ${year}`;
 }
@@ -105,12 +156,13 @@ export function dateStringToMonthIndex(dateString: string, grain?: TimeGrain | s
   }
 
   const parts = dateString.trim().split(' ');
+  const startYear = parseInt(currentDataRange.start.split('-')[0], 10);
   if (parts.length < 2) return 12;
   const month = parts[0];
   let year = parseInt(parts[1], 10);
   if (year < 100) year += 2000;
   const monthIdx = MONTHS.indexOf(month);
   if (monthIdx === -1 || isNaN(year)) return 12;
-  const yearOffset = Math.max(0, year - 2025);
+  const yearOffset = Math.max(0, year - startYear);
   return yearOffset * 12 + monthIdx;
 }

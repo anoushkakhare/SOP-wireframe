@@ -23,11 +23,19 @@ export const MonthPicker: React.FC<MonthPickerProps> = ({
       ? className
       : 'flex-1 bg-surface border border-border rounded-card p-2 shadow-xs';
 
+  const fallbackYear = YEARS.includes(2026) ? 2026 : YEARS[0];
+  const parseYear = (str?: string) => {
+    if (!str) return fallbackYear;
+    let y = parseInt(str, 10);
+    if (isNaN(y)) return fallbackYear;
+    if (y < 100) y += 2000;
+    return YEARS.includes(y) ? y : fallbackYear;
+  };
+
   // 1. Year view: years only
   if (g === 'year') {
     const match = value.match(/\d{4}|\d{2}/);
-    let currentYear = match ? parseInt(match[0], 10) : 2026;
-    if (currentYear < 100) currentYear += 2000;
+    const currentYear = parseYear(match ? match[0] : undefined);
 
     return (
       <div className={containerClass}>
@@ -54,8 +62,7 @@ export const MonthPicker: React.FC<MonthPickerProps> = ({
   if (g === 'half') {
     const parts = value.trim().split(' ');
     const currentHalf = parts[0]?.toUpperCase().startsWith('H2') ? 'H2' : 'H1';
-    let currentYear = parseInt(parts[1], 10) || 2026;
-    if (currentYear < 100) currentYear += 2000;
+    const currentYear = parseYear(parts[1]);
 
     return (
       <div className={containerClass}>
@@ -94,8 +101,7 @@ export const MonthPicker: React.FC<MonthPickerProps> = ({
     const parts = value.trim().split(' ');
     const quarters = ['Q1', 'Q2', 'Q3', 'Q4'];
     const currentQ = quarters.find((q) => q === parts[0]?.toUpperCase()) || 'Q1';
-    let currentYear = parseInt(parts[1], 10) || 2026;
-    if (currentYear < 100) currentYear += 2000;
+    const currentYear = parseYear(parts[1]);
 
     return (
       <div className={containerClass}>
@@ -135,8 +141,7 @@ export const MonthPicker: React.FC<MonthPickerProps> = ({
   // 4. Week view: W01-W53 (filtered to valid periods) + year
   if (g === 'week') {
     const parts = value.trim().split(' ');
-    let currentYear = parseInt(parts[1], 10) || 2026;
-    if (currentYear < 100) currentYear += 2000;
+    const currentYear = parseYear(parts[1]);
 
     const maxWeeks = getWeeksInYear(currentYear);
     const weekOptions = Array.from({ length: maxWeeks }, (_, i) => `W${String(i + 1).padStart(2, '0')}`);
@@ -166,7 +171,7 @@ export const MonthPicker: React.FC<MonthPickerProps> = ({
           <select
             value={currentYear}
             onChange={(e) => {
-              const newYear = parseInt(e.target.value, 10);
+              const newYear = parseYear(e.target.value);
               const newMax = getWeeksInYear(newYear);
               const wNum = parseInt(currentWeek.replace('W', ''), 10) || 1;
               const validW = wNum > newMax ? `W${newMax}` : currentWeek;
@@ -187,9 +192,8 @@ export const MonthPicker: React.FC<MonthPickerProps> = ({
   }
 
   // 5. Month view: month + year
-  const [currentMonth = 'Jan', currentYearStr = '2026'] = value.split(' ');
-  let currentYear = parseInt(currentYearStr, 10) || 2026;
-  if (currentYear < 100) currentYear += 2000;
+  const [currentMonth = 'Jan', currentYearStr] = value.split(' ');
+  const currentYear = parseYear(currentYearStr);
   const monthVal = MONTHS.includes(currentMonth) ? currentMonth : 'Jan';
 
   return (

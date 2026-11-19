@@ -203,10 +203,13 @@ export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
     const initial = new Set<string>();
     initial.add('FY25');
     initial.add('FY26');
+    initial.add('FY27');
     initial.add('H1 25');
     initial.add('H2 25');
     initial.add('H1 26');
     initial.add('H2 26');
+    initial.add('H1 27');
+    initial.add('H2 27');
     return initial;
   });
 
@@ -418,12 +421,15 @@ export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
 
     const weeks = buildCalendarWeeks();
 
-    // Determine target year range from visibleRange or default to FY26
-    let targetYears = [2026];
-    if (visibleRange?.from?.includes('25') || visibleRange?.to?.includes('25')) {
-      targetYears = [2025, 2026];
-    } else if (visibleRange?.from?.includes('FY25')) {
-      targetYears = [2025];
+    // Determine target year range from visibleRange or default to all allowed years
+    let targetYears = [2025, 2026, 2027];
+    if (visibleRange?.from || visibleRange?.to) {
+      const matchYears = [2025, 2026, 2027].filter(y => {
+        const y2 = String(y).slice(2);
+        return visibleRange.from?.includes(String(y)) || visibleRange.to?.includes(String(y)) ||
+               visibleRange.from?.includes(y2) || visibleRange.to?.includes(y2);
+      });
+      if (matchYears.length > 0) targetYears = matchYears;
     }
 
     const filteredWeeks = weeks.filter((w) => targetYears.includes(w.year));
@@ -806,7 +812,7 @@ export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
     if (mode === 'time') {
       setExpandedTimeNodeIds((prev) => {
         const next = new Set(prev);
-        ['FY25', 'FY26', 'H1 25', 'H2 25', 'H1 26', 'H2 26', 'Q1 25', 'Q2 25', 'Q3 25', 'Q4 25', 'Q1 26', 'Q2 26', 'Q3 26', 'Q4 26', 'Jan 26', 'Feb 26', 'Mar 26', 'Apr 26', 'May 26', 'Jun 26', 'Jul 26', 'Aug 26', 'Sep 26', 'Oct 26', 'Nov 26', 'Dec 26'].forEach(id => next.add(id));
+        ['FY25', 'FY26', 'FY27', 'H1 25', 'H2 25', 'H1 26', 'H2 26', 'H1 27', 'H2 27', 'Q1 25', 'Q2 25', 'Q3 25', 'Q4 25', 'Q1 26', 'Q2 26', 'Q3 26', 'Q4 26', 'Q1 27', 'Q2 27', 'Q3 27', 'Q4 27', 'Jan 26', 'Feb 26', 'Mar 26', 'Apr 26', 'May 26', 'Jun 26', 'Jul 26', 'Aug 26', 'Sep 26', 'Oct 26', 'Nov 26', 'Dec 26'].forEach(id => next.add(id));
         return next;
       });
     }
@@ -815,7 +821,7 @@ export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
   const handleCollapseAll = () => {
     setExpandAllToggle(false);
     if (mode === 'time') {
-      setExpandedTimeNodeIds(new Set(['FY25', 'FY26']));
+      setExpandedTimeNodeIds(new Set(['FY25', 'FY26', 'FY27']));
     }
   };
 

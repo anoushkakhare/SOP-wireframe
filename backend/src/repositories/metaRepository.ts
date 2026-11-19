@@ -1,4 +1,5 @@
 import masterData from '../data/masterData.json';
+import { DATA_RANGE } from '../config';
 import { MetaOptions, HierarchyNode } from '../types';
 
 export class MetaRepository {
@@ -12,6 +13,7 @@ export class MetaRepository {
     const businessUnits = categories;
 
     return {
+      dataRange: DATA_RANGE,
       productLevels: [
         { value: 'brand', label: 'Brand' },
         { value: 'product', label: 'Product' },

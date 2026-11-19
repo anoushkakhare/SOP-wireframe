@@ -26,6 +26,7 @@ import { useFullscreen } from '../hooks/useFullscreen';
 import { metaService } from '../services/metaService';
 import { labels } from '../constants/labels';
 import { allowedLevels } from '../utils/allowedLevels';
+import { setDataRange } from '../utils/dateRange';
 import { LEVELS, LEVEL_MAP } from '../constants/hierarchy';
 import { ProductLevelNum } from '../types';
 
@@ -90,6 +91,12 @@ export const DemandPlannerPage: React.FC = () => {
     queryKey: ['meta-options'],
     queryFn: () => metaService.getOptions(),
   });
+
+  React.useEffect(() => {
+    if (metaQuery.data?.dataRange) {
+      setDataRange(metaQuery.data.dataRange);
+    }
+  }, [metaQuery.data?.dataRange]);
 
   const hierarchyQuery = useQuery({
     queryKey: ['hierarchy'],

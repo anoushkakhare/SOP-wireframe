@@ -21,14 +21,16 @@ function rand(min, max) {
 
 const TODAY = '2026-11-17';
 
-// ─── ISO Weeks Jan 2025 – Dec 2026 ───────────────────────────────────────────
+// ─── ISO Weeks Jan 2025 – Dec 2027 ───────────────────────────────────────────
 // A week belongs to the month containing its Thursday; no split weeks.
+const DATA_RANGE = { start: '2025-01', end: '2027-12' };
+const endYear = parseInt(DATA_RANGE.end.split('-')[0], 10);
 const WEEKS = [];
 let d = new Date(Date.UTC(2024, 11, 30)); // Mon Dec 30 2024
 while (true) {
   const thu = new Date(d.getTime() + 3 * 86400000);
   const yr = thu.getUTCFullYear();
-  if (yr > 2026) break;
+  if (yr > endYear) break;
   const end = new Date(d.getTime() + 6 * 86400000); // Sunday
   const jan4 = new Date(Date.UTC(yr, 0, 4));
   const jan4Day = (jan4.getUTCDay() + 6) % 7;
