@@ -5,27 +5,24 @@ export const MONTHS = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-export const YEARS = [2025, 2026, 2027];
+export const YEARS = Array.from({ length: 2027 - 1900 + 1 }, (_, i) => 1900 + i);
 
-export const GRAIN_PERIODS: Record<string, string[]> = {
-  year: ['FY25', 'FY26', 'FY27'],
-  half: ['H1 25', 'H2 25', 'H1 26', 'H2 26', 'H1 27', 'H2 27'],
-  quarter: [
-    'Q1 25', 'Q2 25', 'Q3 25', 'Q4 25',
-    'Q1 26', 'Q2 26', 'Q3 26', 'Q4 26',
-    'Q1 27', 'Q2 27', 'Q3 27', 'Q4 27',
-  ],
-  month: [
-    'Jan 25', 'Feb 25', 'Mar 25', 'Apr 25', 'May 25', 'Jun 25',
-    'Jul 25', 'Aug 25', 'Sep 25', 'Oct 25', 'Nov 25', 'Dec 25',
-    'Jan 26', 'Feb 26', 'Mar 26', 'Apr 26', 'May 26', 'Jun 26',
-    'Jul 26', 'Aug 26', 'Sep 26', 'Oct 26', 'Nov 26', 'Dec 26',
-    'Jan 27', 'Feb 27', 'Mar 27', 'Apr 27', 'May 27', 'Jun 27',
-    'Jul 27', 'Aug 27', 'Sep 27', 'Oct 27', 'Nov 27', 'Dec 27',
-  ],
-  week: Array.from({ length: 52 }, (_, i) => `W${String(i + 1).padStart(2, '0')} 25`)
-    .concat(Array.from({ length: 52 }, (_, i) => `W${String(i + 1).padStart(2, '0')} 26`))
-    .concat(Array.from({ length: 52 }, (_, i) => `W${String(i + 1).padStart(2, '0')} 27`)),
+export function getWeeksInYear(year: number): number {
+  const d = new Date(year, 11, 31);
+  const day = d.getDay();
+  const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+  return day === 4 || (day === 3 && isLeap) ? 53 : 52;
+}
+
+const GRAIN_PERIODS: Record<string, string[]> = {
+  year: YEARS.map((y) => `FY${y}`),
+  half: YEARS.flatMap((y) => [`H1 ${y}`, `H2 ${y}`]),
+  quarter: YEARS.flatMap((y) => [`Q1 ${y}`, `Q2 ${y}`, `Q3 ${y}`, `Q4 ${y}`]),
+  month: YEARS.flatMap((y) => MONTHS.map((m) => `${m} ${y}`)),
+  week: YEARS.flatMap((y) => {
+    const count = getWeeksInYear(y);
+    return Array.from({ length: count }, (_, i) => `W${String(i + 1).padStart(2, '0')} ${y}`);
+  }),
 };
 
 export function normalizeGrain(grain?: string): string {
@@ -40,6 +37,17 @@ export function getGrainPeriods(grain?: TimeGrain | string): string[] {
   return GRAIN_PERIODS[g] || GRAIN_PERIODS.month;
 }
 
+export function normalizeDateInput(d: string): string {
+  return d
+    .replace(/\bFY25\b/g, 'FY2025')
+    .replace(/\bFY26\b/g, 'FY2026')
+    .replace(/\bFY27\b/g, 'FY2027')
+    .replace(/\b25\b/g, '2025')
+    .replace(/\b26\b/g, '2026')
+    .replace(/\b27\b/g, '2027')
+    .trim();
+}
+
 export function getDefaultRangeForGrain(grain?: TimeGrain | string): {
   from: string;
   to: string;
@@ -47,33 +55,29 @@ export function getDefaultRangeForGrain(grain?: TimeGrain | string): {
 } {
   const g = normalizeGrain(grain);
   const periods = getGrainPeriods(g);
+  const total = periods.length;
 
-  let from = periods[0];
-  let to = periods[periods.length - 1];
+  // Middle position with 20-25% gap
+  const maxAllowedGap = Math.max(1, total - 2);
+  const desiredGap = Math.min(maxAllowedGap, Math.max(1, Math.round(total * 0.22)));
+  const mid = Math.floor(total / 2);
 
-  if (g === 'year') {
-    from = 'FY25';
-    to = 'FY26';
-  } else if (g === 'half') {
-    from = 'H1 26';
-    to = 'H2 26';
-  } else if (g === 'quarter') {
-    from = 'Q1 26';
-    to = 'Q4 26';
-  } else if (g === 'month') {
-    from = 'Jan 26';
-    to = 'Dec 26';
-  } else if (g === 'week') {
-    from = 'W40 26';
-    to = 'W53 26';
+  let startIdx = Math.max(0, mid - Math.floor(desiredGap / 2));
+  let endIdx = Math.min(total - 1, startIdx + desiredGap);
+
+  if (endIdx - startIdx < 1) {
+    endIdx = Math.min(total - 1, startIdx + 1);
+  }
+  if (endIdx >= total) {
+    endIdx = total - 1;
+    startIdx = Math.max(0, endIdx - desiredGap);
   }
 
-  let startIdx = periods.indexOf(from);
-  let endIdx = periods.indexOf(to);
-  if (startIdx < 0) startIdx = 0;
-  if (endIdx < 0) endIdx = periods.length - 1;
-
-  return { from, to, range: [startIdx, endIdx] };
+  return {
+    from: periods[startIdx],
+    to: periods[endIdx],
+    range: [startIdx, endIdx],
+  };
 }
 
 export function monthIndexToDateString(index: number, grain?: TimeGrain | string): string {
@@ -91,9 +95,11 @@ export function monthIndexToDateString(index: number, grain?: TimeGrain | string
 export function dateStringToMonthIndex(dateString: string, grain?: TimeGrain | string): number {
   if (grain) {
     const periods = getGrainPeriods(grain);
-    const norm = dateString.replace(/\b2025\b/, '25').replace(/\b2026\b/, '26').replace(/\b2027\b/, '27').trim();
+    const norm = normalizeDateInput(dateString);
     const idx = periods.indexOf(norm);
     if (idx >= 0) return idx;
+    const directIdx = periods.indexOf(dateString.trim());
+    if (directIdx >= 0) return directIdx;
     const def = getDefaultRangeForGrain(grain);
     return def.range[0];
   }
