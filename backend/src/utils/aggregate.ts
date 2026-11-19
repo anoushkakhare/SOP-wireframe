@@ -3,6 +3,7 @@
  * One function ensures KPIs, charts, treemap and table always match.
  */
 import masterData from '../data/masterData.json';
+import { DATA_RANGE } from '../config';
 
 export type MasterItem = typeof masterData.items[number];
 
@@ -90,7 +91,14 @@ export function normalizeMeasure(measure?: string): 'cases' | 'units' | 'value' 
 
 /** Normalize period label for matching */
 export function normalizePeriodLabel(l: string): string {
-  return l.replace(/\b2025\b/g, '25').replace(/\b2026\b/g, '26').trim();
+  return l
+    .replace(/\bFY2025\b/g, 'FY25')
+    .replace(/\bFY2026\b/g, 'FY26')
+    .replace(/\bFY2027\b/g, 'FY27')
+    .replace(/\b2025\b/g, '25')
+    .replace(/\b2026\b/g, '26')
+    .replace(/\b2027\b/g, '27')
+    .trim();
 }
 
 const MO_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -200,7 +208,9 @@ export function getPeriodsForGrain(grainName?: string, from?: string, to?: strin
   const allPeriods: PeriodInfo[] = Array.from(map.values()).map(p => {
     const prior = p.label.endsWith('26')
       ? p.label.replace(/26$/, '25')
-      : undefined;
+      : p.label.endsWith('27')
+        ? p.label.replace(/27$/, '26')
+        : undefined;
     return {
       label: p.label,
       start: p.start,
@@ -218,7 +228,7 @@ export function getPeriodsForGrain(grainName?: string, from?: string, to?: strin
 
   if (grain === 'year') {
     defaultFrom = 'FY25';
-    defaultTo = 'FY26';
+    defaultTo = 'FY27';
   } else if (grain === 'half') {
     defaultFrom = 'H1 26';
     defaultTo = 'H2 26';
@@ -242,14 +252,40 @@ export function getPeriodsForGrain(grainName?: string, from?: string, to?: strin
   const normFrom = from ? normalizePeriodLabel(from) : defaultFrom;
   const normTo = to ? normalizePeriodLabel(to) : defaultTo;
 
+  const startYear = parseInt(DATA_RANGE.start.split('-')[0], 10);
+  const endYear = parseInt(DATA_RANGE.end.split('-')[0], 10);
+
+  const parseYear = (str: string) => {
+    const m = str.match(/\b(19\d{2}|20\d{2})\b/) || str.match(/FY(\d{2,4})/) || str.match(/\b(\d{2})\b/);
+    if (!m) return null;
+    let yr = parseInt(m[1], 10);
+    return yr < 100 ? yr + 2000 : yr;
+  };
+
   let fromIdx = allPeriods.findIndex(p => p.label === normFrom);
   let toIdx = allPeriods.findIndex(p => p.label === normTo);
 
-  if (fromIdx < 0) fromIdx = allPeriods.findIndex(p => p.label === defaultFrom);
-  if (toIdx < 0) toIdx = allPeriods.findIndex(p => p.label === defaultTo);
+  if (fromIdx < 0) {
+    const y = from ? parseYear(from) : null;
+    if (y !== null && y < startYear) fromIdx = 0;
+    else if (y !== null && y > endYear) fromIdx = allPeriods.length - 1;
+    else fromIdx = allPeriods.findIndex(p => p.label === defaultFrom);
+  }
+  if (toIdx < 0) {
+    const y = to ? parseYear(to) : null;
+    if (y !== null && y > endYear) toIdx = allPeriods.length - 1;
+    else if (y !== null && y < startYear) toIdx = 0;
+    else toIdx = allPeriods.findIndex(p => p.label === defaultTo);
+  }
+
   if (fromIdx < 0) fromIdx = 0;
   if (toIdx < 0) toIdx = allPeriods.length - 1;
   if (fromIdx > toIdx) [fromIdx, toIdx] = [toIdx, fromIdx];
+
+  // 104-period clamp
+  if (toIdx - fromIdx + 1 > 104) {
+    toIdx = fromIdx + 103;
+  }
 
   const activePeriods = allPeriods.slice(fromIdx, toIdx + 1);
   const firstForecastIdx = activePeriods.findIndex(p => !p.isActual);

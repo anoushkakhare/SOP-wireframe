@@ -28,7 +28,7 @@ export interface WeekSplitInfo {
 }
 
 /**
- * Builds the canonical list of ISO weeks for 2025 and 2026.
+ * Builds the canonical list of ISO weeks for 2025 to 2027.
  */
 export function buildCalendarWeeks(): WeekSplitInfo[] {
   const weeks: WeekSplitInfo[] = [];
@@ -37,7 +37,7 @@ export function buildCalendarWeeks(): WeekSplitInfo[] {
   while (true) {
     const thu = new Date(d.getTime() + 3 * 86400000);
     const yr = thu.getUTCFullYear();
-    if (yr > 2026) break;
+    if (yr > 2027) break;
     const end = new Date(d.getTime() + 6 * 86400000); // Sunday
     const jan4 = new Date(Date.UTC(yr, 0, 4));
     const jan4Day = (jan4.getUTCDay() + 6) % 7;

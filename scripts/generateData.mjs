@@ -21,14 +21,16 @@ function rand(min, max) {
 
 const TODAY = '2026-11-17';
 
-// ─── ISO Weeks Jan 2025 – Dec 2026 ───────────────────────────────────────────
+// ─── ISO Weeks Jan 2025 – Dec 2027 ───────────────────────────────────────────
 // A week belongs to the month containing its Thursday; no split weeks.
+const DATA_RANGE = { start: '2025-01', end: '2027-12' };
+const endYear = parseInt(DATA_RANGE.end.split('-')[0], 10);
 const WEEKS = [];
 let d = new Date(Date.UTC(2024, 11, 30)); // Mon Dec 30 2024
 while (true) {
   const thu = new Date(d.getTime() + 3 * 86400000);
   const yr = thu.getUTCFullYear();
-  if (yr > 2026) break;
+  if (yr > endYear) break;
   const end = new Date(d.getTime() + 6 * 86400000); // Sunday
   const jan4 = new Date(Date.UTC(yr, 0, 4));
   const jan4Day = (jan4.getUTCDay() + 6) % 7;
@@ -620,7 +622,7 @@ const output = {
       status: "saved",
       lastModified: "2026-11-12T07:31:00.000Z",
       userId: "usr_dp_1",
-      userName: "Priya Sharma"
+      userName: "Nishtha Agarwal"
     },
     {
       id: "scen_2",
@@ -628,7 +630,7 @@ const output = {
       status: "saved",
       lastModified: "2026-11-11T09:30:00.000Z",
       userId: "usr_dp_1",
-      userName: "Priya Sharma"
+      userName: "Nishtha Agarwal"
     },
     {
       id: "scen_3",
@@ -636,7 +638,7 @@ const output = {
       status: "committed",
       lastModified: "2026-07-15T14:30:00.000Z",
       userId: "usr_dp_1",
-      userName: "Priya Sharma"
+      userName: "Nishtha Agarwal"
     },
     {
       id: "scen_4",
@@ -644,7 +646,7 @@ const output = {
       status: "saved",
       lastModified: "2026-07-18T10:15:00.000Z",
       userId: "usr_dp_1",
-      userName: "Priya Sharma"
+      userName: "Nishtha Agarwal"
     }
   ]
 };

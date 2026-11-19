@@ -4,7 +4,6 @@ import { RoleBadge } from '../header/RoleBadge';
 import { LabeledSelect } from '../header/LabeledSelect';
 import { HeaderActions } from '../header/HeaderActions';
 import { ReadinessChip } from '../header/ReadinessChip';
-import { DataReviewNav } from '../header/DataReviewNav';
 import { CalendarPopover } from '../header/CalendarPopover';
 import { ComparePopover } from '../header/ComparePopover';
 import { Uom, ProductLevelNum, TimeGrain } from '../../types';
@@ -35,6 +34,7 @@ interface StickyHeaderProps {
   onOpenScenarios?: () => void;
   isTableActive?: boolean;
   activeFilterCount?: number;
+  selectionRow?: React.ReactNode;
 }
 
 export const StickyHeader: React.FC<StickyHeaderProps> = ({
@@ -59,6 +59,7 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
   onOpenScenarios,
   isTableActive = false,
   activeFilterCount = 0,
+  selectionRow,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -154,97 +155,108 @@ export const StickyHeader: React.FC<StickyHeaderProps> = ({
   );
 
   return (
-    <header className="sticky top-0 z-30 w-full bg-primary-700 px-4 md:px-6 py-2.5 shadow-sm min-h-[56px]">
-      <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-4">
-        {/* 1. Left: Unilever logo + Role badge */}
-        <div className="flex items-center gap-4 shrink-0">
-          <img
-            src="/unilever-logo.png"
-            alt="Unilever"
-            style={{ height: 38, width: 'auto', objectFit: 'contain', display: 'block' }}
-          />
-          <RoleBadge roleTitle={roleTitle} userName={userName} />
+    <header className="sticky top-0 z-30 w-full shadow-sm">
+      {/* 1. Header bar */}
+      <div className="w-full bg-primary-700 px-4 md:px-6 py-2.5 min-h-[56px]">
+        <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-4">
+          {/* 1. Left: Unilever logo + Role badge */}
+          <div className="flex items-center gap-4 shrink-0">
+            <img
+              src="/unilever-logo.png"
+              alt="Unilever"
+              className="block md:hidden h-[38px] w-auto object-contain shrink-0"
+            />
+            <RoleBadge roleTitle={roleTitle} userName={userName} />
+          </div>
+
+          {selects_desktop}
+
+          {/* Right side: Readiness chip, calendar icon, compare popover, and dashboard-only actions */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <ReadinessChip />
+            <CalendarPopover />
+            {!isDataReview && <ComparePopover />}
+
+            {!isDataReview && onSaveScenario && onCommitScenario && onToggleTable && onOpenFilter && onOpenScenarios && (
+              <div className="hidden sm:flex items-center gap-2 pl-1 border-l border-white/20">
+                <HeaderActions
+                  onSaveScenario={onSaveScenario}
+                  onCommitScenario={onCommitScenario}
+                  onToggleTable={onToggleTable}
+                  onOpenFilter={onOpenFilter}
+                  onOpenScenarios={onOpenScenarios}
+                  isTableActive={isTableActive}
+                  activeFilterCount={activeFilterCount}
+                />
+              </div>
+            )}
+
+            {!isDataReview && (
+              <div className="flex sm:hidden items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="p-2 border border-white/30 rounded-card bg-white/10 text-white hover:bg-white/20 transition-colors"
+                  aria-label={labels.header.mobileMenuToggle}
+                >
+                  {isMobileMenuOpen ? <X className="w-5 h-5" /> : <SlidersHorizontal className="w-5 h-5" />}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        {selects_desktop}
-
-        {/* Right side: Readiness chip, calendar icon, compare popover, and dashboard-only actions */}
-        <div className="flex items-center gap-2.5 shrink-0 min-w-0">
-          {isDataReview && <DataReviewNav />}
-          <ReadinessChip />
-          <CalendarPopover />
-          {!isDataReview && <ComparePopover />}
-
-          {!isDataReview && onSaveScenario && onCommitScenario && onToggleTable && onOpenFilter && onOpenScenarios && (
-            <div className="hidden sm:flex items-center gap-2 pl-1 border-l border-white/20">
-              <HeaderActions
-                onSaveScenario={onSaveScenario}
-                onCommitScenario={onCommitScenario}
-                onToggleTable={onToggleTable}
-                onOpenFilter={onOpenFilter}
-                onOpenScenarios={onOpenScenarios}
-                isTableActive={isTableActive}
-                activeFilterCount={activeFilterCount}
+        {!isDataReview && isMobileMenuOpen && (
+          <div className="lg:hidden mt-3 pt-3 border-t border-white/20 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-150">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <LabeledSelect
+                label={selects.productView}
+                value={String(productLevel)}
+                options={productLevelOptions.map(o => ({ value: o.value, label: o.label }))}
+                onChange={(v) => onProductLevelChange?.(Number(v) as ProductLevelNum)}
+              />
+              <LabeledSelect
+                label="Time view"
+                value={timeGrain}
+                options={resolvedTimeGrains}
+                onChange={(v) => onTimeGrainChange?.(v as TimeGrain)}
+              />
+              <LabeledSelect
+                label={selects.customerView}
+                value={customerView}
+                options={customerViewOptions}
+                onChange={(v) => onCustomerViewChange?.(v as CustomerViewOption)}
+              />
+              <LabeledSelect
+                label={selects.measure}
+                value={measure}
+                options={resolvedMeasures}
+                onChange={(v) => onMeasureChange?.(v as Uom)}
               />
             </div>
-          )}
-
-          {!isDataReview && (
-            <div className="flex sm:hidden items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 border border-white/30 rounded-card bg-white/10 text-white hover:bg-white/20 transition-colors"
-                aria-label={labels.header.mobileMenuToggle}
-              >
-                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <SlidersHorizontal className="w-5 h-5" />}
-              </button>
-            </div>
-          )}
-        </div>
+            {onSaveScenario && onCommitScenario && onToggleTable && onOpenFilter && onOpenScenarios && (
+              <div className="flex sm:hidden justify-end pt-2 border-t border-white/20">
+                <HeaderActions
+                  onSaveScenario={onSaveScenario}
+                  onCommitScenario={onCommitScenario}
+                  onToggleTable={onToggleTable}
+                  onOpenFilter={onOpenFilter}
+                  onOpenScenarios={onOpenScenarios}
+                  isTableActive={isTableActive}
+                  activeFilterCount={activeFilterCount}
+                />
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {!isDataReview && isMobileMenuOpen && (
-        <div className="lg:hidden mt-3 pt-3 border-t border-white/20 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-            <LabeledSelect
-              label={selects.productView}
-              value={String(productLevel)}
-              options={productLevelOptions.map(o => ({ value: o.value, label: o.label }))}
-              onChange={(v) => onProductLevelChange?.(Number(v) as ProductLevelNum)}
-            />
-            <LabeledSelect
-              label="Time view"
-              value={timeGrain}
-              options={resolvedTimeGrains}
-              onChange={(v) => onTimeGrainChange?.(v as TimeGrain)}
-            />
-            <LabeledSelect
-              label={selects.customerView}
-              value={customerView}
-              options={customerViewOptions}
-              onChange={(v) => onCustomerViewChange?.(v as CustomerViewOption)}
-            />
-            <LabeledSelect
-              label={selects.measure}
-              value={measure}
-              options={resolvedMeasures}
-              onChange={(v) => onMeasureChange?.(v as Uom)}
-            />
+      {/* 2. Selection row (Summary dashboard only) */}
+      {selectionRow && (
+        <div className="w-full bg-bg-page border-b border-border shadow-xs px-4 md:px-6 py-2 select-none">
+          <div className="max-w-[1600px] mx-auto">
+            {selectionRow}
           </div>
-          {onSaveScenario && onCommitScenario && onToggleTable && onOpenFilter && onOpenScenarios && (
-            <div className="flex sm:hidden justify-end pt-2 border-t border-white/20">
-              <HeaderActions
-                onSaveScenario={onSaveScenario}
-                onCommitScenario={onCommitScenario}
-                onToggleTable={onToggleTable}
-                onOpenFilter={onOpenFilter}
-                onOpenScenarios={onOpenScenarios}
-                isTableActive={isTableActive}
-                activeFilterCount={activeFilterCount}
-              />
-            </div>
-          )}
         </div>
       )}
     </header>

@@ -58,7 +58,13 @@ export interface HierarchyNode {
   parentId: string | null;
 }
 
+export interface DataRange {
+  start: string;
+  end: string;
+}
+
 export interface MetaOptions {
+  dataRange?: DataRange;
   productLevels: Array<{ value: ProductLevel; label: string }>;
   customerLevels: Array<{ value: CustomerLevel; label: string }>;
   uoms: Array<{ value: Uom; label: string }>;

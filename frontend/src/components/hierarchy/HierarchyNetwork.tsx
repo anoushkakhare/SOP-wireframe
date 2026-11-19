@@ -15,7 +15,7 @@ export interface HierarchyNetworkProps {
   selectedApgs?: string[];
 }
 
-interface TreeNodeData {
+export interface TreeNodeData {
   id: string;
   name: string;
   rawName: string;
@@ -26,6 +26,148 @@ interface TreeNodeData {
   children?: TreeNodeData[];
   itemStyle?: any;
   label?: any;
+}
+
+export function filterTree(
+  root: TreeNodeData | null | undefined,
+  query: string
+): TreeNodeData | null {
+  if (!root) return null;
+  const q = query.trim().toLowerCase();
+  if (!q) return root;
+
+  const cloneNode = (
+    node: TreeNodeData,
+    filteredChildren: TreeNodeData[] | undefined,
+    isMatch: boolean
+  ): TreeNodeData => {
+    const levelColor = LEVEL_MAP[node.level]?.color || '#4F4EC6';
+    return {
+      ...node,
+      isMatch,
+      collapsed: false,
+      count: filteredChildren ? filteredChildren.length : 0,
+      children: filteredChildren && filteredChildren.length > 0 ? filteredChildren : undefined,
+      itemStyle: {
+        ...node.itemStyle,
+        color: isMatch ? '#FEF08A' : (node.itemStyle?.color || levelColor),
+        borderColor: isMatch ? '#CA8A04' : (node.itemStyle?.borderColor || levelColor),
+        borderWidth: isMatch ? 3 : (node.itemStyle?.borderWidth || 1),
+      },
+      label: {
+        ...node.label,
+        color: isMatch ? '#854D0E' : (node.label?.color || '#1A1C2E'),
+        fontWeight: isMatch ? 'bold' : (node.label?.fontWeight || 'normal'),
+        backgroundColor: isMatch ? '#FEF08A' : undefined,
+        padding: isMatch ? [2, 4] : undefined,
+        borderRadius: isMatch ? 3 : undefined,
+      },
+    };
+  };
+
+  const cloneAllDescendants = (node: TreeNodeData): TreeNodeData => {
+    const isDirect = (node.rawName || node.name).toLowerCase().includes(q);
+    const children = node.children?.map(cloneAllDescendants);
+    return cloneNode(node, children, isDirect);
+  };
+
+  const filterNode = (node: TreeNodeData, hasMatchingAncestor: boolean): TreeNodeData | null => {
+    const isDirect = (node.rawName || node.name).toLowerCase().includes(q);
+    const effectiveAncestorMatch = hasMatchingAncestor || isDirect;
+
+    if (effectiveAncestorMatch) {
+      const children = node.children?.map(cloneAllDescendants);
+      return cloneNode(node, children, isDirect);
+    }
+
+    if (!node.children || node.children.length === 0) {
+      return null;
+    }
+
+    const filteredChildren: TreeNodeData[] = [];
+    for (const child of node.children) {
+      const filteredChild = filterNode(child, false);
+      if (filteredChild) {
+        filteredChildren.push(filteredChild);
+      }
+    }
+
+    if (filteredChildren.length === 0) {
+      return null;
+    }
+
+    return cloneNode(node, filteredChildren, false);
+  };
+
+  return filterNode(root, false);
+}
+
+export function countMatches(node: TreeNodeData | null | undefined): number {
+  if (!node) return 0;
+  let count = node.isMatch ? 1 : 0;
+  if (node.children) {
+    for (const child of node.children) {
+      count += countMatches(child);
+    }
+  }
+  return count;
+}
+
+export function setTreeCollapsed(root: TreeNodeData, collapsed: boolean): TreeNodeData {
+  const walk = (n: TreeNodeData): TreeNodeData => ({
+    ...n,
+    collapsed,
+    children: n.children ? n.children.map(walk) : undefined,
+  });
+  return walk(root);
+}
+
+export function applyDefaultExpansion(root: TreeNodeData): TreeNodeData {
+  const clone = (node: TreeNodeData): TreeNodeData => ({
+    ...node,
+    children: node.children ? node.children.map(clone) : undefined,
+  });
+  const tree = clone(root);
+
+  const walk = (node: TreeNodeData, isRoot: boolean, isFirstPath: boolean) => {
+    if (isRoot) {
+      node.collapsed = false;
+      if (node.level >= 3) {
+        if (node.children) {
+          for (const child of node.children) {
+            walk(child, false, false);
+          }
+        }
+        return;
+      }
+      if (node.children) {
+        node.children.forEach((child, idx) => {
+          const nextFirstPath = node.level < 2 && idx === 0;
+          walk(child, false, nextFirstPath);
+        });
+      }
+    } else {
+      if (isFirstPath) {
+        node.collapsed = false;
+        if (node.children) {
+          node.children.forEach((child, idx) => {
+            const nextFirstPath = node.level < 2 && idx === 0;
+            walk(child, false, nextFirstPath);
+          });
+        }
+      } else {
+        node.collapsed = true;
+        if (node.children) {
+          for (const child of node.children) {
+            walk(child, false, false);
+          }
+        }
+      }
+    }
+  };
+
+  walk(tree, true, true);
+  return tree;
 }
 
 export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
@@ -39,24 +181,42 @@ export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
   const chartInstanceRef = useRef<echarts.ECharts | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [expandAllToggle, setExpandAllToggle] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setSearchQuery('');
+    setDebouncedQuery('');
+    setExpandAllToggle(null);
+  }, [mode]);
+
   const [expandedTimeNodeIds, setExpandedTimeNodeIds] = useState<Set<string>>(() => {
     // Default expanded to Quarter in Time mode:
     // Year and Half are expanded by default; Quarters and Months start collapsed
     const initial = new Set<string>();
     initial.add('FY25');
     initial.add('FY26');
+    initial.add('FY27');
     initial.add('H1 25');
     initial.add('H2 25');
     initial.add('H1 26');
     initial.add('H2 26');
+    initial.add('H1 27');
+    initial.add('H2 27');
     return initial;
   });
 
   // ─── 1. Product Mode Data Preparation ───────────────────────────────────────
   const productData = useMemo(() => {
     if (mode !== 'product' || nodes.length === 0) {
-      return { tree: null, ancestors: [], startLevel: 1 };
+      return { tree: null, ancestors: [], startLevel: 1, matchCount: 0 };
     }
 
     const nodeById = new Map<string, HierarchyNode>(nodes.map((n) => [n.id, n]));
@@ -94,24 +254,10 @@ export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
       }
     }
 
-    const query = searchQuery.trim().toLowerCase();
-
-    // Recursive tree builder
-    const buildTree = (node: HierarchyNode): TreeNodeData => {
+    // Recursive tree builder for full tree
+    const buildFullNode = (node: HierarchyNode): TreeNodeData => {
       const childrenNodes = childMap.get(node.id) || [];
-      const children = childrenNodes.map(buildTree);
-      const isMatch = query ? node.name.toLowerCase().includes(query) || node.id.toLowerCase().includes(query) : false;
-      const childMatch = children.some((c) => c.isMatch || (c as any).hasMatchDescendant);
-
-      let collapsed = false;
-      if (expandAllToggle === false) {
-        collapsed = true;
-      } else if (expandAllToggle === true) {
-        collapsed = false;
-      } else if (query) {
-        collapsed = !childMatch;
-      }
-
+      const children = childrenNodes.map(buildFullNode);
       const levelColor = LEVEL_MAP[node.level]?.color || '#4F4EC6';
       const labelText = `${node.name} (${children.length})`;
 
@@ -121,51 +267,83 @@ export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
         rawName: node.name,
         level: node.level,
         count: children.length,
-        isMatch,
-        collapsed,
+        isMatch: false,
+        collapsed: false,
         children: children.length > 0 ? children : undefined,
         itemStyle: {
-          color: isMatch ? '#EAB308' : levelColor,
-          borderColor: isMatch ? '#CA8A04' : levelColor,
-          borderWidth: isMatch ? 3 : 1,
+          color: levelColor,
+          borderColor: levelColor,
+          borderWidth: 1,
         },
         label: {
-          color: isMatch ? '#CA8A04' : '#1A1C2E',
-          fontWeight: isMatch ? 'bold' : 'normal',
+          color: '#1A1C2E',
+          fontWeight: 'normal',
         },
       };
     };
 
-    let tree: TreeNodeData;
-    if (roots.length === 1) {
-      tree = buildTree(roots[0]);
+    let fullTree: TreeNodeData;
+    if (roots.length === 1 && activeSelectedIds.length > 0) {
+      fullTree = buildFullNode(roots[0]);
     } else {
-      const builtRoots = roots.map(buildTree);
-      tree = {
+      const builtRoots = roots.map(buildFullNode);
+      fullTree = {
         id: 'root-all',
         name: activeSelectedIds.length === 0 ? `All categories (${roots.length})` : `Selected roots (${roots.length})`,
         rawName: activeSelectedIds.length === 0 ? 'All categories' : 'Selected roots',
-        level: Math.max(1, startLevel - 1),
+        level: activeSelectedIds.length === 0 ? 0 : Math.max(0, startLevel - 1),
         count: roots.length,
+        isMatch: false,
         collapsed: false,
         children: builtRoots,
         itemStyle: {
           color: '#0F0E9A',
           borderColor: '#0F0E9A',
         },
+        label: {
+          color: '#1A1C2E',
+          fontWeight: 'normal',
+        },
       };
     }
 
-    return { tree, ancestors, startLevel };
-  }, [mode, nodes, selectedIds, searchQuery, expandAllToggle]);
+    const query = debouncedQuery.trim();
+    let tree: TreeNodeData | null = null;
+    let matchCount = 0;
+
+    if (query) {
+      const filtered = filterTree(fullTree, query);
+      matchCount = countMatches(filtered);
+      if (filtered) {
+        if (expandAllToggle === true) {
+          tree = setTreeCollapsed(filtered, false);
+        } else if (expandAllToggle === false) {
+          tree = setTreeCollapsed(filtered, true);
+        } else {
+          tree = filtered;
+        }
+      } else {
+        tree = null;
+      }
+    } else {
+      matchCount = 0;
+      if (expandAllToggle === true) {
+        tree = setTreeCollapsed(fullTree, false);
+      } else if (expandAllToggle === false) {
+        tree = setTreeCollapsed(fullTree, true);
+      } else {
+        tree = applyDefaultExpansion(fullTree);
+      }
+    }
+
+    return { tree, ancestors, startLevel, matchCount };
+  }, [mode, nodes, selectedIds, debouncedQuery, expandAllToggle]);
 
   // ─── 2. Customer Mode Data Preparation ─────────────────────────────────────
   const customerData = useMemo(() => {
-    if (mode !== 'customer') return null;
+    if (mode !== 'customer') return { tree: null, matchCount: 0 };
 
-    const query = searchQuery.trim().toLowerCase();
     const apgChildren: TreeNodeData[] = APG_OPTIONS.map((apgName) => {
-      const isMatch = query ? apgName.toLowerCase().includes(query) : false;
       const isSelected = selectedApgs.length === 0 || selectedApgs.includes(apgName);
       return {
         id: apgName,
@@ -173,41 +351,69 @@ export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
         rawName: apgName,
         level: 2,
         count: 0,
-        isMatch,
+        isMatch: false,
         collapsed: false,
         itemStyle: {
-          color: isMatch ? '#EAB308' : isSelected ? '#0F0E9A' : '#A3A2E2',
+          color: isSelected ? '#0F0E9A' : '#A3A2E2',
           borderColor: isSelected ? '#0F0E9A' : '#D6D6F1',
         },
         label: {
           color: isSelected ? '#1A1C2E' : '#71717A',
-          fontWeight: isMatch ? 'bold' : isSelected ? '500' : 'normal',
+          fontWeight: isSelected ? '500' : 'normal',
         },
       };
     });
 
-    const isRootMatch = query ? 'all apgs'.includes(query) : false;
-    let rootCollapsed = false;
-    if (expandAllToggle === false) rootCollapsed = true;
-    else if (expandAllToggle === true) rootCollapsed = false;
-
-    const tree: TreeNodeData = {
+    const fullTree: TreeNodeData = {
       id: 'all-apgs',
       name: `All APGs (${apgChildren.length})`,
       rawName: 'All APGs',
       level: 1,
       count: apgChildren.length,
-      isMatch: isRootMatch,
-      collapsed: rootCollapsed,
+      isMatch: false,
+      collapsed: false,
       children: apgChildren,
       itemStyle: {
         color: '#0F0E9A',
         borderColor: '#0F0E9A',
       },
+      label: {
+        color: '#1A1C2E',
+        fontWeight: 'normal',
+      },
     };
 
-    return tree;
-  }, [mode, searchQuery, expandAllToggle, selectedApgs]);
+    const query = debouncedQuery.trim();
+    let tree: TreeNodeData | null = null;
+    let matchCount = 0;
+
+    if (query) {
+      const filtered = filterTree(fullTree, query);
+      matchCount = countMatches(filtered);
+      if (filtered) {
+        if (expandAllToggle === true) {
+          tree = setTreeCollapsed(filtered, false);
+        } else if (expandAllToggle === false) {
+          tree = setTreeCollapsed(filtered, true);
+        } else {
+          tree = filtered;
+        }
+      } else {
+        tree = null;
+      }
+    } else {
+      matchCount = 0;
+      if (expandAllToggle === true) {
+        tree = setTreeCollapsed(fullTree, false);
+      } else if (expandAllToggle === false) {
+        tree = setTreeCollapsed(fullTree, true);
+      } else {
+        tree = applyDefaultExpansion(fullTree);
+      }
+    }
+
+    return { tree, matchCount };
+  }, [mode, debouncedQuery, expandAllToggle, selectedApgs]);
 
   // ─── 3. Time Mode Data Preparation ─────────────────────────────────────────
   const timeGraphData = useMemo(() => {
@@ -215,12 +421,15 @@ export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
 
     const weeks = buildCalendarWeeks();
 
-    // Determine target year range from visibleRange or default to FY26
-    let targetYears = [2026];
-    if (visibleRange?.from?.includes('25') || visibleRange?.to?.includes('25')) {
-      targetYears = [2025, 2026];
-    } else if (visibleRange?.from?.includes('FY25')) {
-      targetYears = [2025];
+    // Determine target year range from visibleRange or default to all allowed years
+    let targetYears = [2025, 2026, 2027];
+    if (visibleRange?.from || visibleRange?.to) {
+      const matchYears = [2025, 2026, 2027].filter(y => {
+        const y2 = String(y).slice(2);
+        return visibleRange.from?.includes(String(y)) || visibleRange.to?.includes(String(y)) ||
+               visibleRange.from?.includes(y2) || visibleRange.to?.includes(y2);
+      });
+      if (matchYears.length > 0) targetYears = matchYears;
     }
 
     const filteredWeeks = weeks.filter((w) => targetYears.includes(w.year));
@@ -464,8 +673,11 @@ export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
     const chart = chartInstanceRef.current;
 
     if (mode === 'product' || mode === 'customer') {
-      const treeRoot = mode === 'product' ? productData.tree : customerData;
-      if (!treeRoot) return;
+      const treeRoot = mode === 'product' ? productData.tree : customerData.tree;
+      if (!treeRoot) {
+        chart.clear();
+        return;
+      }
 
       const option: echarts.EChartsOption = {
         tooltip: {
@@ -600,7 +812,7 @@ export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
     if (mode === 'time') {
       setExpandedTimeNodeIds((prev) => {
         const next = new Set(prev);
-        ['FY25', 'FY26', 'H1 25', 'H2 25', 'H1 26', 'H2 26', 'Q1 25', 'Q2 25', 'Q3 25', 'Q4 25', 'Q1 26', 'Q2 26', 'Q3 26', 'Q4 26', 'Jan 26', 'Feb 26', 'Mar 26', 'Apr 26', 'May 26', 'Jun 26', 'Jul 26', 'Aug 26', 'Sep 26', 'Oct 26', 'Nov 26', 'Dec 26'].forEach(id => next.add(id));
+        ['FY25', 'FY26', 'FY27', 'H1 25', 'H2 25', 'H1 26', 'H2 26', 'H1 27', 'H2 27', 'Q1 25', 'Q2 25', 'Q3 25', 'Q4 25', 'Q1 26', 'Q2 26', 'Q3 26', 'Q4 26', 'Q1 27', 'Q2 27', 'Q3 27', 'Q4 27', 'Jan 26', 'Feb 26', 'Mar 26', 'Apr 26', 'May 26', 'Jun 26', 'Jul 26', 'Aug 26', 'Sep 26', 'Oct 26', 'Nov 26', 'Dec 26'].forEach(id => next.add(id));
         return next;
       });
     }
@@ -609,7 +821,7 @@ export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
   const handleCollapseAll = () => {
     setExpandAllToggle(false);
     if (mode === 'time') {
-      setExpandedTimeNodeIds(new Set(['FY25', 'FY26']));
+      setExpandedTimeNodeIds(new Set(['FY25', 'FY26', 'FY27']));
     }
   };
 
@@ -725,37 +937,58 @@ export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
     );
   };
 
+  const activeMatchCount = mode === 'product' ? productData.matchCount : mode === 'customer' ? customerData.matchCount : 0;
+
   return (
     <div className="w-full h-full flex flex-col bg-surface rounded-card overflow-hidden">
       {/* ── Top Controls Bar: Search, Expand All, Collapse All ── */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-border bg-surface-header/60 gap-4">
         {/* Search */}
-        <div className="relative flex-1 max-w-sm">
-          <Search className="w-4 h-4 text-text-secondary absolute left-2.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setExpandAllToggle(null);
-            }}
-            placeholder={
-              mode === 'product'
-                ? 'Search products, brands, units…'
-                : mode === 'customer'
-                  ? 'Search APG…'
-                  : 'Search period (e.g. W05, Jan, Q1)…'
-            }
-            className="w-full pl-8 pr-7 py-1.5 text-xs bg-surface border border-border rounded-card focus:outline-none focus:ring-1 focus:ring-primary-500 text-text-primary"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-text-disabled hover:text-text-primary text-xs"
+        <div className="flex items-center gap-3 flex-1 max-w-md">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="w-4 h-4 text-text-secondary absolute left-2.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSearchQuery(val);
+                if (!val.trim()) {
+                  setDebouncedQuery('');
+                }
+                setExpandAllToggle(null);
+              }}
+              placeholder={
+                mode === 'product'
+                  ? 'Search products, brands, units…'
+                  : mode === 'customer'
+                    ? 'Search APG…'
+                    : 'Search period (e.g. W05, Jan, Q1)…'
+              }
+              className="w-full pl-8 pr-7 py-1.5 text-xs bg-surface border border-border rounded-card focus:outline-none focus:ring-1 focus:ring-primary-500 text-text-primary"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setDebouncedQuery('');
+                  setExpandAllToggle(null);
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-text-disabled hover:text-text-primary text-xs"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          {debouncedQuery.trim() && (mode === 'product' || mode === 'customer') && (
+            <span
+              className={`text-xs whitespace-nowrap font-medium ${
+                activeMatchCount === 0 ? 'text-text-disabled italic' : 'text-text-secondary'
+              }`}
             >
-              ✕
-            </button>
+              {activeMatchCount === 0 ? 'No matches' : `${activeMatchCount} matches`}
+            </span>
           )}
         </div>
 
@@ -790,7 +1023,22 @@ export const HierarchyNetwork: React.FC<HierarchyNetworkProps> = ({
 
       {/* ── ECharts Canvas Container ── */}
       <div className="flex-1 w-full min-h-[460px] relative bg-surface p-2">
-        <div ref={chartRef} className="w-full h-full min-h-[460px]" />
+        <div
+          ref={chartRef}
+          className={`w-full h-full min-h-[460px] ${
+            debouncedQuery.trim() && activeMatchCount === 0 && (mode === 'product' || mode === 'customer')
+              ? 'invisible'
+              : ''
+          }`}
+        />
+        {debouncedQuery.trim() && activeMatchCount === 0 && (mode === 'product' || mode === 'customer') && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-text-secondary p-6">
+            <p className="text-sm font-medium">No matches</p>
+            <p className="text-xs text-text-disabled mt-1">
+              No hierarchy nodes match &ldquo;{debouncedQuery}&rdquo;
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

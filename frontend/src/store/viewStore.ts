@@ -115,8 +115,8 @@ export const useViewStore = create<ViewState>()(
         }),
     }),
     {
-      name: 'view-store-v3',
-      version: 3,
+      name: 'view-store-v4',
+      version: 4,
     }
   )
 );
