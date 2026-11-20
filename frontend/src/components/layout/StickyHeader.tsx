@@ -40,7 +40,7 @@ interface StickyHeaderProps {
 
 export const StickyHeader: React.FC<StickyHeaderProps> = ({
   roleTitle,
-  userName,
+  userName = 'Nishtha Agarwal',
   productLevel = 1,
   allowedLevels = [1, 2, 3, 4, 5],
   customerView = 'apg',

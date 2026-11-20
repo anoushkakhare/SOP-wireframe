@@ -6,6 +6,7 @@ import { useScenarioStore } from '../store/scenarioStore';
 import { useTableStore } from '../store/tableStore';
 import { KpiItem } from '../types';
 import { toMeasureUnits, editMatchesFilters } from '../utils/editsOverlay';
+import { labels } from '../constants/labels';
 
 export function useKpis() {
   const { productLevel, scope, apg, measure, timeGrain, compare } = useViewStore();
@@ -59,11 +60,8 @@ export function useKpis() {
     }
   }
 
-  const kpis: KpiItem[] = (query.data || []).map((item) => {
+  const rawKpis: KpiItem[] = (query.data || []).map((item) => {
     if (item.key === 'total_forecast' && totalForecastDelta !== 0 && item.value !== null) {
-      return { ...item, value: item.value + totalForecastDelta };
-    }
-    if (item.key === 'forecast_adj' && totalForecastDelta !== 0 && item.value !== null) {
       return { ...item, value: item.value + totalForecastDelta };
     }
     if (item.key === 'opportunity' && totalOpportunityDelta !== 0 && item.value !== null) {
@@ -103,6 +101,45 @@ export function useKpis() {
     }
     return item;
   });
+
+  // Filter out forecast_adj and merge opportunity & risk into ONE card
+  const filteredKpis = rawKpis.filter((item) => item.key !== 'forecast_adj');
+  const oppItem = filteredKpis.find((k) => k.key === 'opportunity');
+  const riskItem = filteredKpis.find((k) => k.key === 'risk');
+
+  let kpis: KpiItem[];
+  if (oppItem && riskItem) {
+    const oppRiskCard: KpiItem = {
+      key: 'opportunity_risk',
+      label: labels.kpi.opportunityRisk,
+      value: null,
+      opportunityValue: oppItem.value ?? 0,
+      riskValue: riskItem.value ?? 0,
+      opportunityDelta: oppItem.delta,
+      riskDelta: riskItem.delta,
+      opportunityCompareValue: oppItem.compareValue,
+      riskCompareValue: riskItem.compareValue,
+      opportunityPctChange: oppItem.pctChange,
+      riskPctChange: riskItem.pctChange,
+      compareTo: oppItem.compareTo || riskItem.compareTo,
+      format: oppItem.format || 'number',
+    };
+    const result: KpiItem[] = [];
+    let inserted = false;
+    for (const item of filteredKpis) {
+      if (item.key === 'opportunity' || item.key === 'risk') {
+        if (!inserted) {
+          result.push(oppRiskCard);
+          inserted = true;
+        }
+      } else {
+        result.push(item);
+      }
+    }
+    kpis = result;
+  } else {
+    kpis = filteredKpis;
+  }
 
   return { ...query, data: kpis };
 }

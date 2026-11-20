@@ -69,7 +69,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   children,
   selectionRow,
   roleTitle = 'Demand Planner',
-  userName,
+  userName = 'Nishtha Agarwal',
   metaOptions = null,
   hierarchyNodes = [],
   productLevel = 1,

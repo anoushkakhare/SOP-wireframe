@@ -23,8 +23,8 @@ A responsive full-stack Sales & Operations Planning (S&OP) web application built
      - 🌪️ **Filters** (`FilterDrawer`)
      - ☰ **Scenarios** (`ScenarioSelectorDrawer`)
    - Mobile: Responsive menu collapsing dropdowns and actions.
-3. **9 KPI Cards Row**:
-   - Total forecast (`1.82M`, neutral, no sign) | Forecast adjustment (`+42K`) | Risk (`-96K`) | Opportunity (`+128K`) | FY growth (`+2.8%`) | YTD growth (`+5.8%`) | YTG growth (`-1.9%`) | FY growth (R&O) (`+2.8%`) | YTG growth (R&O) (`-1.9%`).
+3. **8 KPI Cards Row**:
+   - Total forecast (`1.82M`, neutral, no sign) | Baseline | Actuals | Opportunity & Risk (`+128K` / `-96K`) | Growth vs previous | FY growth (`+2.8%`) | YTD growth (`+5.8%`) | YTG growth (`-1.9%`).
    - Positive numbers are positive green with `+` and up triangle icon, negative are negative red with `-` and down triangle icon, neutral are dark.
    - Info tooltip on each card with a one-line definition and "vs last year" caption where data exists.
    - Horizontally scrollable on small screens.

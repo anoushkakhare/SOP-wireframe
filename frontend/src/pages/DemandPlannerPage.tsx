@@ -218,7 +218,7 @@ export const DemandPlannerPage: React.FC = () => {
   return (
     <AppShell
       roleTitle={user?.roleTitle || labels.header.avatarRole}
-      userName={user?.name}
+      userName={user?.name || 'Nishtha Agarwal'}
       metaOptions={metaQuery.data || null}
       hierarchyNodes={hierarchyNodes}
       productLevel={productLevel}
