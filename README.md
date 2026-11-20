@@ -1,3 +1,5 @@
+https://docs.google.com/document/d/1nnz5t6rjFOQU25jdIsz1Y9rcSv20ppuaHEBnIZNZ7NQ/edit?usp=sharing
+
 # Demand Planner — Sales & Operations Planning (S&OP) Web Application
 
 A responsive full-stack Sales & Operations Planning (S&OP) web application built to enterprise standards, featuring primary brand indigo theming, role-driven layout manifests, analytics charts, drill-down desegregation, scenario planning, and an interactive bottom tabular dock with live cell editing and change logs.
