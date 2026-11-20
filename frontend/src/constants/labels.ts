@@ -21,6 +21,7 @@ export const labels = {
 
   // ─── Header ───────────────────────────────────────────────────────────
   header: {
+    defaultUserName: 'Nishtha Agarwal',
     /** Shown below the user's name in the left badge */
     avatarRole: 'Demand Planner',
     mobileMenuToggle: 'Toggle controls menu',
@@ -38,9 +39,9 @@ export const labels = {
         customer:       'Customer',
       },
       measureOptions: {
-        units:   'Units',
-        volume:  'Volume',
-        revenue: 'Value',
+        cases: 'Cases',
+        units: 'Units',
+        value: 'Value',
       },
     },
 
@@ -57,9 +58,9 @@ export const labels = {
   // ─── KPIs ─────────────────────────────────────────────────────────────
   kpi: {
     totalForecast:     'Total forecast',
-    forecastAdj:       'Forecast adjustment',
     risk:              'Risk',
     opportunity:       'Opportunity',
+    opportunityRisk:   'Opportunity & Risk',
     fyGrowth:          'FY growth',
     ytdGrowth:         'YTD growth',
     ytgGrowth:         'YTG growth',
@@ -69,28 +70,28 @@ export const labels = {
 
     /** One-line tooltip definitions */
     tooltips: {
-      totalForecast:  'Sum of all forecast units for the full fiscal year.',
-      forecastAdj:    'Manual adjustments applied on top of the statistical baseline.',
-      risk:           'Downside volume risk relative to the base forecast.',
-      opportunity:    'Upside volume opportunity relative to the base forecast.',
-      fyGrowth:       'Year-on-year growth for the full fiscal year.',
-      ytdGrowth:      'Year-on-year growth from Jan to the latest closed month.',
-      ytgGrowth:      'Year-on-year growth for the remaining months of the year.',
-      fyGrowthRO:     'FY growth including risk and opportunity adjustments.',
-      ytgGrowthRO:    'YTG growth including risk and opportunity adjustments.',
+      totalForecast:   'Sum of all forecast units for the full fiscal year.',
+      risk:            'Downside volume risk relative to the base forecast.',
+      opportunity:     'Upside volume opportunity relative to the base forecast.',
+      opportunityRisk: 'Upside volume opportunity and downside volume risk relative to the base forecast.',
+      fyGrowth:        'Year-on-year growth for the full fiscal year.',
+      ytdGrowth:       'Year-on-year growth from Jan to the latest closed month.',
+      ytgGrowth:       'Year-on-year growth for the remaining months of the year.',
+      fyGrowthRO:      'FY growth including risk and opportunity adjustments.',
+      ytgGrowthRO:     'YTG growth including risk and opportunity adjustments.',
     },
   },
 
   // ─── Charts ───────────────────────────────────────────────────────────
   charts: {
     forecastTrend:        'Forecast trend',
-    /** Dynamic: "Forecast by brand and customer group" */
+    /** Dynamic: "Forecast by Brand and APG" */
     forecastBy:  (level: string) =>
-      `Forecast by ${level} and customer group`,
+      `Forecast by ${level} and APG`,
     forecastBridge:       'Forecast bridge',
     productMix:           'Product mix',
 
-    axisForecast:         'Forecast (units)',
+    axisForecast:         (measure: string = 'units') => `Forecast (${measure})`,
 
     fullscreenExpand:     'Expand',
     fullscreenExit:       'Exit fullscreen',

@@ -8,6 +8,8 @@ interface TableFloatingButtonsProps {
     onToggleEdit: () => void;
     onToggleDelta: () => void;
     onCloseOrSave: () => void;
+    canEdit?: boolean;
+    disabledTooltip?: string;
 }
 
 /**
@@ -24,23 +26,35 @@ export const TableFloatingButtons: React.FC<TableFloatingButtonsProps> = ({
     onToggleEdit,
     onToggleDelta,
     onCloseOrSave,
+    canEdit = true,
+    disabledTooltip,
 }) => {
     const isEditing = mode === 'edit';
     const isDelta = mode === 'delta';
     const { floatingButtons: l } = labels.table;
+
+    const editTooltip = !canEdit
+        ? (disabledTooltip || 'Switch to Month or Week to edit')
+        : isEditing
+        ? l.switchToView
+        : l.editForecast;
 
     return (
         <div className="flex items-center gap-2">
             {/* 1. Edit ↔ View */}
             <button
                 type="button"
-                onClick={onToggleEdit}
-                title={isEditing ? l.switchToView : l.editForecast}
-                aria-label={isEditing ? l.switchToView : l.editForecast}
-                className={`w-8 h-8 rounded-full border flex items-center justify-center shadow-sm transition-all hover:scale-105 ${isEditing
-                        ? 'bg-primary-700 text-white border-primary-700'
-                        : 'bg-surface text-text-secondary border-border hover:border-primary-700 hover:text-primary-700 hover:bg-primary-50'
-                    }`}
+                onClick={canEdit ? onToggleEdit : undefined}
+                disabled={!canEdit}
+                title={editTooltip}
+                aria-label={editTooltip}
+                className={`w-8 h-8 rounded-full border flex items-center justify-center shadow-sm transition-all ${
+                    !canEdit
+                        ? 'opacity-40 cursor-not-allowed bg-surface text-text-secondary border-border'
+                        : isEditing
+                        ? 'bg-primary-700 text-white border-primary-700 hover:scale-105'
+                        : 'bg-surface text-text-secondary border-border hover:border-primary-700 hover:text-primary-700 hover:bg-primary-50 hover:scale-105'
+                }`}
             >
                 {isEditing ? <Eye className="w-4 h-4" /> : <Pencil className="w-3.5 h-3.5" />}
             </button>

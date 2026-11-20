@@ -4,26 +4,25 @@ import {
   StackedBarResponse,
   WaterfallResponse,
   TreemapResponse,
-  ProductLevel,
+  DataQueryParams,
 } from '../types';
 
 export class ChartService {
-  async getForecastLine(parent?: string): Promise<ForecastLineResponse> {
-    return chartRepository.getForecastLine(parent);
+  async getForecastLine(params: DataQueryParams = {}): Promise<ForecastLineResponse> {
+    return chartRepository.getForecastLine(params);
   }
 
-  async getStackedBar(level: ProductLevel = 'brand', parent?: string): Promise<StackedBarResponse> {
-    return chartRepository.getStackedBar(level, parent);
+  async getStackedBar(params: DataQueryParams = {}): Promise<StackedBarResponse> {
+    return chartRepository.getStackedBar(params);
   }
 
-  async getWaterfall(parent?: string): Promise<WaterfallResponse> {
-    return chartRepository.getWaterfall(parent);
+  async getWaterfall(params: DataQueryParams = {}): Promise<WaterfallResponse> {
+    return chartRepository.getWaterfall(params);
   }
 
-  async getTreemap(level: ProductLevel = 'brand'): Promise<TreemapResponse> {
-    return chartRepository.getTreemap(level);
+  async getTreemap(params: DataQueryParams = {}): Promise<TreemapResponse> {
+    return chartRepository.getTreemap(params);
   }
 }
 
 export const chartService = new ChartService();
-

@@ -6,20 +6,25 @@ export interface FormatOptions {
   isNeutral?: boolean;
   withSign?: boolean;
   decimals?: number;
+  measure?: string;
 }
 
 export function formatCompactNumber(
-  value: number,
+  value: number | null | undefined,
   options: FormatOptions = {}
 ): string {
-  const { format = 'number', isNeutral = false, withSign = !isNeutral, decimals } = options;
+  if (value === null || value === undefined) return '–';
+  const { format = 'number', isNeutral = false, withSign = !isNeutral, decimals, measure } = options;
+  const isCurrency = format === 'currency' || measure === 'value';
 
   if (value === 0 || isNaN(value)) {
     if (format === 'percent') return '0.0%';
+    if (isCurrency) return '₹0';
     return '0';
   }
 
   const sign = value > 0 ? (withSign && !isNeutral ? '+' : '') : '-';
+  const sym = isCurrency ? '₹' : '';
   const abs = Math.abs(value);
 
   if (format === 'percent') {
@@ -32,24 +37,23 @@ export function formatCompactNumber(
     const formatted = decimals !== undefined
       ? num.toFixed(decimals)
       : num % 1 === 0
-      ? num.toFixed(0)
-      : num.toFixed(2).replace(/\.?0+$/, (match, offset) => {
-          // Keep up to 2 decimal places, e.g. 1.82M
-          return match.length === 3 ? '' : match;
-        });
-    return `${sign}${num.toFixed(2)}M`;
+        ? num.toFixed(0)
+        : num.toFixed(2).replace(/0$/, '').replace(/\.0$/, '');
+    return `${sign}${sym}${formatted}M`;
   }
 
   if (abs >= 1_000) {
     const num = abs / 1_000;
     const formatted = decimals !== undefined
       ? num.toFixed(decimals)
-      : Math.round(num).toString();
-    return `${sign}${formatted}K`;
+      : num % 1 === 0
+        ? Math.round(num).toString()
+        : num.toFixed(1).replace(/\.0$/, '');
+    return `${sign}${sym}${formatted}K`;
   }
 
   const formatted = decimals !== undefined ? abs.toFixed(decimals) : Math.round(abs).toString();
-  return `${sign}${formatted}`;
+  return `${sign}${sym}${formatted}`;
 }
 
 export function formatCurrencyValue(value: number, isNeutral = false): string {

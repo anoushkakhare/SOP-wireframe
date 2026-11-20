@@ -24,7 +24,7 @@ interface UiState {
   setDeleteScenarioTarget: (target: { id: string; name: string } | null) => void;
   setFullscreenChartId: (id: string | null) => void;
 
-  addToast: (message: string, type?: 'success' | 'error' | 'info') => void;
+  addToast: (message: string, type?: 'success' | 'error' | 'info', id?: string) => void;
   removeToast: (id: string) => void;
 }
 
@@ -46,11 +46,19 @@ export const useUiStore = create<UiState>((set) => ({
   setDeleteScenarioTarget: (target) => set({ deleteScenarioTarget: target }),
   setFullscreenChartId: (id) => set({ fullscreenChartId: id }),
 
-  addToast: (message, type = 'success') => {
-    const id = `toast_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    set((state) => ({
-      toasts: [...state.toasts, { id, message, type }],
-    }));
+  addToast: (message, type = 'success', customId) => {
+    const id = customId || `toast_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    set((state) => {
+      const existing = state.toasts.find((t) => t.id === id);
+      if (existing) {
+        return {
+          toasts: state.toasts.map((t) => (t.id === id ? { id, message, type } : t)),
+        };
+      }
+      return {
+        toasts: [...state.toasts, { id, message, type }],
+      };
+    });
     setTimeout(() => {
       set((state) => ({
         toasts: state.toasts.filter((t) => t.id !== id),

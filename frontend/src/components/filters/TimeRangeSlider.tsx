@@ -1,54 +1,342 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MonthPicker } from './MonthPicker';
-import { dateStringToMonthIndex } from '../../utils/dateRange';
+import {
+  dateStringToMonthIndex,
+  getGrainPeriods,
+  normalizeGrain,
+  YEARS,
+} from '../../utils/dateRange';
 import { labels } from '../../constants/labels';
+import { TimeGrain } from '../../types';
 
 interface TimeRangeSliderProps {
-  range: [number, number]; // [startIdx, endIdx] from 0 to 35
+  range: [number, number];
   startDate: string;
   endDate: string;
+  grain?: TimeGrain | string;
   onChangeRange: (newRange: [number, number]) => void;
   onChangeStartDate: (date: string) => void;
   onChangeEndDate: (date: string) => void;
+}
+
+function getGrainPopoverLabels(grain?: string): { startLabel: string; endLabel: string } {
+  const g = normalizeGrain(grain);
+  switch (g) {
+    case 'year':
+      return { startLabel: 'START YEAR', endLabel: 'END YEAR' };
+    case 'half':
+      return { startLabel: 'START HALF', endLabel: 'END HALF' };
+    case 'quarter':
+      return { startLabel: 'START QUARTER', endLabel: 'END QUARTER' };
+    case 'week':
+      return { startLabel: 'START WEEK', endLabel: 'END WEEK' };
+    case 'month':
+    default:
+      return { startLabel: 'START MONTH', endLabel: 'END MONTH' };
+  }
 }
 
 export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
   range,
   startDate,
   endDate,
+  grain = 'month',
   onChangeRange,
   onChangeStartDate,
   onChangeEndDate,
 }) => {
-  const [startIdx, endIdx] = range;
+  const periods = getGrainPeriods(grain);
+  const maxIdx = Math.max(1, periods.length - 1);
+
+  const startIdx = Math.max(0, Math.min(maxIdx - 1, range[0]));
+  const endIdx = Math.max(startIdx + 1, Math.min(maxIdx, range[1]));
+
   const { fields } = labels.filterDrawer;
+  const { startLabel, endLabel } = getGrainPopoverLabels(grain);
 
-  const handleStartSlider = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseInt(e.target.value, 10);
-    const newStart = Math.min(val, endIdx);
-    onChangeRange([newStart, endIdx]);
+  // Dragging states
+  const [isDraggingStart, setIsDraggingStart] = useState(false);
+  const [isDraggingEnd, setIsDraggingEnd] = useState(false);
+
+  // Hover & Focus states for popovers
+  const [isStartHovered, setIsStartHovered] = useState(false);
+  const [isStartFocused, setIsStartFocused] = useState(false);
+  const [isEndHovered, setIsEndHovered] = useState(false);
+  const [isEndFocused, setIsEndFocused] = useState(false);
+  const [lastActive, setLastActive] = useState<'start' | 'end'>('start');
+
+  const startTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const endTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startContainerRef = useRef<HTMLDivElement>(null);
+  const endContainerRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (startTimerRef.current) clearTimeout(startTimerRef.current);
+      if (endTimerRef.current) clearTimeout(endTimerRef.current);
+    };
+  }, []);
+
+  // Popover open handlers with ~150ms close delay
+  const handleStartMouseEnter = () => {
+    if (startTimerRef.current) {
+      clearTimeout(startTimerRef.current);
+      startTimerRef.current = null;
+    }
+    setLastActive('start');
+    setIsStartHovered(true);
   };
 
-  const handleEndSlider = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = parseInt(e.target.value, 10);
-    const newEnd = Math.max(val, startIdx);
-    onChangeRange([startIdx, newEnd]);
+  const handleStartMouseLeave = () => {
+    if (startTimerRef.current) clearTimeout(startTimerRef.current);
+    startTimerRef.current = setTimeout(() => {
+      setIsStartHovered(false);
+    }, 150);
   };
 
+  const handleStartFocus = () => {
+    if (startTimerRef.current) {
+      clearTimeout(startTimerRef.current);
+      startTimerRef.current = null;
+    }
+    setLastActive('start');
+    setIsStartFocused(true);
+  };
+
+  const handleStartBlur = () => {
+    setTimeout(() => {
+      if (
+        startContainerRef.current &&
+        !startContainerRef.current.contains(document.activeElement)
+      ) {
+        setIsStartFocused(false);
+      }
+    }, 0);
+  };
+
+  const handleEndMouseEnter = () => {
+    if (endTimerRef.current) {
+      clearTimeout(endTimerRef.current);
+      endTimerRef.current = null;
+    }
+    setLastActive('end');
+    setIsEndHovered(true);
+  };
+
+  const handleEndMouseLeave = () => {
+    if (endTimerRef.current) clearTimeout(endTimerRef.current);
+    endTimerRef.current = setTimeout(() => {
+      setIsEndHovered(false);
+    }, 150);
+  };
+
+  const handleEndFocus = () => {
+    if (endTimerRef.current) {
+      clearTimeout(endTimerRef.current);
+      endTimerRef.current = null;
+    }
+    setLastActive('end');
+    setIsEndFocused(true);
+  };
+
+  const handleEndBlur = () => {
+    setTimeout(() => {
+      if (
+        endContainerRef.current &&
+        !endContainerRef.current.contains(document.activeElement)
+      ) {
+        setIsEndFocused(false);
+      }
+    }, 0);
+  };
+
+  // Drag handlers for Start Thumb
+  const handleStartPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+    setIsDraggingStart(true);
+    setIsStartHovered(false);
+    setIsStartFocused(false);
+    setLastActive('start');
+  };
+
+  const handleStartPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingStart || !trackRef.current) return;
+    const rect = trackRef.current.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    let newStart = Math.max(0, Math.min(endIdx - 1, Math.round(pct * maxIdx)));
+    if (endIdx - newStart + 1 > 104) {
+      newStart = endIdx - 103;
+    }
+
+    if (newStart !== startIdx) {
+      onChangeRange([newStart, endIdx]);
+      onChangeStartDate(periods[newStart]);
+    }
+  };
+
+  const handleStartPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingStart) return;
+    setIsDraggingStart(false);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  // Drag handlers for End Thumb
+  const handleEndPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {}
+    setIsDraggingEnd(true);
+    setIsEndHovered(false);
+    setIsEndFocused(false);
+    setLastActive('end');
+  };
+
+  const handleEndPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingEnd || !trackRef.current) return;
+    const rect = trackRef.current.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    let newEnd = Math.max(startIdx + 1, Math.min(maxIdx, Math.round(pct * maxIdx)));
+    if (newEnd - startIdx + 1 > 104) {
+      newEnd = startIdx + 103;
+    }
+
+    if (newEnd !== endIdx) {
+      onChangeRange([startIdx, newEnd]);
+      onChangeEndDate(periods[newEnd]);
+    }
+  };
+
+  const handleEndPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDraggingEnd) return;
+    setIsDraggingEnd(false);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {}
+  };
+
+  // Keyboard navigation
+  const handleStartKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    let target = startIdx;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') target = startIdx - 1;
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') target = startIdx + 1;
+    else if (e.key === 'Home') target = 0;
+    else if (e.key === 'End') target = endIdx - 1;
+    else return;
+    e.preventDefault();
+
+    let newStart = Math.max(0, Math.min(endIdx - 1, target));
+    if (endIdx - newStart + 1 > 104) {
+      newStart = endIdx - 103;
+    }
+    if (newStart !== startIdx) {
+      onChangeRange([newStart, endIdx]);
+      onChangeStartDate(periods[newStart]);
+    }
+  };
+
+  const handleEndKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    let target = endIdx;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') target = endIdx - 1;
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') target = endIdx + 1;
+    else if (e.key === 'Home') target = startIdx + 1;
+    else if (e.key === 'End') target = maxIdx;
+    else return;
+    e.preventDefault();
+
+    let newEnd = Math.max(startIdx + 1, Math.min(maxIdx, target));
+    if (newEnd - startIdx + 1 > 104) {
+      newEnd = startIdx + 103;
+    }
+    if (newEnd !== endIdx) {
+      onChangeRange([startIdx, newEnd]);
+      onChangeEndDate(periods[newEnd]);
+    }
+  };
+
+  // Track click handler
+  const handleTrackPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).getAttribute('role') === 'slider') return;
+    if (!trackRef.current) return;
+    const rect = trackRef.current.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const clickedIdx = Math.round(pct * maxIdx);
+
+    if (clickedIdx < startIdx) {
+      let newStart = clickedIdx;
+      if (endIdx - newStart + 1 > 104) newStart = endIdx - 103;
+      onChangeRange([newStart, endIdx]);
+      onChangeStartDate(periods[newStart]);
+    } else if (clickedIdx > endIdx) {
+      let newEnd = clickedIdx;
+      if (newEnd - startIdx + 1 > 104) newEnd = startIdx + 103;
+      onChangeRange([startIdx, newEnd]);
+      onChangeEndDate(periods[newEnd]);
+    } else {
+      if (clickedIdx - startIdx <= endIdx - clickedIdx) {
+        let newStart = Math.min(endIdx - 1, clickedIdx);
+        if (endIdx - newStart + 1 > 104) newStart = endIdx - 103;
+        onChangeRange([newStart, endIdx]);
+        onChangeStartDate(periods[newStart]);
+      } else {
+        let newEnd = Math.max(startIdx + 1, clickedIdx);
+        if (newEnd - startIdx + 1 > 104) newEnd = startIdx + 103;
+        onChangeRange([startIdx, newEnd]);
+        onChangeEndDate(periods[newEnd]);
+      }
+    }
+  };
+
+  // Dropdown handlers inside popovers
   const handleStartPicker = (date: string) => {
-    const idx = dateStringToMonthIndex(date);
-    onChangeStartDate(date);
-    onChangeRange([Math.min(idx, endIdx), endIdx]);
+    const idx = dateStringToMonthIndex(date, grain);
+    let newEnd = endIdx;
+    if (idx >= newEnd) {
+      newEnd = Math.min(maxIdx, idx + 1);
+    }
+    if (newEnd - idx + 1 > 104) {
+      newEnd = idx + 103;
+    }
+
+    onChangeRange([idx, newEnd]);
+    onChangeStartDate(periods[idx]);
+    if (newEnd !== endIdx) {
+      onChangeEndDate(periods[newEnd]);
+    }
   };
 
   const handleEndPicker = (date: string) => {
-    const idx = dateStringToMonthIndex(date);
-    onChangeEndDate(date);
-    onChangeRange([startIdx, Math.max(idx, startIdx)]);
+    const idx = dateStringToMonthIndex(date, grain);
+    let newStart = startIdx;
+    if (idx <= newStart) {
+      newStart = Math.max(0, idx - 1);
+    }
+    if (idx - newStart + 1 > 104) {
+      newStart = idx - 103;
+    }
+
+    onChangeRange([newStart, idx]);
+    onChangeEndDate(periods[idx]);
+    if (newStart !== startIdx) {
+      onChangeStartDate(periods[newStart]);
+    }
   };
 
-  const startPercent = (startIdx / 35) * 100;
-  const endPercent = (endIdx / 35) * 100;
+  const startPercent = (startIdx / maxIdx) * 100;
+  const endPercent = (endIdx / maxIdx) * 100;
+
+  const showStartPopover =
+    (isStartHovered || isStartFocused) && !isDraggingStart && !isDraggingEnd;
+  const showEndPopover =
+    (isEndHovered || isEndFocused) && !isDraggingStart && !isDraggingEnd;
 
   return (
     <div className="space-y-3 p-3 bg-surface border border-border rounded-card">
@@ -62,75 +350,133 @@ export const TimeRangeSlider: React.FC<TimeRangeSliderProps> = ({
       </div>
 
       {/* Dual Slider Bar */}
-      <div className="pt-2 px-1">
-        <div className="relative h-6 flex items-center">
+      <div className="pt-2 px-1 relative">
+        <div
+          ref={trackRef}
+          className="relative h-6 flex items-center cursor-pointer select-none"
+          onPointerDown={handleTrackPointerDown}
+        >
           {/* Track background */}
           <div className="absolute w-full h-2 bg-primary-100 rounded-full" />
 
           {/* Active colored bar between handles */}
           <div
-            className="absolute h-2 bg-primary-700 rounded-full"
+            className="absolute h-2 bg-primary-700 rounded-full pointer-events-none"
             style={{
               left: `${startPercent}%`,
-              width: `${endPercent - startPercent}%`,
+              width: `${Math.max(0, endPercent - startPercent)}%`,
             }}
           />
 
-          {/* Slider input 1 (start) */}
-          <input
-            type="range"
-            min={0}
-            max={35}
-            value={startIdx}
-            onChange={handleStartSlider}
-            aria-label={`${fields.startMonth} slider`}
-            className="absolute w-full h-2 opacity-0 cursor-pointer pointer-events-auto z-20"
-          />
-
-          {/* Slider input 2 (end) */}
-          <input
-            type="range"
-            min={0}
-            max={35}
-            value={endIdx}
-            onChange={handleEndSlider}
-            aria-label={`${fields.endMonth} slider`}
-            className="absolute w-full h-2 opacity-0 cursor-pointer pointer-events-auto z-20"
-          />
-
-          {/* Visual thumb for Start */}
+          {/* Start Thumb + Popover Container */}
           <div
-            className="absolute w-4 h-4 rounded-full bg-surface border-2 border-primary-700 shadow-sm pointer-events-none z-10 -ml-2"
+            ref={startContainerRef}
+            className={`absolute top-0 bottom-0 pointer-events-none ${
+              lastActive === 'start' ? 'z-40' : 'z-30'
+            }`}
             style={{ left: `${startPercent}%` }}
-          />
+            onMouseEnter={handleStartMouseEnter}
+            onMouseLeave={handleStartMouseLeave}
+            onFocus={handleStartFocus}
+            onBlur={handleStartBlur}
+          >
+            {/* Popover */}
+            {showStartPopover && (
+              <div
+                className="absolute bottom-full mb-2 z-50 min-w-[160px] bg-surface border border-border rounded-card p-2 shadow-lg pointer-events-auto"
+                style={{
+                  left: '0',
+                  transform: `translateX(-${startPercent}%)`,
+                }}
+              >
+                {/* Invisible hover bridge to thumb */}
+                <div className="absolute top-full left-0 right-0 h-3" />
+                <MonthPicker
+                  label={startLabel}
+                  value={startDate}
+                  grain={grain}
+                  onChange={handleStartPicker}
+                  className=""
+                />
+              </div>
+            )}
 
-          {/* Visual thumb for End */}
+            {/* Visual thumb for Start */}
+            <div
+              tabIndex={0}
+              role="slider"
+              aria-label={`${startLabel} slider`}
+              aria-valuenow={startIdx}
+              aria-valuemin={0}
+              aria-valuemax={endIdx}
+              aria-valuetext={startDate}
+              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-surface border-2 border-primary-700 shadow-sm -ml-2 cursor-grab active:cursor-grabbing focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 select-none pointer-events-auto"
+              onPointerDown={handleStartPointerDown}
+              onPointerMove={handleStartPointerMove}
+              onPointerUp={handleStartPointerUp}
+              onPointerCancel={handleStartPointerUp}
+              onKeyDown={handleStartKeyDown}
+            />
+          </div>
+
+          {/* End Thumb + Popover Container */}
           <div
-            className="absolute w-4 h-4 rounded-full bg-primary-700 border-2 border-surface shadow-sm pointer-events-none z-10 -ml-2"
+            ref={endContainerRef}
+            className={`absolute top-0 bottom-0 pointer-events-none ${
+              lastActive === 'end' ? 'z-40' : 'z-30'
+            }`}
             style={{ left: `${endPercent}%` }}
-          />
+            onMouseEnter={handleEndMouseEnter}
+            onMouseLeave={handleEndMouseLeave}
+            onFocus={handleEndFocus}
+            onBlur={handleEndBlur}
+          >
+            {/* Popover */}
+            {showEndPopover && (
+              <div
+                className="absolute bottom-full mb-2 z-50 min-w-[160px] bg-surface border border-border rounded-card p-2 shadow-lg pointer-events-auto"
+                style={{
+                  left: '0',
+                  transform: `translateX(-${endPercent}%)`,
+                }}
+              >
+                {/* Invisible hover bridge to thumb */}
+                <div className="absolute top-full left-0 right-0 h-3" />
+                <MonthPicker
+                  label={endLabel}
+                  value={endDate}
+                  grain={grain}
+                  onChange={handleEndPicker}
+                  className=""
+                />
+              </div>
+            )}
+
+            {/* Visual thumb for End */}
+            <div
+              tabIndex={0}
+              role="slider"
+              aria-label={`${endLabel} slider`}
+              aria-valuenow={endIdx}
+              aria-valuemin={startIdx}
+              aria-valuemax={maxIdx}
+              aria-valuetext={endDate}
+              className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary-700 border-2 border-surface shadow-sm -ml-2 cursor-grab active:cursor-grabbing focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 select-none pointer-events-auto"
+              onPointerDown={handleEndPointerDown}
+              onPointerMove={handleEndPointerMove}
+              onPointerUp={handleEndPointerUp}
+              onPointerCancel={handleEndPointerUp}
+              onKeyDown={handleEndKeyDown}
+            />
+          </div>
         </div>
 
-        {/* Year Ticks: 2025, 2026, 2027 */}
+        {/* Ticks */}
         <div className="flex justify-between text-[10px] font-medium text-text-secondary pt-1 px-1">
-          <span>2025</span>
-          <span>2026</span>
-          <span>2027</span>
+          {YEARS.map((y) => (
+            <span key={y}>{y}</span>
+          ))}
         </div>
-      </div>
-
-      {/* Synced Month Pickers */}
-      <div className="flex gap-2 pt-1">
-        <MonthPicker
-          label={fields.startMonth}
-          value={startDate}
-          onChange={handleStartPicker}
-        />
-        <MonthPicker
-          label={fields.endMonth}
-          value={endDate}
-          onChange={handleEndPicker}
-        />
       </div>
     </div>
   );

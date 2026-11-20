@@ -1,132 +1,204 @@
+import { aggregate, getPeriodsForGrain, normalizeGrain } from '../utils/aggregate';
 import masterData from '../data/masterData.json';
-import { KpiItem, ProductLevel, CustomerLevel, Uom } from '../types';
+import { KpiItem, Uom } from '../types';
 
 export class KpiRepository {
   async getKpis(params: {
-    productLevel?: ProductLevel;
-    customerLevel?: CustomerLevel;
+    productLevel?: number;
+    scope?: string;
+    apg?: string;
     uom?: Uom;
-    parent?: string;
+    measure?: string;
+    timeGrain?: string;
+    from?: string;
+    to?: string;
     scenarioId?: string;
+    planningCycle?: string;
+    compareTo?: string;
+    activity?: string;
+    pastPeriodsOnly?: boolean;
   }): Promise<KpiItem[]> {
-    let items = masterData.items as any[];
+    if (params.compareTo) {
+      const cycleA = params.planningCycle || 'Current cycle';
+      const cycleB = params.compareTo;
+      const isActuals = cycleB.toLowerCase().includes('actual');
+      const [kpisA, kpisB] = await Promise.all([
+        this.getKpis({ ...params, compareTo: undefined, planningCycle: cycleA, pastPeriodsOnly: isActuals }),
+        this.getKpis({ ...params, compareTo: undefined, planningCycle: cycleB, pastPeriodsOnly: isActuals }),
+      ]);
 
-    if (params.parent) {
-      items = items.filter((it) => it.brand === params.parent);
-    }
+      const bMap = new Map(kpisB.map(b => [b.key, b]));
 
-    // Calculate totals directly from master data items
-    let totalForecast = 0;
-    let totalOpportunity = 0;
-    let totalRisk = 0;
+      return kpisA.map(itemA => {
+        const itemB = bMap.get(itemA.key);
+        const valA = itemA.value;
+        const valB = itemB?.value ?? null;
+        let delta: number | null = null;
+        let pctChange: number | null = null;
 
-    items.forEach((it) => {
-      masterData.months.forEach((m: string, idx: number) => {
-        if (idx < masterData.currentMonthIndex) {
-          totalForecast += it.pastActuals[m] || 0;
-        } else {
-          totalForecast += it.definitions.actualFcst[m] || 0;
-          totalOpportunity += it.definitions.opportunity[m] || 0;
-          totalRisk += it.definitions.risk[m] || 0;
+        if (valA !== null && valB !== null) {
+          delta = itemA.format === 'percent'
+            ? +((valB - valA).toFixed(1))
+            : Math.round(valB - valA);
+          pctChange = valA !== 0
+            ? +(((valB - valA) / Math.abs(valA)) * 100).toFixed(1)
+            : 0;
         }
+
+        return {
+          ...itemA,
+          compareValue: valB,
+          delta,
+          pctChange,
+          compareTo: cycleB,
+        };
       });
+    }
+    const meas = params.measure || params.uom || 'units';
+    const normGrain = normalizeGrain(params.timeGrain);
+
+    const groups = aggregate({
+      scope: params.scope,
+      apg: params.apg,
+      level: params.productLevel || 3,
+      timeGrain: params.timeGrain,
+      measure: meas,
+      from: params.from,
+      to: params.to,
+      planningCycle: params.planningCycle,
+      activity: params.activity,
+      pastPeriodsOnly: params.pastPeriodsOnly,
     });
 
-    let forecastAdjustment = masterData.targets.forecastAdjustment;
-    let growthFy = masterData.targets.growthFy;
-    let growthYtd = masterData.targets.growthYtd;
-    let growthYtg = masterData.targets.growthYtg;
-    let growthFyRo = masterData.targets.growthFyRo;
-    let growthYtgRo = masterData.targets.growthYtgRo;
-
-    // Unit of measure scaling
-    let multiplier = 1.0;
-    if (params.uom === 'volume') multiplier = 1.25;
-    else if (params.uom === 'revenue') multiplier = 4.5;
+    let totalForecast = groups.reduce((s, g) => s + g.totalForecast, 0);
+    let totalOpportunity = groups.reduce((s, g) => s + g.totalOpportunity, 0);
+    let totalRisk = groups.reduce((s, g) => s + g.totalRisk, 0);
+    let priorTotalForecast = groups.reduce((s, g) => s + g.priorTotalForecast, 0);
+    let ytdForecast = groups.reduce((s, g) => s + g.ytdForecast, 0);
+    let priorYtdForecast = groups.reduce((s, g) => s + g.priorYtdForecast, 0);
+    let ytgForecast = groups.reduce((s, g) => s + g.ytgForecast, 0);
+    let priorYtgForecast = groups.reduce((s, g) => s + g.priorYtgForecast, 0);
 
     // Scenario adjustment
     if (params.scenarioId === 'scen_1') {
-      // Festive Season Upside
-      forecastAdjustment += 65000;
-      totalForecast += 65000;
-      growthFy = +(growthFy + 1.2).toFixed(1);
+      const delta = Math.round(totalForecast * 0.035);
+      totalForecast += delta;
     } else if (params.scenarioId === 'scen_4') {
-      // Raw Material Delay Risk
-      forecastAdjustment -= 80000;
-      totalForecast -= 80000;
-      growthFy = +(growthFy - 1.5).toFixed(1);
-      growthYtg = +(growthYtg - 2.1).toFixed(1);
+      const delta = Math.round(totalForecast * 0.045);
+      totalForecast -= delta;
     }
 
-    totalForecast = Math.round(totalForecast * multiplier);
-    forecastAdjustment = Math.round(forecastAdjustment * multiplier);
-    totalOpportunity = Math.round(totalOpportunity * multiplier);
-    totalRisk = Math.round(totalRisk * multiplier);
+    // Baseline: MRF baseline sum for the range
+    const mrfGroups = aggregate({
+      scope: params.scope,
+      apg: params.apg,
+      level: params.productLevel || 3,
+      timeGrain: params.timeGrain,
+      measure: meas,
+      from: params.from,
+      to: params.to,
+      planningCycle: 'MRF',
+      activity: params.activity,
+    });
+    const baseline = Math.round(mrfGroups.reduce((s, g) => s + g.totalForecast, 0));
+
+    // Actuals: actual periods in range ("–" if none)
+    const { activePeriods, allPeriods } = getPeriodsForGrain(params.timeGrain, params.from, params.to);
+    const actualPeriods = activePeriods.filter(p => p.isActual);
+    let totalActuals: number | null = null;
+    if (actualPeriods.length > 0) {
+      totalActuals = Math.round(
+        groups.reduce((s, g) => {
+          let sum = 0;
+          for (const p of actualPeriods) {
+            sum += (g.periodActuals[p.label] || 0);
+          }
+          return s + sum;
+        }, 0)
+      );
+    }
+
+    // Growth vs previous {period}
+    // "Growth vs previous {period}" follows timeGrain: growth of the last full period in range vs the one before
+    const grainLabelName = normGrain === 'half' ? 'half' : normGrain;
+    const prevPeriodTitle = `Growth vs previous ${grainLabelName}`;
+
+    let growthPrev = 0;
+    let growthPrevRo = 0;
+    if (activePeriods.length >= 2) {
+      const currP = activePeriods[activePeriods.length - 1];
+      const prevP = activePeriods[activePeriods.length - 2];
+      const currVal = groups.reduce((s, g) => s + (g.periodForecast[currP.label] || 0), 0);
+      const prevVal = groups.reduce((s, g) => s + (g.periodForecast[prevP.label] || 0), 0);
+      const currOpp = groups.reduce((s, g) => s + (g.periodOpportunity[currP.label] || 0), 0);
+      const currRisk = groups.reduce((s, g) => s + (g.periodRisk[currP.label] || 0), 0);
+
+      if (prevVal > 0) {
+        growthPrev = +(((currVal - prevVal) / prevVal) * 100).toFixed(1);
+        growthPrevRo = +((((currVal + currOpp + currRisk) - prevVal) / prevVal) * 100).toFixed(1);
+      }
+    } else if (activePeriods.length === 1) {
+      const currP = activePeriods[0];
+      const currIdx = allPeriods.findIndex(p => p.label === currP.label);
+      if (currIdx > 0) {
+        const prevP = allPeriods[currIdx - 1];
+        const prevGroups = aggregate({
+          scope: params.scope,
+          apg: params.apg,
+          level: params.productLevel || 3,
+          timeGrain: params.timeGrain,
+          measure: meas,
+          from: prevP.label,
+          to: prevP.label,
+          planningCycle: params.planningCycle,
+          activity: params.activity,
+        });
+        const currVal = groups.reduce((s, g) => s + (g.periodForecast[currP.label] || 0), 0);
+        const prevVal = prevGroups.reduce((s, g) => s + (g.periodForecast[prevP.label] || 0), 0);
+        const currOpp = groups.reduce((s, g) => s + (g.periodOpportunity[currP.label] || 0), 0);
+        const currRisk = groups.reduce((s, g) => s + (g.periodRisk[currP.label] || 0), 0);
+        if (prevVal > 0) {
+          growthPrev = +(((currVal - prevVal) / prevVal) * 100).toFixed(1);
+          growthPrevRo = +((((currVal + currOpp + currRisk) - prevVal) / prevVal) * 100).toFixed(1);
+        }
+      }
+    }
+
+    // Dynamic YoY growth vs same period last year
+    const calcGrowth = (curr: number, prev: number, fallback: number) => {
+      if (prev > 0) {
+        return +(((curr - prev) / prev) * 100).toFixed(1);
+      }
+      return fallback;
+    };
+
+    const growthFy = calcGrowth(totalForecast, priorTotalForecast, masterData.targets.growthFy);
+    const growthYtd = calcGrowth(ytdForecast, priorYtdForecast, masterData.targets.growthYtd);
+    const growthYtg = calcGrowth(ytgForecast, priorYtgForecast, masterData.targets.growthYtg);
+
+    const growthFyRo = calcGrowth(
+      totalForecast + totalOpportunity + totalRisk,
+      priorTotalForecast,
+      masterData.targets.growthFyRo
+    );
+    const growthYtgRo = calcGrowth(
+      ytgForecast + totalOpportunity + totalRisk,
+      priorYtgForecast,
+      masterData.targets.growthYtgRo
+    );
+
+    const numFormat = meas === 'value' ? 'currency' : 'number';
 
     return [
-      {
-        key: 'total_forecast',
-        label: 'Total forecast',
-        value: totalForecast,
-        format: 'number',
-        isNeutral: true,
-      },
-      {
-        key: 'forecast_adj',
-        label: 'Forecast adjustment',
-        value: forecastAdjustment,
-        format: 'number',
-        growthType: 'positive',
-      },
-      {
-        key: 'risk',
-        label: 'Risk',
-        value: totalRisk,
-        format: 'number',
-        growthType: 'negative',
-      },
-      {
-        key: 'opportunity',
-        label: 'Opportunity',
-        value: totalOpportunity,
-        format: 'number',
-        growthType: 'positive',
-      },
-      {
-        key: 'growth_fy',
-        label: 'FY growth',
-        value: growthFy,
-        format: 'percent',
-        growthType: 'positive',
-      },
-      {
-        key: 'growth_ytd',
-        label: 'YTD growth',
-        value: growthYtd,
-        format: 'percent',
-        growthType: 'positive',
-      },
-      {
-        key: 'growth_ytg',
-        label: 'YTG growth',
-        value: growthYtg,
-        format: 'percent',
-        growthType: 'negative',
-      },
-      {
-        key: 'growth_fy_ro',
-        label: 'FY growth (R&O)',
-        value: growthFyRo,
-        format: 'percent',
-        growthType: 'positive',
-      },
-      {
-        key: 'growth_ytg_ro',
-        label: 'YTG growth (R&O)',
-        value: growthYtgRo,
-        format: 'percent',
-        growthType: 'negative',
-      },
+      { key: 'total_forecast', label: 'Total forecast', value: totalForecast, format: numFormat, isNeutral: true },
+      { key: 'baseline', label: 'Baseline', value: baseline, format: numFormat, isNeutral: true },
+      { key: 'actuals', label: 'Actuals', value: totalActuals, format: numFormat, isNeutral: true },
+      { key: 'opportunity', label: 'Opportunity', value: totalOpportunity, format: numFormat, growthType: 'positive' },
+      { key: 'risk', label: 'Risk', value: totalRisk, format: numFormat, growthType: 'negative' },
+      { key: 'growth_prev', label: prevPeriodTitle, value: growthPrev, format: 'percent', growthType: growthPrev >= 0 ? 'positive' : 'negative', roValue: growthPrevRo },
+      { key: 'fy_growth', label: 'FY growth', value: growthFy, format: 'percent', growthType: growthFy >= 0 ? 'positive' : 'negative', roValue: growthFyRo },
+      { key: 'ytd_growth', label: 'YTD growth', value: growthYtd, format: 'percent', growthType: growthYtd >= 0 ? 'positive' : 'negative' },
+      { key: 'ytg_growth', label: 'YTG growth', value: growthYtg, format: 'percent', growthType: growthYtg >= 0 ? 'positive' : 'negative', roValue: growthYtgRo },
     ];
   }
 }

@@ -1,128 +1,115 @@
+import { aggregate, getPeriodsForGrain } from '../utils/aggregate';
 import masterData from '../data/masterData.json';
-import { TableResponse, ProductLevel, PlanningTableRow } from '../types';
+import { TableResponse, PlanningTableRow } from '../types';
+
+function mapProductLevel(n: number): 'brand' | 'product' {
+  return n >= 4 ? 'product' : 'brand';
+}
 
 export class TableRepository {
   async getTable(params: {
-    level?: ProductLevel;
-    parent?: string;
+    productLevel?: number;
+    scope?: string;
+    apg?: string;
+    timeGrain?: string;
+    measure?: string;
+    from?: string;
+    to?: string;
+    planningCycle?: string;
+    compareTo?: string;
+    activity?: string;
     filters?: any;
   }): Promise<TableResponse> {
-    const level: ProductLevel = params.level || 'brand';
-    let rawItems = masterData.items as any[];
+    if (params.compareTo) {
+      const cycleA = params.planningCycle || 'Current cycle';
+      const cycleB = params.compareTo;
+      const [tableA, tableB] = await Promise.all([
+        this.getTable({ ...params, compareTo: undefined, planningCycle: cycleA }),
+        this.getTable({ ...params, compareTo: undefined, planningCycle: cycleB }),
+      ]);
 
-    if (params.parent) {
-      rawItems = rawItems.filter((it) => it.brand === params.parent);
-    }
+      const bMap = new Map(tableB.rows.map(r => [r.id, r]));
 
-    if (level === 'product') {
-      const rows: PlanningTableRow[] = rawItems.map((it) => ({
-        id: it.id,
-        category: it.category,
-        brand: it.brand,
-        product: it.product,
-        customerGroup: it.customerGroup,
-        customer: it.customer,
-        pastActuals: it.pastActuals,
-        definitions: it.definitions,
-      }));
-
-      return {
-        period: masterData.months,
-        currentMonthIndex: masterData.currentMonthIndex,
-        level: 'product',
-        rows,
-      };
-    }
-
-    // Brand level: Group by Brand × CustomerGroup × Customer
-    const brandMap: Record<string, PlanningTableRow> = {};
-    rawItems.forEach((it) => {
-      const groupKey = `${it.category}_${it.brand}_${it.customerGroup}_${it.customer}`;
-      if (!brandMap[groupKey]) {
-        brandMap[groupKey] = {
-          id: `b_${groupKey}`,
-          category: it.category,
-          brand: it.brand,
-          customerGroup: it.customerGroup,
-          customer: it.customer,
-          pastActuals: {},
-          definitions: {
-            opportunity: {},
-            actualFcst: {},
-            risk: {},
-          },
-        };
-      }
-
-      const row = brandMap[groupKey];
-      masterData.months.forEach((m: string, idx: number) => {
-        if (idx < masterData.currentMonthIndex) {
-          row.pastActuals[m] = (row.pastActuals[m] || 0) + (it.pastActuals[m] || 0);
-        } else {
-          row.definitions.actualFcst[m] =
-            (row.definitions.actualFcst[m] || 0) + (it.definitions.actualFcst[m] || 0);
-          row.definitions.opportunity[m] =
-            (row.definitions.opportunity[m] || 0) + (it.definitions.opportunity[m] || 0);
-          row.definitions.risk[m] =
-            (row.definitions.risk[m] || 0) + (it.definitions.risk[m] || 0);
+      tableA.rows.forEach(r => {
+        const matchingB = bMap.get(r.id);
+        if (matchingB) {
+          r.definitionsB = matchingB.definitions;
+          r.pastActualsB = matchingB.pastActuals;
         }
       });
+
+      return {
+        ...tableA,
+        compareTo: cycleB,
+        cycleA,
+      };
+    }
+    const level = params.productLevel || 3;
+    const { activePeriods, currentPeriodIndex } = getPeriodsForGrain(
+      params.timeGrain,
+      params.from,
+      params.to
+    );
+
+    const groups = aggregate({
+      scope: params.scope,
+      apg: params.apg,
+      level,
+      timeGrain: params.timeGrain,
+      measure: params.measure,
+      from: params.from,
+      to: params.to,
+      planningCycle: params.planningCycle,
+      activity: params.activity,
     });
 
-    const rows = Object.values(brandMap);
+    const rows: PlanningTableRow[] = groups.map(g => {
+      const pastActuals: Record<string, number> = {};
+      const opportunity: Record<string, number> = {};
+      const actualFcst: Record<string, number> = {};
+      const risk: Record<string, number> = {};
+
+      activePeriods.forEach((p, pIdx) => {
+        if (pIdx < currentPeriodIndex) {
+          pastActuals[p.label] = g.periodActuals[p.label] || 0;
+        } else {
+          actualFcst[p.label] = g.periodForecast[p.label] || 0;
+          opportunity[p.label] = g.periodOpportunity[p.label] || 0;
+          risk[p.label] = g.periodRisk[p.label] || 0;
+        }
+      });
+
+      const sample = g.items[0] as any;
+
+      const row: PlanningTableRow = {
+        id: `row_${g.id}`,
+        category: sample?.category,
+        sop: sample?.sop,
+        brand: sample?.brand,
+        forecastGroup: sample?.forecastGroup,
+        forecastUnit: sample?.forecastUnit,
+        customerGroup: params.apg || 'All',
+        customer: params.apg || 'All',
+        apg: params.apg || 'All',
+        unitsPerCase: sample?.unitsPerCase || 12,
+        price: sample?.price || 100,
+        pastActuals,
+        definitions: { opportunity, actualFcst, risk },
+      };
+      return row;
+    });
 
     return {
-      period: masterData.months,
-      currentMonthIndex: masterData.currentMonthIndex,
-      level: 'brand',
+      period: activePeriods.map(p => p.label),
+      currentMonthIndex: currentPeriodIndex,
+      level: mapProductLevel(level),
+      productLevelNum: level,
       rows,
     };
   }
 
-  async desegregate(parentBrand?: string): Promise<TableResponse> {
-    let rawItems = masterData.items as any[];
-    if (parentBrand) {
-      rawItems = rawItems.filter((it) => it.brand === parentBrand);
-    }
-
-    const rows: PlanningTableRow[] = rawItems.map((it) => {
-      const diffs: Record<string, Record<string, number>> = {
-        opportunity: {
-          'Jun 2026': 250,
-          'Jul 2026': -150,
-          'Aug 2026': 300,
-        },
-        actualFcst: {
-          'Jun 2026': 1100,
-          'Jul 2026': -750,
-          'Aug 2026': 1350,
-        },
-        risk: {
-          'Jun 2026': -180,
-          'Jul 2026': 220,
-          'Aug 2026': -90,
-        },
-      };
-
-      return {
-        id: it.id,
-        category: it.category,
-        brand: it.brand,
-        product: it.product,
-        customerGroup: it.customerGroup,
-        customer: it.customer,
-        pastActuals: it.pastActuals,
-        definitions: it.definitions,
-        diffs,
-      };
-    });
-
-    return {
-      period: masterData.months,
-      currentMonthIndex: masterData.currentMonthIndex,
-      level: 'product',
-      rows,
-    };
+  async desegregate(scope?: string, params: { timeGrain?: string; measure?: string; from?: string; to?: string; planningCycle?: string; activity?: string } = {}): Promise<TableResponse> {
+    return this.getTable({ productLevel: 5, scope, ...params });
   }
 }
 

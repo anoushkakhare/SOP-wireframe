@@ -1,3 +1,4 @@
+import { aggregate, getPeriodsForGrain } from '../utils/aggregate';
 import masterData from '../data/masterData.json';
 import {
   ForecastLineResponse,
@@ -8,224 +9,578 @@ import {
   TreemapResponse,
   TreemapNode,
   ProductLevel,
+  DataQueryParams,
 } from '../types';
+import { LEVELS } from '../constants/hierarchy';
 
-const BRAND_INDIGO_COLORS: Record<string, string> = {
-  'Dove': '#0F0E9A',
-  "Pond's": '#2B2AB0',
-  'Vaseline': '#4F4EC6',
-  'Sunsilk': '#7A79D6',
-  'Surf Excel': '#0F0E9A',
-  'Comfort': '#2B2AB0',
-  'Domestos': '#4F4EC6',
-  'Lux': '#2B2AB0',
-  'Lifebuoy': '#4F4EC6',
-  'Rexona': '#7A79D6',
-  'Closeup': '#A3A2E2',
-  'Knorr': '#0F0E9A',
-  "Hellmann's": '#2B2AB0',
-  'Brooke Bond': '#4F4EC6',
-  'Lipton': '#7A79D6',
-};
+const LEVEL_COLORS: Record<number, string> = Object.fromEntries(
+  LEVELS.map(l => [l.id, l.color])
+);
+
+function resolveProductLevel(params: DataQueryParams): number {
+  if (params.productLevel) return params.productLevel;
+  return 3; // default brand
+}
 
 export class ChartRepository {
-  async getForecastLine(parent?: string): Promise<ForecastLineResponse> {
-    let items = masterData.items as any[];
-    if (parent) {
-      items = items.filter((it) => it.brand === parent);
-    }
+  async getForecastLine(params: DataQueryParams = {}): Promise<ForecastLineResponse> {
+    const { activePeriods, currentPeriodIndex } = getPeriodsForGrain(
+      params.timeGrain as string,
+      params.from,
+      params.to
+    );
 
-    const points = masterData.months.map((m: string, mIdx: number) => {
-      let forecast = 0;
-      let opp = 0;
-      let risk = 0;
+    const cycleA = params.planningCycle || 'Current cycle';
+    const compareTo = params.compareTo;
 
-      items.forEach((it) => {
-        if (mIdx < masterData.currentMonthIndex) {
-          forecast += it.pastActuals[m] || 0;
-        } else {
-          forecast += it.definitions.actualFcst[m] || 0;
-          opp += it.definitions.opportunity[m] || 0;
-          risk += it.definitions.risk[m] || 0;
-        }
+    if (compareTo) {
+      const isBActuals = compareTo.toLowerCase().includes('actual');
+      const groupsA = aggregate({
+        ...params,
+        level: 5,
+        planningCycle: cycleA,
+        pureForecast: true,
+      });
+      const groupsB = aggregate({
+        ...params,
+        level: 5,
+        planningCycle: compareTo,
+        pureForecast: true,
       });
 
-      // Best case & worst case bounds
-      const worstCase = Math.round(forecast + (mIdx < masterData.currentMonthIndex ? 0 : risk));
-      const bestCase = Math.round(forecast + (mIdx < masterData.currentMonthIndex ? 0 : opp));
+      const points = activePeriods.map((p, pIdx) => {
+        let valA = 0;
+        let oppA = 0;
+        let riskA = 0;
+        let valB: number | null = 0;
 
-      return {
-        time: m,
-        forecast,
-        worstCase,
-        bestCase,
-      };
+        for (const g of groupsA) {
+          valA += g.periodForecast[p.label] || 0;
+          oppA += g.periodOpportunity[p.label] || 0;
+          riskA += g.periodRisk[p.label] || 0;
+        }
+
+        if (isBActuals) {
+          if (pIdx < currentPeriodIndex) {
+            let sumB = 0;
+            for (const g of groupsB) {
+              sumB += g.periodForecast[p.label] || 0;
+            }
+            valB = sumB;
+          } else {
+            valB = null; // Actuals past periods only
+          }
+        } else {
+          let sumB = 0;
+          for (const g of groupsB) {
+            sumB += g.periodForecast[p.label] || 0;
+          }
+          valB = sumB;
+        }
+
+        const rValA = Math.round(valA);
+        const rValB = valB !== null ? Math.round(valB) : null;
+        const delta = rValB !== null ? Math.round(rValB - rValA) : null;
+
+        return {
+          time: p.label,
+          forecast: rValA,
+          worstCase: Math.round(valA + riskA),
+          bestCase: Math.round(valA + oppA),
+          seriesA: rValA,
+          seriesB: rValB,
+          delta,
+          aName: cycleA,
+          bName: compareTo,
+        };
+      });
+
+      return { points, compareTo, cycleA };
+    }
+
+    const groups = aggregate({
+      scope: params.scope,
+      apg: params.apg,
+      level: 5,
+      timeGrain: params.timeGrain as string,
+      measure: params.measure,
+      from: params.from,
+      to: params.to,
+      planningCycle: params.planningCycle,
+      activity: params.activity,
     });
 
+    const points = activePeriods.map((p, pIdx) => {
+      let forecast = 0, opp = 0, risk = 0;
+      for (const g of groups) {
+        if (pIdx < currentPeriodIndex) {
+          forecast += g.periodActuals[p.label] || 0;
+        } else {
+          forecast += g.periodForecast[p.label] || 0;
+          opp += g.periodOpportunity[p.label] || 0;
+          risk += g.periodRisk[p.label] || 0;
+        }
+      }
+      return {
+        time: p.label,
+        forecast: Math.round(forecast),
+        worstCase: Math.round(forecast + (pIdx < currentPeriodIndex ? 0 : risk)),
+        bestCase: Math.round(forecast + (pIdx < currentPeriodIndex ? 0 : opp)),
+      };
+    });
     return { points };
   }
 
-  async getStackedBar(level: ProductLevel = 'brand', parent?: string): Promise<StackedBarResponse> {
-    let items = masterData.items as any[];
+  async getStackedBar(params: DataQueryParams = {}): Promise<StackedBarResponse> {
+    const level = resolveProductLevel(params);
     const availableCustomerGroups = ['Modern trade', 'General trade', 'E-commerce', 'Quick commerce'];
+    const hasChild = level < 5;
+    const levelStr: ProductLevel = level <= 3 ? 'brand' : 'product';
 
-    if (level === 'product') {
-      if (parent) {
-        items = items.filter((it) => it.brand === parent);
-      }
+    const cycleA = params.planningCycle || 'Current cycle';
+    const compareTo = params.compareTo;
 
-      // Group by product
-      const productMap: Record<string, { total: number; segments: Record<string, number> }> = {};
-      items.forEach((it) => {
-        if (!productMap[it.product]) {
-          productMap[it.product] = { total: 0, segments: {} };
-        }
-        let itemTotal = 0;
-        masterData.months.forEach((m: string, idx: number) => {
-          itemTotal += idx < masterData.currentMonthIndex ? it.pastActuals[m] : it.definitions.actualFcst[m];
-        });
-
-        productMap[it.product].segments[it.customerGroup] =
-          (productMap[it.product].segments[it.customerGroup] || 0) + itemTotal;
-        productMap[it.product].total += itemTotal;
+    if (compareTo) {
+      const isActuals = compareTo.toLowerCase().includes('actual');
+      const groupsA = aggregate({
+        ...params,
+        level,
+        planningCycle: cycleA,
+        pureForecast: true,
+        pastPeriodsOnly: isActuals,
+      });
+      const groupsB = aggregate({
+        ...params,
+        level,
+        planningCycle: compareTo,
+        pureForecast: true,
+        pastPeriodsOnly: isActuals,
       });
 
-      const barItems: StackedBarItem[] = Object.entries(productMap).map(([prodName, data]) => ({
-        category: prodName,
-        hasDrillDown: false,
-        segments: data.segments,
-        total: data.total,
-      }));
+      const bMap = new Map(groupsB.map(g => [g.id, g]));
 
-      return {
-        level: 'product',
-        parent,
-        items: barItems,
-        availableCustomerGroups,
-      };
-    }
+      const items: StackedBarItem[] = groupsA.map(gA => {
+        const gB = bMap.get(gA.id);
+        const totA = gA.totalForecast;
+        const totB = gB ? gB.totalForecast : 0;
+        const delta = totB - totA;
 
-    // Level === 'brand'
-    const brandMap: Record<string, { total: number; segments: Record<string, number> }> = {};
-    items.forEach((it) => {
-      if (!brandMap[it.brand]) {
-        brandMap[it.brand] = { total: 0, segments: {} };
-      }
-      let itemTotal = 0;
-      masterData.months.forEach((m: string, idx: number) => {
-        itemTotal += idx < masterData.currentMonthIndex ? it.pastActuals[m] : it.definitions.actualFcst[m];
-      });
-
-      brandMap[it.brand].segments[it.customerGroup] =
-        (brandMap[it.brand].segments[it.customerGroup] || 0) + itemTotal;
-      brandMap[it.brand].total += itemTotal;
-    });
-
-    const barItems: StackedBarItem[] = Object.entries(brandMap).map(([brandName, data]) => ({
-      category: brandName,
-      hasDrillDown: true,
-      segments: data.segments,
-      total: data.total,
-    }));
-
-    return {
-      level: 'brand',
-      items: barItems,
-      availableCustomerGroups,
-    };
-  }
-
-  async getWaterfall(parent?: string): Promise<WaterfallResponse> {
-    let items = masterData.items as any[];
-    let parentShare = 1.0;
-
-    if (parent) {
-      const parentItems = items.filter((it) => it.brand === parent);
-      let totalAll = 0;
-      let totalParent = 0;
-      items.forEach((it) => {
-        masterData.months.forEach((m: string, idx: number) => {
-          const val = idx < masterData.currentMonthIndex ? it.pastActuals[m] : it.definitions.actualFcst[m];
-          totalAll += val;
-        });
-      });
-      parentItems.forEach((it) => {
-        masterData.months.forEach((m: string, idx: number) => {
-          const val = idx < masterData.currentMonthIndex ? it.pastActuals[m] : it.definitions.actualFcst[m];
-          totalParent += val;
-        });
-      });
-      parentShare = totalAll > 0 ? totalParent / totalAll : 0.2;
-    }
-
-    const baseline = Math.round(masterData.targets.baseline * parentShare);
-    const demandDrivers = Math.round(masterData.targets.demandDrivers * parentShare);
-    const manualAdjustment = Math.round(masterData.targets.manualAdjustment * parentShare);
-    const finalForecast = baseline + demandDrivers + manualAdjustment;
-
-    const steps: WaterfallStep[] = [
-      { name: 'Baseline', value: baseline, type: 'total' },
-      { name: 'Demand drivers', value: demandDrivers, type: 'increase' },
-      { name: 'Manual adjustment', value: manualAdjustment, type: 'increase' },
-      { name: 'Final forecast', value: finalForecast, type: 'total' },
-    ];
-
-    return { steps };
-  }
-
-  async getTreemap(level: ProductLevel = 'brand'): Promise<TreemapResponse> {
-    const items = masterData.items as any[];
-
-    if (level === 'product') {
-      const flatNodes: TreemapNode[] = items.map((it, idx) => {
-        let val = 0;
-        masterData.months.forEach((m: string, mIdx: number) => {
-          val += mIdx < masterData.currentMonthIndex ? it.pastActuals[m] : it.definitions.actualFcst[m];
-        });
-        const color = BRAND_INDIGO_COLORS[it.brand] || (idx % 2 === 0 ? '#4F4EC6' : '#7A79D6');
         return {
-          name: it.product,
-          value: val,
-          brand: it.brand,
-          color,
+          id: gA.id,
+          category: gA.name,
+          hasDrillDown: hasChild,
+          segments: { ...gA.apgForecast },
+          total: totA,
+          seriesA: totA,
+          seriesB: totB,
+          delta,
+          segmentsA: { ...gA.apgForecast },
+          segmentsB: { ...(gB?.apgForecast || {}) },
         };
       });
 
       return {
-        level: 'product',
-        data: flatNodes,
+        level: levelStr,
+        items,
+        availableCustomerGroups,
+        compareTo,
+        cycleA,
       };
     }
 
-    // Level === 'brand'
-    const brandGroups: Record<string, any[]> = {};
-    items.forEach((it) => {
-      if (!brandGroups[it.brand]) {
-        brandGroups[it.brand] = [];
-      }
-      let val = 0;
-      masterData.months.forEach((m: string, mIdx: number) => {
-        val += mIdx < masterData.currentMonthIndex ? it.pastActuals[m] : it.definitions.actualFcst[m];
-      });
-      brandGroups[it.brand].push({
-        name: it.product,
-        value: val,
-        brand: it.brand,
-        color: BRAND_INDIGO_COLORS[it.brand] || '#4F4EC6',
-      });
+    const groups = aggregate({
+      scope: params.scope,
+      apg: params.apg,
+      level,
+      timeGrain: params.timeGrain as string,
+      measure: params.measure,
+      from: params.from,
+      to: params.to,
+      planningCycle: params.planningCycle,
+      activity: params.activity,
     });
 
-    const brandNodes: TreemapNode[] = Object.entries(brandGroups).map(([brandName, children]) => ({
-      name: brandName,
-      brand: brandName,
-      color: BRAND_INDIGO_COLORS[brandName] || '#0F0E9A',
-      children,
+    const items: StackedBarItem[] = groups.map(g => ({
+      id: g.id,
+      category: g.name,
+      hasDrillDown: hasChild,
+      segments: { ...g.apgForecast },
+      total: g.totalForecast,
     }));
 
     return {
-      level: 'brand',
-      data: brandNodes,
+      level: levelStr,
+      items,
+      availableCustomerGroups,
     };
+  }
+
+  async getWaterfall(params: DataQueryParams = {}): Promise<WaterfallResponse> {
+    const cycleA = params.planningCycle || 'Current cycle';
+    const compareTo = params.compareTo;
+
+    if (compareTo) {
+      const isActuals = compareTo.toLowerCase().includes('actual');
+      const groupsA = aggregate({
+        ...params,
+        level: 5,
+        planningCycle: cycleA,
+        pureForecast: true,
+        pastPeriodsOnly: isActuals,
+      });
+      const groupsB = aggregate({
+        ...params,
+        level: 5,
+        planningCycle: compareTo,
+        pureForecast: true,
+        pastPeriodsOnly: isActuals,
+      });
+
+      const totalA = groupsA.reduce((s, g) => s + g.totalForecast, 0);
+      const totalB = groupsB.reduce((s, g) => s + g.totalForecast, 0);
+
+      const baseA = Math.round(totalA * 0.88);
+      const ddA = Math.round(totalA * 0.098);
+      const maA = totalA - baseA - ddA;
+
+      const baseB = Math.round(totalB * 0.88);
+      const ddB = Math.round(totalB * 0.098);
+      const maB = totalB - baseB - ddB;
+
+      const baseChange = baseB - baseA;
+      const ddChange = ddB - ddA;
+      const maChange = maB - maA;
+
+      const steps: WaterfallStep[] = [
+        {
+          name: `Forecast ${cycleA}`,
+          value: totalA,
+          type: 'total',
+          topDrivers: [
+            { name: 'Core volume base', value: Math.round(totalA * 0.55) },
+            { name: 'Channel promotion volume', value: Math.round(totalA * 0.28) },
+            { name: 'Innovation uplift', value: totalA - Math.round(totalA * 0.55) - Math.round(totalA * 0.28) },
+          ],
+        },
+        {
+          name: 'Baseline change',
+          value: baseChange,
+          type: baseChange >= 0 ? 'increase' : 'decrease',
+          topDrivers: [
+            { name: 'Trend momentum revision', value: Math.round(baseChange * 0.52) },
+            { name: 'Base run-rate restatement', value: Math.round(baseChange * 0.28) },
+            { name: 'Distribution reset', value: baseChange - Math.round(baseChange * 0.52) - Math.round(baseChange * 0.28) },
+          ],
+        },
+        {
+          name: 'Demand drivers change',
+          value: ddChange,
+          type: ddChange >= 0 ? 'increase' : 'decrease',
+          topDrivers: [
+            { name: 'Festive promo', value: Math.round(ddChange * 0.58) },
+            { name: 'Media blitz', value: Math.round(ddChange * 0.26) },
+            { name: 'Price increase', value: ddChange - Math.round(ddChange * 0.58) - Math.round(ddChange * 0.26) },
+          ],
+        },
+        {
+          name: 'Manual adjustment change',
+          value: maChange,
+          type: maChange >= 0 ? 'increase' : 'decrease',
+          topDrivers: [
+            { name: 'Supply quota realignment', value: Math.round(maChange * 0.5) },
+            { name: 'Regional buffer revision', value: Math.round(maChange * 0.3) },
+            { name: 'Key account override', value: maChange - Math.round(maChange * 0.5) - Math.round(maChange * 0.3) },
+          ],
+        },
+        {
+          name: `Forecast ${compareTo}`,
+          value: totalB,
+          type: 'total',
+          topDrivers: [
+            { name: 'Core volume base', value: Math.round(totalB * 0.55) },
+            { name: 'Channel promotion volume', value: Math.round(totalB * 0.28) },
+            { name: 'Innovation uplift', value: totalB - Math.round(totalB * 0.55) - Math.round(totalB * 0.28) },
+          ],
+        },
+      ];
+
+      return { steps, compareTo, cycleA };
+    }
+
+    const groups = aggregate({
+      scope: params.scope,
+      apg: params.apg,
+      level: 5,
+      timeGrain: params.timeGrain as string,
+      measure: params.measure,
+      from: params.from,
+      to: params.to,
+      planningCycle: params.planningCycle,
+      activity: params.activity,
+    });
+
+    const totalScope = groups.reduce((s, g) => s + g.totalForecast, 0);
+
+    const baseline = Math.round(totalScope * 0.88);
+    const demandDrivers = Math.round(totalScope * 0.098);
+    const manualAdjustment = totalScope - baseline - demandDrivers;
+    const finalForecast = totalScope;
+
+    const steps: WaterfallStep[] = [
+      {
+        name: 'Baseline',
+        value: baseline,
+        type: 'total',
+        topDrivers: [
+          { name: 'Core run-rate', value: Math.round(baseline * 0.62) },
+          { name: 'Distribution reach', value: Math.round(baseline * 0.24) },
+          { name: 'Organic category trend', value: baseline - Math.round(baseline * 0.62) - Math.round(baseline * 0.24) },
+        ],
+      },
+      {
+        name: 'Demand drivers',
+        value: demandDrivers,
+        type: 'increase',
+        topDrivers: [
+          { name: 'Festive promo', value: Math.round(demandDrivers * 0.55) },
+          { name: 'Media blitz', value: Math.round(demandDrivers * 0.30) },
+          { name: 'Price increase', value: demandDrivers - Math.round(demandDrivers * 0.55) - Math.round(demandDrivers * 0.30) },
+        ],
+      },
+      {
+        name: 'Manual adjustment',
+        value: manualAdjustment,
+        type: manualAdjustment >= 0 ? 'increase' : 'decrease',
+        topDrivers: [
+          { name: 'Supply constraint', value: -Math.round(Math.abs(manualAdjustment) * 0.45) },
+          { name: 'Regional distributor push', value: Math.round(Math.abs(manualAdjustment) * 0.85) },
+          { name: 'Inventory buffer', value: manualAdjustment - (-Math.round(Math.abs(manualAdjustment) * 0.45)) - Math.round(Math.abs(manualAdjustment) * 0.85) },
+        ],
+      },
+      {
+        name: 'Final forecast',
+        value: finalForecast,
+        type: 'total',
+        topDrivers: [
+          { name: 'Beauty & Wellbeing', value: Math.round(finalForecast * 0.42) },
+          { name: 'Personal Care', value: Math.round(finalForecast * 0.35) },
+          { name: 'Home Care & Foods', value: finalForecast - Math.round(finalForecast * 0.42) - Math.round(finalForecast * 0.35) },
+        ],
+      },
+    ];
+    return { steps };
+  }
+
+  async getTreemap(params: DataQueryParams = {}): Promise<TreemapResponse> {
+    const level = resolveProductLevel(params);
+    const levelStr: ProductLevel = level <= 3 ? 'brand' : 'product';
+    const cycleA = params.planningCycle || 'Current cycle';
+    const compareTo = params.compareTo;
+
+    if (compareTo) {
+      const isActuals = compareTo.toLowerCase().includes('actual');
+      if (level === 1) {
+        const groupsA = aggregate({
+          ...params,
+          level: 1,
+          planningCycle: cycleA,
+          pureForecast: true,
+          pastPeriodsOnly: isActuals,
+        });
+        const groupsB = aggregate({
+          ...params,
+          level: 1,
+          planningCycle: compareTo,
+          pureForecast: true,
+          pastPeriodsOnly: isActuals,
+        });
+
+        const aMap = new Map(groupsA.map(g => [g.id, g]));
+
+        const data: TreemapNode[] = groupsB
+          .filter(gB => gB.totalForecast > 0)
+          .map(gB => {
+            const gA = aMap.get(gB.id);
+            const valB = Math.round(gB.totalForecast);
+            const valA = gA ? Math.round(gA.totalForecast) : 0;
+            const delta = valB - valA;
+            const pctChange = valA > 0 ? +(((valB - valA) / valA) * 100).toFixed(1) : 0;
+            return {
+              id: gB.id,
+              name: gB.name,
+              value: valB,
+              valueA: valA,
+              valueB: valB,
+              delta,
+              pctChange,
+            };
+          });
+
+        return { level: levelStr, data, compareTo, cycleA };
+      }
+
+      const parentLevel = level - 1;
+      const parentGroupsA = aggregate({
+        ...params,
+        level: parentLevel,
+        planningCycle: cycleA,
+        pureForecast: true,
+        pastPeriodsOnly: isActuals,
+      });
+      const parentGroupsB = aggregate({
+        ...params,
+        level: parentLevel,
+        planningCycle: compareTo,
+        pureForecast: true,
+        pastPeriodsOnly: isActuals,
+      });
+      const groupsA = aggregate({
+        ...params,
+        level,
+        planningCycle: cycleA,
+        pureForecast: true,
+        pastPeriodsOnly: isActuals,
+      });
+      const groupsB = aggregate({
+        ...params,
+        level,
+        planningCycle: compareTo,
+        pureForecast: true,
+        pastPeriodsOnly: isActuals,
+      });
+
+      const parentMapB = new Map<string, typeof parentGroupsB[0]>();
+      for (const pg of parentGroupsB) {
+        parentMapB.set(pg.id, pg);
+      }
+      const aMap = new Map(groupsA.map(g => [g.id, g]));
+
+      const childrenByParent = new Map<string, TreemapNode[]>();
+      for (const tgB of groupsB) {
+        if (tgB.totalForecast <= 0) continue;
+        const pid = tgB.parentId as string;
+        if (!pid) continue;
+        if (!childrenByParent.has(pid)) {
+          childrenByParent.set(pid, []);
+        }
+        const tgA = aMap.get(tgB.id);
+        const valB = Math.round(tgB.totalForecast);
+        const valA = tgA ? Math.round(tgA.totalForecast) : 0;
+        const delta = valB - valA;
+        const pctChange = valA > 0 ? +(((valB - valA) / valA) * 100).toFixed(1) : 0;
+
+        childrenByParent.get(pid)!.push({
+          id: tgB.id,
+          name: tgB.name,
+          value: valB,
+          valueA: valA,
+          valueB: valB,
+          delta,
+          pctChange,
+          parentId: pid,
+          parentName: parentMapB.get(pid)?.name || '',
+        });
+      }
+
+      const data: TreemapNode[] = [];
+      for (const pgB of parentGroupsB) {
+        const children = childrenByParent.get(pgB.id);
+        if (!children || children.length === 0) continue;
+        const parentTotalB = children.reduce((sum, c) => sum + (c.value || 0), 0);
+        const parentTotalA = children.reduce((sum, c) => sum + (c.valueA || 0), 0);
+        const parentDelta = parentTotalB - parentTotalA;
+        const parentPct = parentTotalA > 0 ? +(((parentTotalB - parentTotalA) / parentTotalA) * 100).toFixed(1) : 0;
+
+        data.push({
+          id: pgB.id,
+          name: pgB.name,
+          value: parentTotalB,
+          valueA: parentTotalA,
+          valueB: parentTotalB,
+          delta: parentDelta,
+          pctChange: parentPct,
+          children,
+        });
+      }
+
+      return { level: levelStr, data, compareTo, cycleA };
+    }
+
+    const groups = aggregate({
+      scope: params.scope,
+      apg: params.apg,
+      level,
+      timeGrain: params.timeGrain as string,
+      measure: params.measure,
+      from: params.from,
+      to: params.to,
+      planningCycle: params.planningCycle,
+      activity: params.activity,
+    });
+
+    // Level 1 is flat with no band
+    if (level === 1) {
+      const data: TreemapNode[] = groups
+        .filter(g => g.totalForecast > 0)
+        .map(g => ({
+          id: g.id,
+          name: g.name,
+          value: Math.round(g.totalForecast),
+        }));
+      return { level: levelStr, data };
+    }
+
+    // Level > 1: Treemap tiles = nodes at the selected productLevel, grouped by their own parent (level-1)
+    const parentLevel = level - 1;
+    const parentGroups = aggregate({
+      scope: params.scope,
+      apg: params.apg,
+      level: parentLevel,
+      timeGrain: params.timeGrain as string,
+      measure: params.measure,
+      from: params.from,
+      to: params.to,
+      planningCycle: params.planningCycle,
+      activity: params.activity,
+    });
+
+    const parentMap = new Map<string, typeof parentGroups[0]>();
+    for (const pg of parentGroups) {
+      parentMap.set(pg.id, pg);
+    }
+
+    // Group tiles by their parentId from masterData nodes hierarchy
+    const childrenByParent = new Map<string, TreemapNode[]>();
+    for (const tg of groups) {
+      if (tg.totalForecast <= 0) continue;
+      const pid = tg.parentId as string;
+      if (!pid) continue;
+      if (!childrenByParent.has(pid)) {
+        childrenByParent.set(pid, []);
+      }
+      childrenByParent.get(pid)!.push({
+        id: tg.id,
+        name: tg.name,
+        value: Math.round(tg.totalForecast),
+        parentId: pid,
+        parentName: parentMap.get(pid)?.name || '',
+      });
+    }
+
+    const data: TreemapNode[] = [];
+    for (const pg of parentGroups) {
+      const children = childrenByParent.get(pg.id);
+      if (!children || children.length === 0) continue;
+      const parentTotal = children.reduce((sum, c) => sum + (c.value || 0), 0);
+      data.push({
+        id: pg.id,
+        name: pg.name,
+        value: parentTotal,
+        children,
+      });
+    }
+
+    return { level: levelStr, data };
   }
 }
 

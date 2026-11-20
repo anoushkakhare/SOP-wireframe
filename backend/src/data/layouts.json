@@ -2,6 +2,22 @@
   "demand_planner": {
     "role": "demand_planner",
     "roleTitle": "Demand Planner",
+    "pages": [
+      {
+        "id": "dashboard",
+        "label": "Summary dashboard",
+        "path": "/dashboard",
+        "icon": "dashboard",
+        "enabled": true
+      },
+      {
+        "id": "data-review",
+        "label": "Data review",
+        "path": "/data-review",
+        "icon": "data-review",
+        "enabled": true
+      }
+    ],
     "headerControls": {
       "showProductLevel": true,
       "showCustomerLevel": true,
@@ -54,7 +70,23 @@
   },
   "leadership": {
     "role": "leadership",
-    "roleTitle": "Executive Leadership",
+    "roleTitle": "Executive",
+    "pages": [
+      {
+        "id": "dashboard",
+        "label": "Summary dashboard",
+        "path": "/dashboard",
+        "icon": "dashboard",
+        "enabled": true
+      },
+      {
+        "id": "data-review",
+        "label": "Data review",
+        "path": "/data-review",
+        "icon": "data-review",
+        "enabled": false
+      }
+    ],
     "headerControls": {
       "showProductLevel": true,
       "showCustomerLevel": true,

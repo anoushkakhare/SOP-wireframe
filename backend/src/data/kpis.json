@@ -7,13 +7,6 @@
     "isNeutral": true
   },
   {
-    "key": "forecast_adj",
-    "label": "Forecast adjustment",
-    "value": 42000,
-    "format": "number",
-    "growthType": "positive"
-  },
-  {
     "key": "risk",
     "label": "Risk",
     "value": -96000,

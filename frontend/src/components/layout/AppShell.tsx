@@ -1,5 +1,6 @@
 import React from 'react';
 import { StickyHeader } from './StickyHeader';
+import { LeftIconRail } from './LeftIconRail';
 import { ScrollRegion } from './ScrollRegion';
 import { FilterDrawer } from '../filters/FilterDrawer';
 import { ScenarioSelectorDrawer } from '../scenarios/ScenarioSelectorDrawer';
@@ -7,145 +8,159 @@ import { SaveScenarioModal } from '../scenarios/SaveScenarioModal';
 import { CommitConfirmModal } from '../scenarios/CommitConfirmModal';
 import { ConfirmDialog } from './ConfirmDialog';
 import { ToastContainer } from './ToastContainer';
-import { MetaOptions, ProductLevel, CustomerLevel, Uom } from '../../types';
+import {
+  MetaOptions,
+  HierarchyNode,
+  Uom,
+  TimeGrain,
+  ProductLevelNum,
+} from '../../types';
+import { CustomerViewOption } from '../../store/viewStore';
 import { labels } from '../../constants/labels';
 
 interface AppShellProps {
   children: React.ReactNode;
-  roleTitle: string;
+  selectionRow?: React.ReactNode;
+  roleTitle?: string;
   userName?: string;
-  metaOptions: MetaOptions | null;
-  productLevel: ProductLevel;
-  customerLevel: CustomerLevel;
-  uom: Uom;
-  onProductLevelChange: (val: ProductLevel) => void;
-  onCustomerLevelChange: (val: CustomerLevel) => void;
-  onUomChange: (val: Uom) => void;
+  metaOptions?: MetaOptions | null;
+  hierarchyNodes?: HierarchyNode[];
+  productLevel?: ProductLevelNum;
+  allowedLevels?: ProductLevelNum[];
+  customerView?: CustomerViewOption;
+  measure?: Uom;
+  timeGrain?: TimeGrain;
+  apg?: string[];
+  onProductLevelChange?: (val: ProductLevelNum) => void;
+  onCustomerViewChange?: (val: CustomerViewOption) => void;
+  onMeasureChange?: (val: Uom) => void;
+  onTimeGrainChange?: (val: TimeGrain) => void;
+  onApgChange?: (val: string[]) => void;
+  onResetHeaderOnly?: () => void;
 
-  // Header Actions
-  isTableActive: boolean;
-  onToggleTable: () => void;
-  hasActiveFilters?: boolean;
+  isTableActive?: boolean;
+  onToggleTable?: () => void;
+  activeFilterCount?: number;
 
-  // Filter Drawer
-  isFilterOpen: boolean;
-  onCloseFilter: () => void;
-  onApplyFilter: () => void;
-  onResetFilter: () => void;
+  isFilterOpen?: boolean;
+  onCloseFilter?: () => void;
+  onApplyFilter?: () => void;
+  onResetFilter?: () => void;
 
-  // Scenario Drawer & Modals
-  isScenarioOpen: boolean;
-  onCloseScenario: () => void;
-  isSaveModalOpen: boolean;
-  onCloseSaveModal: () => void;
-  onSaveScenario: (name: string) => Promise<void>;
-  isCommitModalOpen: boolean;
-  onCloseCommitModal: () => void;
-  onConfirmCommit: () => Promise<void>;
+  isScenarioOpen?: boolean;
+  onCloseScenario?: () => void;
+  isSaveModalOpen?: boolean;
+  onCloseSaveModal?: () => void;
+  onSaveScenario?: (name: string) => Promise<void>;
+  isCommitModalOpen?: boolean;
+  onCloseCommitModal?: () => void;
+  onConfirmCommit?: () => Promise<void>;
 
-  // Delete Scenario Confirmation
-  deleteTarget: { id: string; name: string } | null;
-  onCloseDeleteModal: () => void;
-  onConfirmDelete: () => Promise<void>;
+  deleteTarget?: { id: string; name: string } | null;
+  onCloseDeleteModal?: () => void;
+  onConfirmDelete?: () => Promise<void>;
 
-  // Discard Unsaved Edits Modal
-  isDiscardModalOpen: boolean;
-  onCloseDiscardModal: () => void;
-  onConfirmDiscard: () => void;
+  isDiscardModalOpen?: boolean;
+  onCloseDiscardModal?: () => void;
+  onConfirmDiscard?: () => void;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({
   children,
-  roleTitle,
-  userName,
-  metaOptions,
-  productLevel,
-  customerLevel,
-  uom,
-  onProductLevelChange,
-  onCustomerLevelChange,
-  onUomChange,
-  isTableActive,
-  onToggleTable,
-  hasActiveFilters,
-  isFilterOpen,
-  onCloseFilter,
-  onApplyFilter,
-  onResetFilter,
-  isScenarioOpen,
-  onCloseScenario,
-  isSaveModalOpen,
-  onCloseSaveModal,
-  onSaveScenario,
-  isCommitModalOpen,
-  onCloseCommitModal,
-  onConfirmCommit,
-  deleteTarget,
-  onCloseDeleteModal,
-  onConfirmDelete,
-  isDiscardModalOpen,
-  onCloseDiscardModal,
-  onConfirmDiscard,
+  selectionRow,
+  roleTitle = 'Demand Planner',
+  userName = 'Nishtha Agarwal',
+  metaOptions = null,
+  hierarchyNodes = [],
+  productLevel = 1,
+  allowedLevels = [1, 2, 3, 4, 5],
+  customerView = 'apg',
+  measure = 'cases',
+  timeGrain = 'month',
+  apg = [],
+  onProductLevelChange = () => {},
+  onCustomerViewChange = () => {},
+  onMeasureChange = () => {},
+  onTimeGrainChange = () => {},
+  onApgChange = () => {},
+  onResetHeaderOnly = () => {},
+  isTableActive = false,
+  onToggleTable = () => {},
+  activeFilterCount = 0,
+  isFilterOpen = false,
+  onCloseFilter = () => {},
+  onApplyFilter = () => {},
+  onResetFilter = () => {},
+  isScenarioOpen = false,
+  onCloseScenario = () => {},
+  isSaveModalOpen = false,
+  onCloseSaveModal = () => {},
+  onSaveScenario = async () => {},
+  isCommitModalOpen = false,
+  onCloseCommitModal = () => {},
+  onConfirmCommit = async () => {},
+  deleteTarget = null,
+  onCloseDeleteModal = () => {},
+  onConfirmDelete = async () => {},
+  isDiscardModalOpen = false,
+  onCloseDiscardModal = () => {},
+  onConfirmDiscard = () => {},
 }) => {
   const { dialogs: d } = labels;
 
   return (
     <div className="min-h-screen bg-bg-page flex flex-col font-sans text-text-primary">
-      {/* Sticky Header */}
-      <StickyHeader
-        roleTitle={roleTitle}
-        userName={userName}
-        metaOptions={metaOptions}
-        productLevel={productLevel}
-        customerLevel={customerLevel}
-        uom={uom}
-        onProductLevelChange={onProductLevelChange}
-        onCustomerLevelChange={onCustomerLevelChange}
-        onUomChange={onUomChange}
-        onSaveScenario={() => onCloseSaveModal()}
-        onCommitScenario={() => onCloseCommitModal()}
-        onToggleTable={onToggleTable}
-        onOpenFilter={() => onCloseFilter()}
-        onOpenScenarios={() => onCloseScenario()}
-        isTableActive={isTableActive}
-        hasActiveFilters={hasActiveFilters}
-      />
+      <LeftIconRail />
 
-      {/* Main Scrollable Canvas */}
-      <ScrollRegion hasBottomDock={isTableActive}>
-        {children}
-      </ScrollRegion>
+      <div className="md:ml-[72px] flex flex-col flex-1 min-w-0">
+        <StickyHeader
+          roleTitle={roleTitle}
+          userName={userName}
+          productLevel={productLevel}
+          allowedLevels={allowedLevels}
+          customerView={customerView}
+          measure={measure}
+          measureOptions={metaOptions?.measures || metaOptions?.uoms}
+          timeGrain={timeGrain}
+          timeGrainOptions={metaOptions?.timeGrains}
+          onProductLevelChange={onProductLevelChange}
+          onCustomerViewChange={onCustomerViewChange}
+          onMeasureChange={onMeasureChange}
+          onTimeGrainChange={onTimeGrainChange}
+          onResetHeaderOnly={onResetHeaderOnly}
+          onSaveScenario={() => onCloseSaveModal()}
+          onCommitScenario={() => onCloseCommitModal()}
+          onToggleTable={onToggleTable}
+          onOpenFilter={() => onCloseFilter()}
+          onOpenScenarios={() => onCloseScenario()}
+          isTableActive={isTableActive}
+          activeFilterCount={activeFilterCount}
+          selectionRow={selectionRow}
+        />
 
-      {/* Filter Drawer */}
+        <div className="flex flex-1 min-h-[calc(100vh-56px)] pb-14 md:pb-0 overflow-hidden">
+          <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
+            <ScrollRegion hasBottomDock={isTableActive}>
+              {children}
+            </ScrollRegion>
+          </main>
+        </div>
+      </div>
+
       <FilterDrawer
         isOpen={isFilterOpen}
         onClose={onCloseFilter}
         onApply={onApplyFilter}
         onReset={onResetFilter}
-        metaOptions={metaOptions}
+        hierarchyNodes={hierarchyNodes}
       />
 
-      {/* Scenario Selector Drawer */}
-      <ScenarioSelectorDrawer
-        isOpen={isScenarioOpen}
-        onClose={onCloseScenario}
-      />
+      <ScenarioSelectorDrawer isOpen={isScenarioOpen} onClose={onCloseScenario} />
 
-      {/* Save Scenario Modal */}
-      <SaveScenarioModal
-        isOpen={isSaveModalOpen}
-        onClose={onCloseSaveModal}
-        onSave={onSaveScenario}
-      />
+      <SaveScenarioModal isOpen={isSaveModalOpen} onClose={onCloseSaveModal} onSave={onSaveScenario} />
 
-      {/* Commit Confirm Modal */}
-      <CommitConfirmModal
-        isOpen={isCommitModalOpen}
-        onClose={onCloseCommitModal}
-        onConfirm={onConfirmCommit}
-      />
+      <CommitConfirmModal isOpen={isCommitModalOpen} onClose={onCloseCommitModal} onConfirm={onConfirmCommit} />
 
-      {/* Delete Scenario Confirmation */}
       <ConfirmDialog
         isOpen={!!deleteTarget}
         onClose={onCloseDeleteModal}
@@ -157,7 +172,6 @@ export const AppShell: React.FC<AppShellProps> = ({
         isDestructive
       />
 
-      {/* Discard Unsaved Edits Modal */}
       <ConfirmDialog
         isOpen={isDiscardModalOpen}
         onClose={onCloseDiscardModal}
@@ -169,7 +183,6 @@ export const AppShell: React.FC<AppShellProps> = ({
         isDestructive
       />
 
-      {/* Toast notifications */}
       <ToastContainer />
     </div>
   );

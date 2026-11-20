@@ -24,8 +24,10 @@ import { PlanningTable } from '../components/table/PlanningTable';
 import { Save, ChevronLeft } from 'lucide-react';
 import { KpiItem, PlanningTableRow, Scenario, StackedBarItem } from '../types';
 import { labels } from '../constants/labels';
+import { useAuthStore } from '../store/authStore';
 
 export const DevGalleryPage: React.FC = () => {
+  const { user } = useAuthStore();
   const [selectVal, setSelectVal] = useState('brand');
   const [timeRange, setTimeRange] = useState<[number, number]>([12, 23]);
   const [startDate, setStartDate] = useState('Jan 2026');
@@ -35,11 +37,14 @@ export const DevGalleryPage: React.FC = () => {
   const [editableVal, setEditableVal] = useState(28400);
 
   const sampleKpis: KpiItem[] = [
-    { key: 'tot', label: labels.kpi.totalForecast, value: 1820000, format: 'number', isNeutral: true },
-    { key: 'adj', label: labels.kpi.forecastAdj, value: 42000, format: 'number', growthType: 'positive' },
-    { key: 'risk', label: labels.kpi.risk, value: -96000, format: 'number', growthType: 'negative' },
-    { key: 'opp', label: labels.kpi.opportunity, value: 128000, format: 'number', growthType: 'positive' },
-    { key: 'g_fy', label: labels.kpi.fyGrowth, value: 2.8, format: 'percent', growthType: 'positive' },
+    { key: 'total_forecast', label: labels.kpi.totalForecast, value: 1820000, format: 'number', isNeutral: true },
+    { key: 'baseline', label: 'Baseline', value: 1600000, format: 'number', isNeutral: true },
+    { key: 'actuals', label: 'Actuals', value: 720000, format: 'number', isNeutral: true },
+    { key: 'opportunity_risk', label: labels.kpi.opportunityRisk, value: null, opportunityValue: 128000, riskValue: -96000, format: 'number' },
+    { key: 'growth_prev', label: 'Growth vs previous month', value: 3.4, format: 'percent', growthType: 'positive', roValue: 4.1 },
+    { key: 'fy_growth', label: labels.kpi.fyGrowth, value: 2.8, format: 'percent', growthType: 'positive', roValue: 3.2 },
+    { key: 'ytd_growth', label: labels.kpi.ytdGrowth, value: 5.8, format: 'percent', growthType: 'positive' },
+    { key: 'ytg_growth', label: labels.kpi.ytgGrowth, value: -1.9, format: 'percent', growthType: 'negative', roValue: -1.2 },
   ];
 
   const sampleLinePoints = [
@@ -94,8 +99,8 @@ export const DevGalleryPage: React.FC = () => {
     name: 'Festive Season Upside',
     status: 'saved',
     lastModified: new Date(Date.now() - 120000).toISOString(),
-    userId: 'usr_1',
-    userName: 'Priya Sharma',
+    userId: user?.id || 'usr_1',
+    userName: user?.name || 'Nishtha Agarwal',
   };
 
   const sampleRows: PlanningTableRow[] = [
@@ -135,7 +140,7 @@ export const DevGalleryPage: React.FC = () => {
           1. Header Components
         </h2>
         <div className="flex flex-wrap items-center gap-6 p-4 bg-primary-700 rounded-card shadow-sm">
-          <RoleBadge roleTitle="Demand Planner" userName="Priya Sharma" />
+          <RoleBadge roleTitle={user?.roleTitle || labels.header.avatarRole} userName={user?.name || 'Nishtha Agarwal'} />
           <LabeledSelect
             label={labels.header.selects.productView}
             value={selectVal}
@@ -148,14 +153,14 @@ export const DevGalleryPage: React.FC = () => {
           <HeaderIconButton
             icon={<Save className="w-4 h-4" />}
             tooltip={labels.header.actions.saveScenario}
-            onClick={() => {}}
+            onClick={() => { }}
           />
           <HeaderActions
-            onSaveScenario={() => {}}
-            onCommitScenario={() => {}}
-            onToggleTable={() => {}}
-            onOpenFilter={() => {}}
-            onOpenScenarios={() => {}}
+            onSaveScenario={() => { }}
+            onCommitScenario={() => { }}
+            onToggleTable={() => { }}
+            onOpenFilter={() => { }}
+            onOpenScenarios={() => { }}
             isTableActive={false}
           />
         </div>
@@ -186,11 +191,11 @@ export const DevGalleryPage: React.FC = () => {
             <ForecastLineChart data={sampleLinePoints} />
           </ChartCard>
 
-          <ChartCard title={labels.charts.forecastBy('brand')}>
+          <ChartCard title={labels.charts.forecastBy('Brand')}>
             <StackedBarChart
               data={sampleStackedItems}
               level="brand"
-              onDrillDown={() => {}}
+              onDrillDown={() => { }}
             />
           </ChartCard>
 
@@ -226,9 +231,9 @@ export const DevGalleryPage: React.FC = () => {
               onChange={setSelectedBrands}
             />
             <FilterActions
-              onApply={() => {}}
+              onApply={() => { }}
               onReset={() => setSelectedBrands([])}
-              onClose={() => {}}
+              onClose={() => { }}
             />
           </div>
         </div>
@@ -245,8 +250,8 @@ export const DevGalleryPage: React.FC = () => {
           <div className="w-80">
             <ScenarioCard
               scenario={sampleScenario}
-              onSelect={() => {}}
-              onDelete={() => {}}
+              onSelect={() => { }}
+              onDelete={() => { }}
             />
           </div>
         </div>
@@ -288,7 +293,7 @@ export const DevGalleryPage: React.FC = () => {
             level="brand"
             mode={tableMode}
             draftEdits={{}}
-            onCellEdit={() => {}}
+            onCellEdit={() => { }}
           />
         </div>
       </section>

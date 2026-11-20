@@ -3,7 +3,7 @@ import { User, LayoutManifest, LoginResponse } from '../types';
 
 // ── Store version: bump this whenever the shape of persisted auth data changes.
 // On mismatch the stored token/user/layout are cleared so a fresh login is forced.
-const STORE_VERSION = 2;
+const STORE_VERSION = 3;
 const VERSION_KEY = 'sop_store_version';
 
 function loadPersistedAuth() {
