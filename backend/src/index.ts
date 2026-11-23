@@ -58,6 +58,20 @@ const healthHandler = (_req: Request, res: Response) => {
 app.get('/health', healthHandler);
 app.get('/api/health', healthHandler);
 
+// Serve the production frontend
+const FRONTEND_DIST = path.resolve(__dirname, '../../frontend/dist');
+
+app.use(express.static(FRONTEND_DIST));
+
+// Support React Router browser navigation and page refreshes
+app.get('*', (req: Request, res: Response, next: NextFunction) => {
+  if (req.path.startsWith('/api/')) {
+    return next();
+  }
+
+  res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+});
+
 // Error handling
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Unhandled server error:', err);
