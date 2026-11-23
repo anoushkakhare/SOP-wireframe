@@ -79,16 +79,12 @@ export class KpiRepository {
     let ytgForecast = groups.reduce((s, g) => s + g.ytgForecast, 0);
     let priorYtgForecast = groups.reduce((s, g) => s + g.priorYtgForecast, 0);
 
-    let forecastAdjustment = Math.round(totalForecast * 0.023);
-
     // Scenario adjustment
     if (params.scenarioId === 'scen_1') {
       const delta = Math.round(totalForecast * 0.035);
-      forecastAdjustment += delta;
       totalForecast += delta;
     } else if (params.scenarioId === 'scen_4') {
       const delta = Math.round(totalForecast * 0.045);
-      forecastAdjustment -= delta;
       totalForecast -= delta;
     }
 
@@ -197,7 +193,6 @@ export class KpiRepository {
       { key: 'total_forecast', label: 'Total forecast', value: totalForecast, format: numFormat, isNeutral: true },
       { key: 'baseline', label: 'Baseline', value: baseline, format: numFormat, isNeutral: true },
       { key: 'actuals', label: 'Actuals', value: totalActuals, format: numFormat, isNeutral: true },
-      { key: 'forecast_adj', label: 'Forecast adjustment', value: forecastAdjustment, format: numFormat, growthType: forecastAdjustment >= 0 ? 'positive' : 'negative' },
       { key: 'opportunity', label: 'Opportunity', value: totalOpportunity, format: numFormat, growthType: 'positive' },
       { key: 'risk', label: 'Risk', value: totalRisk, format: numFormat, growthType: 'negative' },
       { key: 'growth_prev', label: prevPeriodTitle, value: growthPrev, format: 'percent', growthType: growthPrev >= 0 ? 'positive' : 'negative', roValue: growthPrevRo },

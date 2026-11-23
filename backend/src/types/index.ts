@@ -106,6 +106,14 @@ export interface KpiItem {
   delta?: number | null;
   pctChange?: number | null;
   compareTo?: string;
+  opportunityValue?: number | null;
+  riskValue?: number | null;
+  opportunityDelta?: number | null;
+  riskDelta?: number | null;
+  opportunityCompareValue?: number | null;
+  riskCompareValue?: number | null;
+  opportunityPctChange?: number | null;
+  riskPctChange?: number | null;
 }
 
 export interface ForecastLinePoint {

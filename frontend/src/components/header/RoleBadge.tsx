@@ -10,8 +10,9 @@ interface RoleBadgeProps {
  * Displays a user avatar initial, the user's name and their role.
  * "Role based access" subtitle removed per spec.
  */
-export const RoleBadge: React.FC<RoleBadgeProps> = ({ roleTitle, userName }) => {
-  const initial = userName?.trim() ? userName.trim().charAt(0).toUpperCase() : '?';
+export const RoleBadge: React.FC<RoleBadgeProps> = ({ roleTitle, userName = 'Nishtha Agarwal' }) => {
+  const displayName = userName?.trim() || 'Nishtha Agarwal';
+  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="flex items-center gap-2.5">
@@ -24,7 +25,7 @@ export const RoleBadge: React.FC<RoleBadgeProps> = ({ roleTitle, userName }) => 
       </div>
       <div className="flex flex-col">
         <span className="text-sm font-semibold text-white leading-tight truncate max-w-[140px]">
-          {userName || roleTitle}
+          {displayName}
         </span>
         <span className="text-[11px] text-white/65 leading-none font-normal">
           {roleTitle}

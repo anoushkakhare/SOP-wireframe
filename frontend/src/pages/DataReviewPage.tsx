@@ -205,7 +205,7 @@ export const DataReviewPage: React.FC = () => {
   };
 
   return (
-    <AppShell roleTitle={roleTitle} userName={user?.name}>
+    <AppShell roleTitle={roleTitle} userName={user?.name || 'Nishtha Agarwal'}>
       <div className="max-w-[1500px] mx-auto p-4 md:p-6 lg:p-8">
         {/* Page Title & Breadcrumb */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">

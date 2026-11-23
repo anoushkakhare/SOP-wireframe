@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ExternalLink } from 'lucide-react';
 import { KpiCard } from './KpiCard';
@@ -10,6 +10,53 @@ import { useFilterStore } from '../../store/filterStore';
 import { countDescendants } from '../../utils/countDescendants';
 import { metaService } from '../../services/metaService';
 import { HierarchyNetwork } from '../hierarchy/HierarchyNetwork';
+
+/** Responsive grid for KPI number cards.
+ *  ≥1200px : fixed grid, all N columns equal width, fills full row.
+ *  <1200px : horizontal-scroll row, each card min 160px.
+ */
+const KpiGrid: React.FC<{ kpis: KpiItem[] }> = ({ kpis }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [wide, setWide] = useState(
+    typeof window !== 'undefined' && window.innerWidth >= 1200,
+  );
+
+  useEffect(() => {
+    const el = ref.current?.parentElement ?? window as unknown as Element;
+    const obs = new ResizeObserver(([entry]) => {
+      setWide((entry?.contentRect?.width ?? window.innerWidth) >= 1200);
+    });
+    obs.observe(el as Element);
+    return () => obs.disconnect();
+  }, []);
+
+  const n = kpis.length || 1;
+
+  const gridStyle: React.CSSProperties = wide
+    ? {
+        display: 'grid',
+        gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`,
+        gap: '12px',
+        width: '100%',
+      }
+    : {
+        display: 'grid',
+        gridAutoFlow: 'column',
+        gridAutoColumns: 'minmax(160px, 1fr)',
+        gap: '12px',
+        overflowX: 'auto',
+        width: '100%',
+        paddingBottom: '4px',
+      };
+
+  return (
+    <div ref={ref} className="no-scrollbar scroll-smooth" style={gridStyle}>
+      {kpis.map((kpi) => (
+        <KpiCard key={kpi.key} kpi={kpi} />
+      ))}
+    </div>
+  );
+};
 
 export interface SelectionKpiRowProps {
   hierarchyNodes?: HierarchyNode[];
@@ -250,13 +297,23 @@ export const KpiNumbersRow: React.FC<KpiNumbersRowProps> = ({
 }) => {
   return (
     <div className="w-full select-none">
-      {/* ─── Row B: Numbers (10 cards, scrolls horizontally) ─── */}
+      {/* ─── Row B: Numbers (8 cards, scrolls horizontally) ─── */}
       {isLoading ? (
-        <div className="w-full flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {Array.from({ length: 10 }).map((_, i) => (
+        /* Skeleton: same responsive grid as the live row */
+        <div
+          className="w-full pb-1 no-scrollbar"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(8, minmax(160px, 1fr))',
+            gap: '12px',
+            overflowX: 'auto',
+          }}
+        >
+          {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="flex-1 min-w-[130px] sm:min-w-[145px] max-w-[200px] h-[86px] bg-surface border border-border rounded-card p-2.5 flex flex-col justify-between animate-pulse shrink-0"
+              className="bg-surface border border-border rounded-card p-2.5 flex flex-col justify-between animate-pulse"
+              style={{ height: '120px', boxSizing: 'border-box' }}
             >
               <div className="h-3 bg-primary-100 rounded w-2/3" />
               <div className="h-6 bg-primary-100 rounded w-4/5 mx-auto" />
@@ -288,11 +345,11 @@ export const KpiNumbersRow: React.FC<KpiNumbersRowProps> = ({
           {labels.generic.noData}
         </div>
       ) : (
-        <div className="w-full flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar scroll-smooth">
-          {kpis.map((kpi) => (
-            <KpiCard key={kpi.key} kpi={kpi} />
-          ))}
-        </div>
+        /*
+         * ≥1200px: grid fills full width, all columns equal.
+         * <1200px: auto-flow column with min 160px per card → horizontal scroll.
+         */
+        <KpiGrid kpis={kpis} />
       )}
     </div>
   );

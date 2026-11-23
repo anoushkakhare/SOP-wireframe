@@ -40,9 +40,7 @@ export const DevGalleryPage: React.FC = () => {
     { key: 'total_forecast', label: labels.kpi.totalForecast, value: 1820000, format: 'number', isNeutral: true },
     { key: 'baseline', label: 'Baseline', value: 1600000, format: 'number', isNeutral: true },
     { key: 'actuals', label: 'Actuals', value: 720000, format: 'number', isNeutral: true },
-    { key: 'forecast_adj', label: labels.kpi.forecastAdj, value: 42000, format: 'number', growthType: 'positive' },
-    { key: 'opportunity', label: labels.kpi.opportunity, value: 128000, format: 'number', growthType: 'positive' },
-    { key: 'risk', label: labels.kpi.risk, value: -96000, format: 'number', growthType: 'negative' },
+    { key: 'opportunity_risk', label: labels.kpi.opportunityRisk, value: null, opportunityValue: 128000, riskValue: -96000, format: 'number' },
     { key: 'growth_prev', label: 'Growth vs previous month', value: 3.4, format: 'percent', growthType: 'positive', roValue: 4.1 },
     { key: 'fy_growth', label: labels.kpi.fyGrowth, value: 2.8, format: 'percent', growthType: 'positive', roValue: 3.2 },
     { key: 'ytd_growth', label: labels.kpi.ytdGrowth, value: 5.8, format: 'percent', growthType: 'positive' },
@@ -102,7 +100,7 @@ export const DevGalleryPage: React.FC = () => {
     status: 'saved',
     lastModified: new Date(Date.now() - 120000).toISOString(),
     userId: user?.id || 'usr_1',
-    userName: user?.name || '',
+    userName: user?.name || 'Nishtha Agarwal',
   };
 
   const sampleRows: PlanningTableRow[] = [
@@ -142,7 +140,7 @@ export const DevGalleryPage: React.FC = () => {
           1. Header Components
         </h2>
         <div className="flex flex-wrap items-center gap-6 p-4 bg-primary-700 rounded-card shadow-sm">
-          <RoleBadge roleTitle={user?.roleTitle || labels.header.avatarRole} userName={user?.name} />
+          <RoleBadge roleTitle={user?.roleTitle || labels.header.avatarRole} userName={user?.name || 'Nishtha Agarwal'} />
           <LabeledSelect
             label={labels.header.selects.productView}
             value={selectVal}
