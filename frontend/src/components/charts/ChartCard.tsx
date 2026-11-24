@@ -10,6 +10,7 @@ interface ChartCardProps {
   height?: string;
   fullscreenHeight?: string;
   headerAction?: React.ReactNode;
+  className?: string;
 }
 
 /**
@@ -24,6 +25,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
   height = 'h-[310px]',
   fullscreenHeight = 'w-full h-[540px]',
   headerAction,
+  className = '',
 }) => {
   const fsLabel = isFullscreen
     ? labels.charts.fullscreenExit
@@ -33,7 +35,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
     <div
       className={`bg-surface border border-border rounded-card shadow-card flex flex-col overflow-hidden transition-all duration-200 ${
         isFullscreen ? fullscreenHeight : height
-      }`}
+      } ${className}`}
     >
       {/* Chart header */}
       <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-border bg-surface select-none">

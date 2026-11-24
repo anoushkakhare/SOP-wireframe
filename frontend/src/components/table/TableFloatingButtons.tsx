@@ -10,6 +10,7 @@ interface TableFloatingButtonsProps {
     onCloseOrSave: () => void;
     canEdit?: boolean;
     disabledTooltip?: string;
+    showClose?: boolean;
 }
 
 /**
@@ -28,6 +29,7 @@ export const TableFloatingButtons: React.FC<TableFloatingButtonsProps> = ({
     onCloseOrSave,
     canEdit = true,
     disabledTooltip,
+    showClose = true,
 }) => {
     const isEditing = mode === 'edit';
     const isDelta = mode === 'delta';
@@ -74,18 +76,20 @@ export const TableFloatingButtons: React.FC<TableFloatingButtonsProps> = ({
             </button>
 
             {/* 3. Save (edit) ↔ Close */}
-            <button
-                type="button"
-                onClick={onCloseOrSave}
-                title={isEditing ? l.saveChanges : l.closeTable}
-                aria-label={isEditing ? l.saveChanges : l.closeTable}
-                className={`w-8 h-8 rounded-full border flex items-center justify-center shadow-sm transition-all hover:scale-105 ${isEditing
-                        ? 'bg-primary-700 text-white border-primary-700 hover:bg-primary-900'
-                        : 'bg-surface text-text-secondary border-border hover:border-negative hover:text-negative hover:bg-negative-bg'
-                    }`}
-            >
-                {isEditing ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
-            </button>
+            {(isEditing || showClose) && (
+              <button
+                  type="button"
+                  onClick={onCloseOrSave}
+                  title={isEditing ? l.saveChanges : l.closeTable}
+                  aria-label={isEditing ? l.saveChanges : l.closeTable}
+                  className={`w-8 h-8 rounded-full border flex items-center justify-center shadow-sm transition-all hover:scale-105 ${isEditing
+                          ? 'bg-primary-700 text-white border-primary-700 hover:bg-primary-900'
+                          : 'bg-surface text-text-secondary border-border hover:border-negative hover:text-negative hover:bg-negative-bg'
+                      }`}
+              >
+                  {isEditing ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+              </button>
+            )}
         </div>
     );
 };

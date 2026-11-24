@@ -5,11 +5,11 @@ import { SelectionKpiRow, KpiNumbersRow } from '../components/kpi/KpiCardRow';
 import { ChartCard } from '../components/charts/ChartCard';
 import { FullscreenChartFrame } from '../components/charts/FullscreenChartFrame';
 import { ForecastLineChart } from '../components/charts/ForecastLineChart';
-import { StackedBarChart } from '../components/charts/StackedBarChart';
 import { DrillToolbar } from '../components/charts/DrillToolbar';
-import { WaterfallChart } from '../components/charts/WaterfallChart';
 import { TreemapChart } from '../components/charts/TreemapChart';
-import { BottomDock } from '../components/table/BottomDock';
+import { PlanningTable } from '../components/table/PlanningTable';
+import { ModeHint } from '../components/table/ModeHint';
+import { TableFloatingButtons } from '../components/table/TableFloatingButtons';
 
 import { useAuthStore } from '../store/authStore';
 import { useViewStore } from '../store/viewStore';
@@ -27,7 +27,7 @@ import { metaService } from '../services/metaService';
 import { labels } from '../constants/labels';
 import { allowedLevels } from '../utils/allowedLevels';
 import { setDataRange } from '../utils/dateRange';
-import { LEVELS, LEVEL_MAP } from '../constants/hierarchy';
+import { LEVEL_MAP } from '../constants/hierarchy';
 import { ProductLevelNum } from '../types';
 
 export const DemandPlannerPage: React.FC = () => {
@@ -43,19 +43,18 @@ export const DemandPlannerPage: React.FC = () => {
     measure,
     timeGrain,
     apg,
+    compare,
     setProductLevel,
     setCustomerView,
     setMeasure,
     setTimeGrain,
     setApg,
-    setScope,
     drillDown,
     drillUp,
     drillHistory,
     resetHeaderOnly,
   } = useViewStore();
 
-  const [barDrillOn, setBarDrillOn] = React.useState(false);
   const [treemapDrillOn, setTreemapDrillOn] = React.useState(false);
 
   const { appliedFilters, applyFilters, resetAll, syncWithGrain } = useFilterStore();
@@ -63,9 +62,16 @@ export const DemandPlannerPage: React.FC = () => {
   const {
     isDockOpen,
     toggleDock,
-    openDock,
-    setDesegregated,
+    mode,
+    draftEdits,
+    isDesegregated,
+    setMode,
+    setCellEdit,
+    revertCellEdit,
+    saveEdits,
     discardEdits,
+    hasUnsavedEdits,
+    setDesegregated,
   } = useTableStore();
 
   const {
@@ -185,23 +191,9 @@ export const DemandPlannerPage: React.FC = () => {
     (isActivityActive ? 1 : 0);
 
   const { charts: cl } = labels;
-  const levelLabel = LEVEL_MAP[productLevel]?.label || 'Brand';
-  const stackedBarTitle = `Forecast by ${levelLabel} and APG`;
 
   // Map numeric level to legacy 'brand'|'product' for chart components
   const legacyLevel = productLevel >= 4 ? 'product' : 'brand';
-
-  const drillToolbar = (
-    <DrillToolbar
-      level={productLevel}
-      minLevel={allowed[0] ?? 1}
-      maxLevel={5}
-      drillOn={barDrillOn}
-      onUp={handleDrillUp}
-      onToggleDown={() => setBarDrillOn((v) => !v)}
-      drillHistoryEmpty={drillHistory.length === 0}
-    />
-  );
 
   const treemapDrillToolbar = (
     <DrillToolbar
@@ -214,6 +206,43 @@ export const DemandPlannerPage: React.FC = () => {
       drillHistoryEmpty={drillHistory.length === 0}
     />
   );
+
+  // Table editing controls logic
+  const canEdit = !compare.on && (timeGrain === 'month' || timeGrain === 'week');
+  const disabledReason = compare.on
+    ? 'Table editing disabled in compare mode'
+    : 'Switch to Month or Week to edit';
+  const hasDraft = Object.keys(draftEdits).length > 0;
+
+  React.useEffect(() => {
+    if (mode === 'edit' && !canEdit) {
+      setMode('view');
+    }
+  }, [mode, canEdit, setMode]);
+
+  const handleToggleEdit = () => {
+    if (!canEdit) return;
+    if (mode === 'edit') {
+      if (hasDraft || hasUnsavedEdits()) {
+        setDiscardConfirmModalOpen(true);
+      } else {
+        setMode('view');
+      }
+    } else {
+      setMode('edit');
+    }
+  };
+
+  const handleToggleDelta = () => {
+    setMode(mode === 'delta' ? 'view' : 'delta');
+  };
+
+  const handleCloseOrSave = () => {
+    if (mode === 'edit') {
+      saveEdits();
+      addToast(labels.toasts.editSaved, 'success');
+    }
+  };
 
   return (
     <AppShell
@@ -233,7 +262,7 @@ export const DemandPlannerPage: React.FC = () => {
       onTimeGrainChange={handleTimeGrainChange}
       onApgChange={setApg}
       onResetHeaderOnly={handleResetHeader}
-      isTableActive={isDockOpen}
+      isTableActive={false}
       onToggleTable={toggleDock}
       activeFilterCount={activeFilterCount}
       isFilterOpen={isFilterDrawerOpen}
@@ -256,56 +285,75 @@ export const DemandPlannerPage: React.FC = () => {
       onConfirmDiscard={handleConfirmDiscard}
       selectionRow={<SelectionKpiRow hierarchyNodes={hierarchyNodes} />}
     >
-      {/* 1. Numbers row */}
-      <section aria-label="Key performance indicators">
-        <KpiNumbersRow
-          kpis={kpis}
-          isLoading={isKpisLoading}
-          isError={isKpisError}
-          error={kpisError as Error}
-          onRetry={refetchKpis}
-        />
-      </section>
+      <div className="summary-dashboard flex flex-col w-full">
+        {/* 1. Numbers row */}
+        <section aria-label="Key performance indicators" className="mb-4">
+          <KpiNumbersRow
+            kpis={kpis}
+            isLoading={isKpisLoading}
+            isError={isKpisError}
+            error={kpisError as Error}
+            onRetry={refetchKpis}
+          />
+        </section>
 
-      {/* 2. Charts */}
-      <section aria-label="Forecast visualisations">
-        {fullscreenChartId ? (
-          <div className="w-full">
-            {fullscreenChartId === 'chart-line' && (
-              <FullscreenChartFrame title={cl.forecastTrend} onClose={closeFullscreen}>
+        {/* 2. Charts */}
+        <section aria-label="Forecast visualisations" className="mb-4">
+          {fullscreenChartId ? (
+            <div className="w-full">
+              {fullscreenChartId === 'chart-line' && (
+                <FullscreenChartFrame title={cl.forecastTrend} onClose={closeFullscreen}>
+                  <ForecastLineChart
+                    data={chartData.forecastLine.data?.points}
+                    isLoading={chartData.forecastLine.isLoading}
+                    isError={chartData.forecastLine.isError}
+                    onRetry={chartData.forecastLine.refetch}
+                  />
+                </FullscreenChartFrame>
+              )}
+              {fullscreenChartId === 'chart-treemap' && (
+                <FullscreenChartFrame title={cl.productMix} onClose={closeFullscreen} headerAction={treemapDrillToolbar}>
+                  <TreemapChart
+                    data={chartData.treemap.data?.data}
+                    level={legacyLevel}
+                    productLevelNum={productLevel}
+                    isLoading={chartData.treemap.isLoading}
+                    isError={chartData.treemap.isError}
+                    onRetry={chartData.treemap.refetch}
+                    drillOn={treemapDrillOn}
+                    onDrillDown={handleDrillDown}
+                  />
+                </FullscreenChartFrame>
+              )}
+            </div>
+          ) : (
+            <div
+              className="summary-dashboard-graphs grid w-full"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))',
+                gap: '16px',
+              }}
+            >
+              <ChartCard
+                title={cl.forecastTrend}
+                onToggleFullscreen={() => openFullscreen('chart-line')}
+                className="!h-[340px] !min-h-0 !overflow-visible"
+              >
                 <ForecastLineChart
                   data={chartData.forecastLine.data?.points}
                   isLoading={chartData.forecastLine.isLoading}
                   isError={chartData.forecastLine.isError}
                   onRetry={chartData.forecastLine.refetch}
                 />
-              </FullscreenChartFrame>
-            )}
-            {fullscreenChartId === 'chart-stacked' && (
-              <FullscreenChartFrame title={stackedBarTitle} onClose={closeFullscreen} headerAction={drillToolbar}>
-                <StackedBarChart
-                  data={chartData.stackedBar.data?.items}
-                  drillOn={barDrillOn}
-                  onToggleDrillOn={setBarDrillOn}
-                  onDrillDown={handleDrillDown}
-                  isLoading={chartData.stackedBar.isLoading}
-                  isError={chartData.stackedBar.isError}
-                  onRetry={chartData.stackedBar.refetch}
-                />
-              </FullscreenChartFrame>
-            )}
-            {fullscreenChartId === 'chart-waterfall' && (
-              <FullscreenChartFrame title={cl.forecastBridge} onClose={closeFullscreen}>
-                <WaterfallChart
-                  data={chartData.waterfall.data?.steps}
-                  isLoading={chartData.waterfall.isLoading}
-                  isError={chartData.waterfall.isError}
-                  onRetry={chartData.waterfall.refetch}
-                />
-              </FullscreenChartFrame>
-            )}
-            {fullscreenChartId === 'chart-treemap' && (
-              <FullscreenChartFrame title={cl.productMix} onClose={closeFullscreen} headerAction={treemapDrillToolbar}>
+              </ChartCard>
+
+              <ChartCard
+                title={cl.productMix}
+                onToggleFullscreen={() => openFullscreen('chart-treemap')}
+                headerAction={treemapDrillToolbar}
+                className="!h-[340px] !min-h-0 !overflow-visible"
+              >
                 <TreemapChart
                   data={chartData.treemap.data?.data}
                   level={legacyLevel}
@@ -316,63 +364,83 @@ export const DemandPlannerPage: React.FC = () => {
                   drillOn={treemapDrillOn}
                   onDrillDown={handleDrillDown}
                 />
-              </FullscreenChartFrame>
-            )}
+              </ChartCard>
+            </div>
+          )}
+        </section>
+
+        {/* 3. Static Forecast Table */}
+        <section aria-label="Forecast planning table" className="w-full bg-surface border border-border rounded-card shadow-card flex flex-col mb-4">
+          {/* Table Header Bar */}
+          <div className="flex items-center justify-between px-4 py-2.5 bg-primary-50 border-b border-border rounded-t-card">
+            <div className="flex items-center gap-3">
+              <h3 className="text-xs font-semibold text-text-primary tracking-tight">
+                Forecast Planning Table
+              </h3>
+              <ModeHint mode={mode} isDesegregated={isDesegregated} />
+            </div>
+            <div className="shrink-0 flex items-center gap-3">
+              {hasDraft && (
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300 shadow-sm animate-in fade-in">
+                  Previewing unsaved edits
+                </span>
+              )}
+              <TableFloatingButtons
+                mode={mode}
+                onToggleEdit={handleToggleEdit}
+                onToggleDelta={handleToggleDelta}
+                onCloseOrSave={handleCloseOrSave}
+                canEdit={canEdit}
+                disabledTooltip={disabledReason}
+                showClose={false}
+              />
+            </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ChartCard title={cl.forecastTrend} onToggleFullscreen={() => openFullscreen('chart-line')}>
-              <ForecastLineChart
-                data={chartData.forecastLine.data?.points}
-                isLoading={chartData.forecastLine.isLoading}
-                isError={chartData.forecastLine.isError}
-                onRetry={chartData.forecastLine.refetch}
-              />
-            </ChartCard>
 
-            <ChartCard title={stackedBarTitle} onToggleFullscreen={() => openFullscreen('chart-stacked')} headerAction={drillToolbar}>
-              <StackedBarChart
-                data={chartData.stackedBar.data?.items}
-                drillOn={barDrillOn}
-                onToggleDrillOn={setBarDrillOn}
-                onDrillDown={handleDrillDown}
-                isLoading={chartData.stackedBar.isLoading}
-                isError={chartData.stackedBar.isError}
-                onRetry={chartData.stackedBar.refetch}
-              />
-            </ChartCard>
-
-            <ChartCard title={cl.forecastBridge} onToggleFullscreen={() => openFullscreen('chart-waterfall')}>
-              <WaterfallChart
-                data={chartData.waterfall.data?.steps}
-                isLoading={chartData.waterfall.isLoading}
-                isError={chartData.waterfall.isError}
-                onRetry={chartData.waterfall.refetch}
-              />
-            </ChartCard>
-
-            <ChartCard
-              title={cl.productMix}
-              onToggleFullscreen={() => openFullscreen('chart-treemap')}
-              headerAction={treemapDrillToolbar}
-            >
-              <TreemapChart
-                data={chartData.treemap.data?.data}
-                level={legacyLevel}
-                productLevelNum={productLevel}
-                isLoading={chartData.treemap.isLoading}
-                isError={chartData.treemap.isError}
-                onRetry={chartData.treemap.refetch}
-                drillOn={treemapDrillOn}
-                onDrillDown={handleDrillDown}
-              />
-            </ChartCard>
+          {/* Table Body Container */}
+          <div className="w-full overflow-x-auto max-h-[600px] overflow-y-auto">
+            <PlanningTable
+              rows={tableData?.rows || []}
+              period={tableData?.period || []}
+              currentMonthIndex={tableData?.currentMonthIndex || 5}
+              level={legacyLevel}
+              productLevelNum={productLevel}
+              mode={mode}
+              draftEdits={draftEdits}
+              onCellEdit={(row, defType, month, deltaBase) => {
+                const fu = row.forecastUnit || row.product || row.forecastGroup || row.brand || row.id;
+                const apg = row.apg || 'All';
+                setCellEdit(
+                  {
+                    forecastUnit: fu,
+                    apg,
+                    period: month,
+                    defType,
+                    rowMeta: {
+                      fuId: row.id,
+                      forecastUnit: fu,
+                      forecastGroup: row.forecastGroup,
+                      brand: row.brand,
+                      sop: row.sop,
+                      category: row.category,
+                      unitsPerCase: row.unitsPerCase || 12,
+                      price: row.price || 100,
+                    },
+                  },
+                  deltaBase
+                );
+              }}
+              onCellRevert={(row, defType, month) => {
+                const fu = row.forecastUnit || row.product || row.forecastGroup || row.brand || row.id;
+                const apg = row.apg || 'All';
+                revertCellEdit({ forecastUnit: fu, apg, period: month, defType });
+              }}
+              isLoading={isTableLoading}
+            />
           </div>
-        )}
-      </section>
-
-      {/* 3. Bottom table dock */}
-      <BottomDock tableData={tableData} level={legacyLevel} productLevelNum={productLevel} isLoading={isTableLoading} />
+        </section>
+      </div>
     </AppShell>
   );
 };
+

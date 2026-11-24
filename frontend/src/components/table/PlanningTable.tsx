@@ -156,26 +156,26 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
       )}
       <table className="w-full text-left border-collapse text-xs">
         {/* ── Header ── primary-700 bg, white text */}
-        <thead>
+        <thead className="sticky top-0 z-20">
           <tr className="bg-primary-700 text-white text-[10px] font-semibold border-b border-primary-900">
             {activeLevels.map((lvl, idx) => (
               <th
                 key={lvl.id}
                 style={{ left: `${idx * 110}px` }}
-                className="sticky z-20 bg-primary-700 py-2.5 px-3 w-[110px] min-w-[110px] max-w-[110px] border-r border-primary-900 whitespace-nowrap truncate"
+                className="sticky top-0 z-30 bg-primary-700 py-2.5 px-3 w-[110px] min-w-[110px] max-w-[110px] border-r border-primary-900 whitespace-nowrap truncate"
               >
                 {lvl.label}
               </th>
             ))}
             <th
               style={{ left: `${activeLevels.length * 110}px` }}
-              className="sticky z-20 bg-primary-700 py-2.5 px-3 w-[100px] min-w-[100px] max-w-[100px] border-r border-primary-900 whitespace-nowrap truncate"
+              className="sticky top-0 z-30 bg-primary-700 py-2.5 px-3 w-[100px] min-w-[100px] max-w-[100px] border-r border-primary-900 whitespace-nowrap truncate"
             >
               APG
             </th>
             <th
               style={{ left: `${activeLevels.length * 110 + 100}px` }}
-              className="sticky z-20 bg-primary-700 py-2 px-2 w-[100px] min-w-[100px] max-w-[100px] border-r border-primary-900 text-center whitespace-nowrap shadow-[2px_0_4px_rgba(0,0,0,0.15)]"
+              className="sticky top-0 z-30 bg-primary-700 py-2 px-2 w-[100px] min-w-[100px] max-w-[100px] border-r border-primary-900 text-center whitespace-nowrap shadow-[2px_0_4px_rgba(0,0,0,0.15)]"
             >
               {isComparing ? (
                 <div className="flex flex-col items-center justify-center leading-tight">
@@ -197,7 +197,7 @@ export const PlanningTable: React.FC<PlanningTableProps> = ({
                 <th
                   key={m}
                   title={straddlingTooltip}
-                  className={`py-2.5 px-3 text-center min-w-[85px] border-r border-primary-900 ${isPast ? 'bg-primary-900 text-primary-300' : 'bg-primary-700'
+                  className={`sticky top-0 z-10 py-2.5 px-3 text-center min-w-[85px] border-r border-primary-900 ${isPast ? 'bg-primary-900 text-primary-300' : 'bg-primary-700'
                     }`}
                 >
                   <div className="font-semibold flex items-center justify-center gap-1">
