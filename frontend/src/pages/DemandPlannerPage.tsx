@@ -8,6 +8,7 @@ import { ForecastLineChart } from '../components/charts/ForecastLineChart';
 import { DrillToolbar } from '../components/charts/DrillToolbar';
 import { TreemapChart } from '../components/charts/TreemapChart';
 import { PlanningTable } from '../components/table/PlanningTable';
+import { ForecastTrendTable } from '../components/table/ForecastTrendTable';
 import { ModeHint } from '../components/table/ModeHint';
 import { TableFloatingButtons } from '../components/table/TableFloatingButtons';
 
@@ -303,12 +304,22 @@ export const DemandPlannerPage: React.FC = () => {
             <div className="w-full">
               {fullscreenChartId === 'chart-line' && (
                 <FullscreenChartFrame title={cl.forecastTrend} onClose={closeFullscreen}>
-                  <ForecastLineChart
-                    data={chartData.forecastLine.data?.points}
-                    isLoading={chartData.forecastLine.isLoading}
-                    isError={chartData.forecastLine.isError}
-                    onRetry={chartData.forecastLine.refetch}
-                  />
+                  <div className="expanded-forecast-trend-view w-full h-full min-h-0">
+                    <div className="w-full h-full min-h-0 relative">
+                      <ForecastLineChart
+                        data={chartData.forecastLine.data?.points}
+                        isLoading={chartData.forecastLine.isLoading}
+                        isError={chartData.forecastLine.isError}
+                        onRetry={chartData.forecastLine.refetch}
+                      />
+                    </div>
+                    <div className="w-full h-full min-h-0 overflow-auto">
+                      <ForecastTrendTable
+                        points={chartData.forecastLine.data?.points}
+                        isLoading={chartData.forecastLine.isLoading}
+                      />
+                    </div>
+                  </div>
                 </FullscreenChartFrame>
               )}
               {fullscreenChartId === 'chart-treemap' && (

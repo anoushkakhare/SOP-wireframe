@@ -178,3 +178,21 @@
   scroll-margin-top: 96px;
 }
 
+/* ── Expanded forecast trend split view ── */
+.expanded-forecast-trend-view {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+@media (max-width: 1100px) {
+  .expanded-forecast-trend-view {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(320px, 1fr) minmax(320px, 1fr);
+  }
+}
+
+
