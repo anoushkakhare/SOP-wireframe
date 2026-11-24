@@ -52,11 +52,25 @@ export const statusDotColor = (status: SectionStatusType): string => {
 interface NavStore {
   activeSectionId: string;
   setActiveSectionId: (id: string) => void;
+  // Navigation target inside the Data review card
+  reviewTarget: {
+    mainTab: 'master' | 'transactional';
+    masterSubTab?: 'product' | 'customer';
+    txChartType?: 'bar' | 'line' | 'pie';
+    timestamp?: number;
+  } | null;
+  setReviewTarget: (target: {
+    mainTab: 'master' | 'transactional';
+    masterSubTab?: 'product' | 'customer';
+    txChartType?: 'bar' | 'line' | 'pie';
+  }) => void;
 }
 
 export const useDataReviewNavStore = create<NavStore>((set) => ({
   activeSectionId: (typeof window !== 'undefined' && window.location.hash.slice(1)) || 'pipeline',
   setActiveSectionId: (id) => set({ activeSectionId: id }),
+  reviewTarget: null,
+  setReviewTarget: (target) => set({ reviewTarget: { ...target, timestamp: Date.now() } }),
 }));
 
 export const scrollToSection = (sectionId: string) => {

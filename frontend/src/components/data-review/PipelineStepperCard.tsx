@@ -14,6 +14,12 @@ import {
 import { DataReviewFeed } from '../../types';
 import { useDataReviewMutations } from '../../hooks/useDataReview';
 
+export interface ReviewTargetState {
+  mainTab: 'master' | 'transactional';
+  masterSubTab?: 'product' | 'customer';
+  txChartType?: 'bar' | 'line' | 'pie';
+}
+
 interface PipelineStepperCardProps {
   feeds: DataReviewFeed[];
   isLoading?: boolean;
@@ -22,6 +28,7 @@ interface PipelineStepperCardProps {
   onToggleHistory?: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  onNavigateToReview?: (target: ReviewTargetState) => void;
 }
 
 export const PipelineStepperCard: React.FC<PipelineStepperCardProps> = ({
@@ -32,6 +39,7 @@ export const PipelineStepperCard: React.FC<PipelineStepperCardProps> = ({
   onToggleHistory,
   isCollapsed: controlledCollapsed,
   onToggleCollapse,
+  onNavigateToReview,
 }) => {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const isCollapsed = controlledCollapsed !== undefined ? controlledCollapsed : internalCollapsed;
@@ -55,6 +63,43 @@ export const PipelineStepperCard: React.FC<PipelineStepperCardProps> = ({
       await loadFeed(id);
     } finally {
       setLoadingFeedId(null);
+    }
+  };
+
+  const getTargetForFeed = (feed: DataReviewFeed): ReviewTargetState => {
+    switch (feed.id) {
+      case 'product-master':
+        return { mainTab: 'master', masterSubTab: 'product' };
+      case 'customer-master':
+        return { mainTab: 'master', masterSubTab: 'customer' };
+      case 'price-master':
+        return { mainTab: 'master', masterSubTab: 'product' };
+      case 'actuals':
+        return { mainTab: 'transactional', txChartType: 'bar' };
+      case 'statistical-forecast':
+        return { mainTab: 'transactional', txChartType: 'line' };
+      default: {
+        const lowerName = (feed.name || '').toLowerCase();
+        if (lowerName.includes('product')) return { mainTab: 'master', masterSubTab: 'product' };
+        if (lowerName.includes('customer')) return { mainTab: 'master', masterSubTab: 'customer' };
+        if (lowerName.includes('price')) return { mainTab: 'master', masterSubTab: 'product' };
+        if (lowerName.includes('stat') || lowerName.includes('forecast')) return { mainTab: 'transactional', txChartType: 'line' };
+        if (feed.type === 'master') return { mainTab: 'master', masterSubTab: 'product' };
+        return { mainTab: 'transactional', txChartType: 'bar' };
+      }
+    }
+  };
+
+  const handleCheckpointClick = (feed: DataReviewFeed) => {
+    if (onNavigateToReview) {
+      onNavigateToReview(getTargetForFeed(feed));
+    }
+  };
+
+  const handleCheckpointKeyDown = (e: React.KeyboardEvent, feed: DataReviewFeed) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleCheckpointClick(feed);
     }
   };
 
@@ -207,29 +252,40 @@ export const PipelineStepperCard: React.FC<PipelineStepperCardProps> = ({
                         />
                       )}
 
-                      {/* Step Circle Node */}
+                      {/* Step Clickable Checkpoint (Circle + Label) */}
                       <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold z-10 shadow-sm transition-transform ${getNodeColor(
-                          feed.status
-                        )}`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => handleCheckpointClick(feed)}
+                        onKeyDown={(e) => handleCheckpointKeyDown(e, feed)}
+                        aria-label={`Navigate to ${feed.name} view in Data review`}
+                        className="group flex flex-col items-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 rounded-lg p-1.5 transition-all hover:bg-gray-50/80 active:scale-95"
                       >
-                        {isLoaded ? (
-                          <CheckCircle2 className="w-4 h-4" />
-                        ) : feed.status === 'delayed' || feed.status === 'failed' ? (
-                          <AlertTriangle className="w-4 h-4" />
-                        ) : (
-                          <Clock className="w-4 h-4" />
-                        )}
-                      </div>
+                        {/* Step Circle Node */}
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold z-10 shadow-sm transition-transform group-hover:scale-110 ${getNodeColor(
+                            feed.status
+                          )}`}
+                        >
+                          {isLoaded ? (
+                            <CheckCircle2 className="w-4 h-4" />
+                          ) : feed.status === 'delayed' || feed.status === 'failed' ? (
+                            <AlertTriangle className="w-4 h-4" />
+                          ) : (
+                            <Clock className="w-4 h-4" />
+                          )}
+                        </div>
 
-                      {/* Step Content */}
-                      <div className="mt-3 flex flex-col items-center w-full">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-xs font-bold text-gray-900 leading-tight">
+                        {/* Step Label */}
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-gray-900 group-hover:text-primary-700 transition-colors leading-tight underline-offset-2 group-hover:underline">
                             {feed.name}
                           </span>
                         </div>
+                      </div>
 
+                      {/* Step Sub-Content (Details & Actions) */}
+                      <div className="mt-1 flex flex-col items-center w-full">
                         <div className="flex items-center gap-1 mb-2">
                           <span className="text-[10px] px-1.5 py-0.2 rounded bg-gray-100 text-gray-600 uppercase font-medium tracking-wide">
                             {feed.type}

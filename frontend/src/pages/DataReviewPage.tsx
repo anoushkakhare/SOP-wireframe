@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { AppShell } from '../components/layout/AppShell';
-import { PipelineStepperCard } from '../components/data-review/PipelineStepperCard';
+import { PipelineStepperCard, ReviewTargetState } from '../components/data-review/PipelineStepperCard';
 import { HistoryTableCard } from '../components/data-review/HistoryTableCard';
 import { DataReviewCard } from '../components/data-review/DataReviewCard';
 import { DataValidationCard } from '../components/data-review/DataValidationCard';
@@ -113,11 +113,45 @@ export const DataReviewPage: React.FC = () => {
   const { data: history = [], isLoading: isHistoryLoading } = useDataReviewHistory();
   const { data: readiness, isLoading: isReadinessLoading } = useDataReviewReadiness();
 
+  const handleNavigateToReview = useCallback((target: ReviewTargetState) => {
+    // 1. Set the active tab / sub-view in the reviewTarget store
+    useDataReviewNavStore.getState().setReviewTarget(target);
+
+    // 2. Ensure the Data review section is expanded
+    setCollapsedMap((prev) => (prev['review'] ? { ...prev, review: false } : prev));
+    useDataReviewNavStore.getState().setActiveSectionId('review');
+    window.history.replaceState(null, '', '#review');
+
+    // 3. Smooth scroll to review section after state update with 12px offset
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const el = document.getElementById('review');
+        if (el) {
+          // Find scroll container (ScrollRegion main or fallback to window)
+          const scrollContainer = el.closest('main') || document.documentElement;
+          const headerOffset = 72; // sticky header height
+          const additionalOffset = 12; // 12px extra offset
+          const totalOffset = headerOffset + additionalOffset;
+
+          if (scrollContainer && scrollContainer !== document.documentElement && scrollContainer.scrollHeight > scrollContainer.clientHeight) {
+            const containerRect = scrollContainer.getBoundingClientRect();
+            const elRect = el.getBoundingClientRect();
+            const targetScrollTop = scrollContainer.scrollTop + (elRect.top - containerRect.top) - totalOffset;
+            scrollContainer.scrollTo({ top: Math.max(0, targetScrollTop), behavior: 'smooth' });
+          } else {
+            const elPosition = el.getBoundingClientRect().top + window.pageYOffset;
+            window.scrollTo({ top: Math.max(0, elPosition - totalOffset), behavior: 'smooth' });
+          }
+        }
+      });
+    });
+  }, []);
+
   const renderSection = (id: string, index: number) => {
     switch (id) {
       case 'pipeline':
         return (
-          <div key="pipeline" id="pipeline" className="scroll-mt-[72px]">
+          <div key="pipeline" id="pipeline" className="scroll-mt-[84px]">
             {/* Section 1: Integration pipeline & schedule */}
             <PipelineStepperCard
               feeds={pipeline}
@@ -127,6 +161,7 @@ export const DataReviewPage: React.FC = () => {
               onToggleHistory={() => setIsHistoryOpen((prev) => !prev)}
               isCollapsed={collapsedMap['pipeline']}
               onToggleCollapse={() => toggleSectionCollapse('pipeline')}
+              onNavigateToReview={handleNavigateToReview}
             />
 
             {/* Section 1 sub-panel: Integration status & history */}

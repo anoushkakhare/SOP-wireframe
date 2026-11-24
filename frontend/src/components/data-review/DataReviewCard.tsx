@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useDataReviewNavStore } from '../../pages/dataReview/sections';
 import {
   Database,
   BarChart2,
@@ -132,6 +133,28 @@ export const DataReviewCard: React.FC<DataReviewCardProps> = ({
   // 4. Fullscreen and docked table state
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isTableCollapsed, setIsTableCollapsed] = useState<boolean>(false); // default docked and open
+  const [isHighlighted, setIsHighlighted] = useState<boolean>(false);
+
+  // Sync with reviewTarget from store (navigation from pipeline stepper)
+  const reviewTarget = useDataReviewNavStore((s) => s.reviewTarget);
+
+  useEffect(() => {
+    if (reviewTarget && reviewTarget.timestamp) {
+      setMainTab(reviewTarget.mainTab);
+      if (reviewTarget.masterSubTab) {
+        setMasterSubTab(reviewTarget.masterSubTab);
+      }
+      if (reviewTarget.txChartType) {
+        setTxChartType(reviewTarget.txChartType);
+      }
+      setIsFullscreen(false);
+      setIsHighlighted(true);
+      const timer = setTimeout(() => {
+        setIsHighlighted(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [reviewTarget]);
 
   // ── Data Queries ──
   // Hierarchy nodes for Product Tree
@@ -367,7 +390,11 @@ export const DataReviewCard: React.FC<DataReviewCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-5">
+    <div
+      className={`bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-5 transition-all duration-300 ${
+        isHighlighted ? 'ring-2 ring-primary-500 shadow-md' : ''
+      }`}
+    >
       {/* ── Section Card Header ── */}
       <button
         type="button"
